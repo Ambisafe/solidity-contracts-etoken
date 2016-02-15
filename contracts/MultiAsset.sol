@@ -93,10 +93,14 @@ contract MultiAsset {
             return false;
         }
         uint pos = assets.length++;
+
+        address[] memory addresses;
+        uint[] memory amounts;
+
         assets[pos] = Asset({
             symbol: _symbol,
-            holders: new address[](2),
-            amounts: new uint[](2),
+            holders: addresses,
+            amounts: amounts,
             name: _name,
             description: _description,
             baseUnit: _baseUnit
