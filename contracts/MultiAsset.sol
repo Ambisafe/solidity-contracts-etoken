@@ -1,12 +1,18 @@
-contract MultiAsset {
+import "CosignEnabled";
+
+contract MultiAsset is CosignEnabled {
     
     event Transfer(address indexed from, address indexed to, bytes32 indexed symbol, uint256 value);
+    event Issue(bytes32 indexed symbol, uint256 value, address by);
+    event Revoke(bytes32 indexed symbol, uint256 value, address by);
     
     struct Asset {
         bytes32 symbol;
         uint8 baseUnit;
-        bytes32 name;
-        bytes32 description;
+        string name;
+        string description;
+        bool isReissuable;
+        address owner;
         mapping(address => uint) index;
         address[] holders;
         uint[] amounts;
@@ -25,14 +31,14 @@ contract MultiAsset {
         }
     }
 
-    function name(bytes32 _symbol) constant returns(bytes32) {
+    function name(bytes32 _symbol) constant returns(string) {
         uint posAsset = assetIndex[_symbol];
         if (posAsset != 0) {
             return assets[posAsset].name;
         }
     }
 
-    function description(bytes32 _symbol) constant returns(bytes32) {
+    function description(bytes32 _symbol) constant returns(string) {
         uint posAsset = assetIndex[_symbol];
         if (posAsset != 0) {
             return assets[posAsset].description;
@@ -63,7 +69,7 @@ contract MultiAsset {
         return assets[posAsset].amounts[pos];
     }
 
-    function transfer(address _to, uint256 _value, bytes32 _symbol) returns(bool) {
+    function transfer(address _to, uint256 _value, bytes32 _symbol) checkSigned(sha3(msg.data)) returns(bool) {
         uint posAsset = assetIndex[_symbol];
         if (posAsset == 0) {
             return false;
@@ -88,11 +94,12 @@ contract MultiAsset {
         return true;
     }
 
-    function issueAsset(bytes32 _symbol, uint _value, bytes32 _name, bytes32 _description, uint8 _baseUnit) returns(bool) {
-        if (assetIndex[_symbol] > 0) {
+    function issueAsset(bytes32 _symbol, uint _value, string _name, string _description, uint8 _baseUnit, bool _isReissuable) returns(bool) {
+        uint pos = assetIndex[_symbol];
+        if (pos > 0) {
             return false;
         }
-        uint pos = assets.length++;
+        pos = assets.length++;
 
         address[] memory addresses;
         uint[] memory amounts;
@@ -102,6 +109,8 @@ contract MultiAsset {
             holders: addresses,
             amounts: amounts,
             name: _name,
+            isReissuable: _isReissuable,
+            owner: tx.origin,
             description: _description,
             baseUnit: _baseUnit
         });
@@ -109,26 +118,36 @@ contract MultiAsset {
         assets[pos].holders[1] = tx.origin;
         assets[pos].index[tx.origin] = 1;
         assetIndex[_symbol] = pos;
-        Transfer(0x0, tx.origin, _symbol, _value);
+        Issue(_symbol, _value, tx.origin);
         return true;
     }
-
-    function issue(bytes32 _symbol, uint _value) returns (bool) {
-        //todo: implement
-        //this would require:
-        // - add owner to the Asset struct
-        // - add isReissuable flag to Asset struct
-        // - implements access rights and events
+    
+    function reissueAsset(bytes32 _symbol, uint _value) returns(bool) {
+        uint posAsset = assetIndex[_symbol];
+        if (posAsset == 0 || !assets[posAsset].isReissuable || assets[posAsset].owner != tx.origin) {
+            return false;
+        }
+        uint pos = assets[posAsset].index[tx.origin];
+        assets[posAsset].amounts[pos] += _value;
+        Issue(_symbol, _value, tx.origin);
+        return true;
     }
     
-    function revoke(bytes32 _symbol, uint _value) returns (bool) {
-        //todo: implement
-        //this would require:
-        // - add owner to the Asset struct
-        // - implements access rights and events
+    function revokeAsset(bytes32 _symbol, uint _value) returns (bool) {
+        uint posAsset = assetIndex[_symbol];
+        if (posAsset == 0 || assets[posAsset].owner != tx.origin) {
+            return false;
+        }
+        uint pos = assets[posAsset].index[tx.origin];
+        if (assets[posAsset].amounts[pos] < _value) {
+            return false;
+        }
+        assets[posAsset].amounts[pos] -= _value;
+        Revoke(_symbol, _value, tx.origin);
+        return true;
     }
     
-    function recover(address _from, address _to) returns (bool) {
+    function recoverAccount(address _from, address _to) returns (bool) {
         //todo: implement
         //this would require:
         // - mark recovered addresse and exclude from txns
