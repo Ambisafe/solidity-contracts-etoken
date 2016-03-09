@@ -55,6 +55,7 @@ contract('MultiAsset', function(accounts) {
   it('should not be possible to reissue 0 of reissuable asset');
   it('should not be possible to reissue missing asset');
   it('should not be possible to reissue 1 with total supply 2**255');
+  it('should not be possible to reissue 2**255 with total supply 1');
   it('should be possible to reissue 1 with total supply (2**255 - 1)');
   it('should be possible to reissue 1 with total supply 0');
   it('should be possible to reissue 2**255 with total supply 0');
