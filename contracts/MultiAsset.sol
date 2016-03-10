@@ -114,6 +114,8 @@ contract MultiAsset is CosignEnabled {
             description: _description,
             baseUnit: _baseUnit
         });
+        assets[pos].amounts.length = 2;
+        assets[pos].holders.length = 2;
         assets[pos].amounts[1] = _value;
         assets[pos].holders[1] = tx.origin;
         assets[pos].index[tx.origin] = 1;

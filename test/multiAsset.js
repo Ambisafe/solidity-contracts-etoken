@@ -1,9 +1,52 @@
-contract('MultiAsset', function(accounts) {
-  it('should not be possible to issue asset with existing symbol');
-  it('should not be possible to issue asset with empty symbol');
-  it('should be possible to issue asset with 1 character symbol');
-  it('should be possible to issue asset with 32 characters symbol');
-  it('should not be possible to issue asset with 33 characters symbol');
+contract('MultiAsset', {reset_state: true}, function(accounts) {
+  var bytes32 = function(number) {
+    var zeros = '000000000000000000000000000000000000000000000000000000000000000';
+    var hexNumber = number.toString(16);
+    return '0x' + (zeros + hexNumber).substring(hexNumber.length - 1);
+  };
+
+  it('should not be possible to issue asset with existing symbol', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var symbol = bytes32(0);
+    var value = 1001;
+    var value2 = 3021;
+    var name = 'Test Name';
+    var name2 = '2Test Name2';
+    var description = 'Test Description';
+    var description2 = '2Test Description2';
+    var baseUnit = 2;
+    var baseUnit2 = 4;
+    var isReissuable = false;
+    var isReissuable2 = true;
+    var watcher = multiAsset.Issue();
+    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
+      return watcher.get();
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      return multiAsset.issueAsset(symbol, value2, name2, description2, baseUnit2, isReissuable2);
+    }).then(function() {
+      return watcher.get();
+    }).then(function(events) {
+      assert.equal(events.length, 0);
+      return multiAsset.name.call(symbol);
+    }).then(function(result) {
+      assert.equal(result, name);
+      return multiAsset.totalSupply.call(symbol);
+    }).then(function(result) {
+      assert.equal(result, value);
+      return multiAsset.description.call(symbol);
+    }).then(function(result) {
+      assert.equal(result, description);
+      return multiAsset.baseUnit.call(symbol);
+    }).then(function(result) {
+      assert.equal(result, baseUnit);
+      // TODO: check isReissuable;
+    }).then(done).catch(done);
+  });
+  it('should be possible to issue asset with 1 bit 0 symbol');
+  it('should be possible to issue asset with 1 bit 1 symbol');
+  it('should be possible to issue asset with 32 bytes symbol');
+  it('should not be possible to issue asset with 257 bits symbol');
   it('should not be possible to issue fixed asset with 0 value');
   it('should be possible to issue fixed asset with 1 value');
   it('should be possible to issue fixed asset with 2**255 value');
@@ -16,7 +59,81 @@ contract('MultiAsset', function(accounts) {
   it('should be possible to issue asset with base unit 1');
   it('should be possible to issue asset with base unit 128');
   it('should not be possible to issue asset with base unit 129');
-  it('should be possible to issue asset');
+  it('should be possible to issue asset', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var symbol = bytes32(0);
+    var value = 1001;
+    var name = 'Test Name';
+    var description = 'Test Description';
+    var baseUnit = 2;
+    var isReissuable = false;
+    var watcher = multiAsset.Issue();
+    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
+      return watcher.get();
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.symbol.valueOf(), symbol);
+      assert.equal(events[0].args.value.valueOf(), value);
+      assert.equal(events[0].args.by.valueOf(), accounts[0]);
+      return multiAsset.name.call(symbol);
+    }).then(function(result) {
+      assert.equal(result, name);
+      return multiAsset.totalSupply.call(symbol);
+    }).then(function(result) {
+      assert.equal(result, value);
+      return multiAsset.description.call(symbol);
+    }).then(function(result) {
+      assert.equal(result, description);
+      return multiAsset.baseUnit.call(symbol);
+    }).then(function(result) {
+      assert.equal(result, baseUnit);
+      // TODO: check isReissuable;
+    }).then(done).catch(done);
+  });
+  it('should be possible to issue multiple assets', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var symbol = bytes32(0);
+    var symbol2 = bytes32(1);
+    var value = 1001;
+    var value2 = 3021;
+    var name = 'Test Name';
+    var name2 = '2Test Name2';
+    var description = 'Test Description';
+    var description2 = '2Test Description2';
+    var baseUnit = 2;
+    var baseUnit2 = 4;
+    var isReissuable = false;
+    var isReissuable2 = true;
+    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
+      return multiAsset.issueAsset(symbol2, value2, name2, description2, baseUnit2, isReissuable2);
+    }).then(function() {
+      return multiAsset.name.call(symbol);
+    }).then(function(result) {
+      assert.equal(result, name);
+      return multiAsset.name.call(symbol2);
+    }).then(function(result) {
+      assert.equal(result, name2);
+      return multiAsset.totalSupply.call(symbol);
+    }).then(function(result) {
+      assert.equal(result, value);
+      return multiAsset.totalSupply.call(symbol2);
+    }).then(function(result) {
+      assert.equal(result, value2);
+      return multiAsset.description.call(symbol);
+    }).then(function(result) {
+      assert.equal(result, description);
+      return multiAsset.description.call(symbol2);
+    }).then(function(result) {
+      assert.equal(result, description2);
+      return multiAsset.baseUnit.call(symbol);
+    }).then(function(result) {
+      assert.equal(result, baseUnit);
+      return multiAsset.baseUnit.call(symbol2);
+    }).then(function(result) {
+      assert.equal(result, baseUnit2);
+      // TODO: check isReissuable;
+    }).then(done).catch(done);
+  });
   it('should be possible to get asset name');
   it('should be possible to get asset description');
   it('should be possible to get asset base unit');
