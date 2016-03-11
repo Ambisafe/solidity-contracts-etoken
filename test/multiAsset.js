@@ -5,14 +5,21 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     return '0x' + (zeros + hexNumber).substring(hexNumber.length - 1);
   };
 
+  var UINT_256_MINUS_2 = '1.15792089237316195423570985008687907853269984665640564039457584007913129639934e+77';
+  var UINT_256_MINUS_1 = '1.15792089237316195423570985008687907853269984665640564039457584007913129639935e+77';
+  var UINT_256 = '1.15792089237316195423570985008687907853269984665640564039457584007913129639936e+77';
   var UINT_255_MINUS_1 = '5.7896044618658097711785492504343953926634992332820282019728792003956564819967e+76';
   var UINT_255 = '5.7896044618658097711785492504343953926634992332820282019728792003956564819968e+76';
-  var UINT_254_PLUS_1 = '2.8948022309329048855892746252171976963317496166410141009864396001978282409985e+76';
-  var UINT_254 = '2.8948022309329048855892746252171976963317496166410141009864396001978282409984e+76';
-  var UINT_254_MINUS_1 = '2.8948022309329048855892746252171976963317496166410141009864396001978282409983e+76';
 
   var BYTES_32 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
   var BITS_257 = '0x10000000000000000000000000000000000000000000000000000000000000000';
+
+  var SYMBOL = bytes32(0);
+  var NAME = 'Test Name';
+  var DESCRIPTION = 'Test Description';
+  var VALUE = 1001;
+  var BASE_UNIT = 2;
+  var IS_REISSUABLE = false;
 
   it('should not be possible to issue asset with existing symbol', function(done) {
     var multiAsset = MultiAsset.deployed();
@@ -55,71 +62,160 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   it('should be possible to issue asset with 1 bit 0 symbol', function(done) {
     var multiAsset = MultiAsset.deployed();
     var symbol = bytes32(0);
-    var value = 1001;
-    var name = 'Test Name';
-    var description = 'Test Description';
-    var baseUnit = 2;
-    var isReissuable = false;
-    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
+    multiAsset.issueAsset(symbol, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.name.call(symbol);
     }).then(function(result) {
-      assert.equal(result.valueOf(), name);
+      assert.equal(result.valueOf(), NAME);
     }).then(done).catch(done);
   });
   it('should be possible to issue asset with 1 bit 1 symbol', function(done) {
     var multiAsset = MultiAsset.deployed();
     var symbol = bytes32(1);
-    var value = 1001;
-    var name = 'Test Name';
-    var description = 'Test Description';
-    var baseUnit = 2;
-    var isReissuable = false;
-    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
+    multiAsset.issueAsset(symbol, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.name.call(symbol);
     }).then(function(result) {
-      assert.equal(result.valueOf(), name);
+      assert.equal(result.valueOf(), NAME);
     }).then(done).catch(done);
   });
   it('should be possible to issue asset with 32 bytes symbol', function(done) {
     var multiAsset = MultiAsset.deployed();
     var symbol = BYTES_32;
-    var value = 1001;
-    var name = 'Test Name';
-    var description = 'Test Description';
-    var baseUnit = 2;
-    var isReissuable = false;
-    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
+    multiAsset.issueAsset(symbol, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.name.call(symbol);
     }).then(function(result) {
-      assert.equal(result.valueOf(), name);
+      assert.equal(result.valueOf(), NAME);
     }).then(done).catch(done);
   });
-  it('should not be possible to issue asset with 257 bits symbol', function(done) {
+  it.skip('should not be possible to issue asset with 257 bits symbol', function(done) {
     var multiAsset = MultiAsset.deployed();
     var symbol = BITS_257;
-    var value = 257;
-    var name = 'Test Name';
-    var description = 'Test Description';
-    var baseUnit = 2;
-    var isReissuable = false;
-    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
-      done('Exception did not happen while it should.');
+    multiAsset.issueAsset(symbol, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.assets.call(1);
+    }).then(function() {
+      done('Exception did not happen, asset created.');
     }, function() {
       done();
     });
   });
-  it('should not be possible to issue fixed asset with 0 value');
-  it('should be possible to issue fixed asset with 1 value');
-  it('should be possible to issue fixed asset with 2**255 value');
-  it('should not be possible to issue fixed asset with (2**255 + 1) value');
-  it('should be possible to issue reissuable asset with 0 value');
-  it('should be possible to issue reissuable asset with 1 value');
-  it('should be possible to issue reissuable asset with 2**255 value');
-  it('should not be possible to issue reissuable asset with (2**255 + 1) value');
-  it('should not be possible to issue asset with base unit 0');
-  it('should be possible to issue asset with base unit 1');
-  it('should be possible to issue asset with base unit 128');
-  it('should not be possible to issue asset with base unit 129');
+  it.skip('should not be possible to issue fixed asset with 0 value', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var value = 0;
+    var isReissuable = false;
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      return multiAsset.name.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), '');
+    }).then(done).catch(done);
+  });
+  it('should be possible to issue fixed asset with 1 value', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var value = 1;
+    var isReissuable = false;
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      return multiAsset.totalSupply.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should be possible to issue fixed asset with (2**256 - 1) value', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var value = UINT_256_MINUS_1;
+    var isReissuable = false;
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      return multiAsset.totalSupply.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to issue fixed asset with 2**256 value', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var value = UINT_256;
+    var isReissuable = false;
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      return multiAsset.name.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), '');
+    }).then(done).catch(done);
+  });
+  it('should be possible to issue reissuable asset with 0 value', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var value = 0;
+    var isReissuable = true;
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      return multiAsset.name.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), NAME);
+    }).then(done).catch(done);
+  });
+  it('should be possible to issue reissuable asset with 1 value', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var value = 1;
+    var isReissuable = true;
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      return multiAsset.totalSupply.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should be possible to issue reissuable asset with (2**256 - 1) value', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var value = UINT_256_MINUS_1;
+    var isReissuable = true;
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      return multiAsset.totalSupply.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to issue reissuable asset with 2**256 value', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var value = UINT_256;
+    var isReissuable = true;
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      return multiAsset.name.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), '');
+      return multiAsset.totalSupply.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it.skip('should not be possible to issue asset with base unit 0', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var baseUnit = 0;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, baseUnit, IS_REISSUABLE).then(function() {
+      return multiAsset.name.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), '');
+    }).then(done).catch(done);
+  });
+  it('should be possible to issue asset with base unit 1', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var baseUnit = 1;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, baseUnit, IS_REISSUABLE).then(function() {
+      return multiAsset.baseUnit.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 1);
+    }).then(done).catch(done);
+  });
+  it('should be possible to issue asset with base unit 255', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var baseUnit = 255;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, baseUnit, IS_REISSUABLE).then(function() {
+      return multiAsset.baseUnit.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 255);
+    }).then(done).catch(done);
+  });
+  it.skip('should not be possible to issue asset with base unit 256', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var baseUnit = 256;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, baseUnit, IS_REISSUABLE).then(function() {
+      return multiAsset.name.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), '');
+    }).then(done).catch(done);
+  });
   it('should be possible to issue asset', function(done) {
     var multiAsset = MultiAsset.deployed();
     var symbol = bytes32(0);
@@ -198,115 +294,83 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to get asset name', function(done) {
     var multiAsset = MultiAsset.deployed();
-    var symbol = bytes32(0);
-    var value = 1001;
-    var name = 'Test Name';
-    var description = 'Test Description';
-    var baseUnit = 2;
-    var isReissuable = false;
-    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
-      return multiAsset.name.call(symbol);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.name.call(SYMBOL);
     }).then(function(result) {
-      assert.equal(result.valueOf(), name);
+      assert.equal(result.valueOf(), NAME);
     }).then(done).catch(done);
   });
   it('should be possible to get asset description', function(done) {
     var multiAsset = MultiAsset.deployed();
-    var symbol = bytes32(0);
-    var value = 1001;
-    var name = 'Test Name';
-    var description = 'Test Description';
-    var baseUnit = 2;
-    var isReissuable = false;
-    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
-      return multiAsset.description.call(symbol);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.description.call(SYMBOL);
     }).then(function(result) {
-      assert.equal(result.valueOf(), description);
+      assert.equal(result.valueOf(), DESCRIPTION);
     }).then(done).catch(done);
   });
   it('should be possible to get asset base unit', function(done) {
     var multiAsset = MultiAsset.deployed();
-    var symbol = bytes32(0);
-    var value = 1001;
-    var name = 'Test Name';
-    var description = 'Test Description';
-    var baseUnit = 2;
-    var isReissuable = false;
-    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
-      return multiAsset.baseUnit.call(symbol);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.baseUnit.call(SYMBOL);
     }).then(function(result) {
-      assert.equal(result.valueOf(), baseUnit);
+      assert.equal(result.valueOf(), BASE_UNIT);
     }).then(done).catch(done);
   });
-  it('should be possible to get asset reissuability');
+  it.skip('should be possible to get asset reissuability', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var isReissuable = true;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      return multiAsset.isReissuable.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), isReissuable);
+    }).then(done).catch(done);
+  });
   it('should be possible to get asset total supply with single holder', function(done) {
     var multiAsset = MultiAsset.deployed();
-    var symbol = bytes32(0);
-    var value = 1001;
-    var name = 'Test Name';
-    var description = 'Test Description';
-    var baseUnit = 2;
-    var isReissuable = false;
-    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
-      return multiAsset.totalSupply.call(symbol);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.totalSupply.call(SYMBOL);
     }).then(function(result) {
-      assert.equal(result.valueOf(), value);
+      assert.equal(result.valueOf(), VALUE);
     }).then(done).catch(done);
   });
   it('should be possible to get asset total supply with multiple holders', function(done) {
     var multiAsset = MultiAsset.deployed();
-    var symbol = bytes32(0);
     var amount = 1001;
     var amount2 = 999;
-    var name = 'Test Name';
-    var description = 'Test Description';
-    var baseUnit = 2;
-    var isReissuable = false;
     var holder2 = accounts[1];
-    multiAsset.issueAsset(symbol, amount + amount2, name, description, baseUnit, isReissuable).then(function() {
-      return multiAsset.transfer(holder2, amount2, symbol);
+    multiAsset.issueAsset(SYMBOL, amount + amount2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.transfer(holder2, amount2, SYMBOL);
     }).then(function() {
-      return multiAsset.totalSupply.call(symbol);
+      return multiAsset.totalSupply.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), amount + amount2);
     }).then(done).catch(done);
   });
   it('should be possible to get asset total supply with multiple holders holding 0 amount', function(done) {
     var multiAsset = MultiAsset.deployed();
-    var symbol = bytes32(0);
-    var value = 1001;
-    var name = 'Test Name';
-    var description = 'Test Description';
-    var baseUnit = 2;
-    var isReissuable = false;
     var holder = accounts[0];
     var holder2 = accounts[1];
-    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
-      return multiAsset.transfer(holder2, value, symbol);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.transfer(holder2, VALUE, SYMBOL);
     }).then(function() {
-      return multiAsset.transfer(holder, value, symbol, {from: holder2});
+      return multiAsset.transfer(holder, VALUE, SYMBOL, {from: holder2});
     }).then(function() {
-      return multiAsset.revokeAsset(symbol, value);
+      return multiAsset.revokeAsset(SYMBOL, VALUE);
     }).then(function() {
-      return multiAsset.totalSupply.call(symbol);
+      return multiAsset.totalSupply.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
-  it('should be possible to get asset total supply with multiple holders holding 2**255 amount', function(done) {
+  it('should be possible to get asset total supply with multiple holders holding (2**256 - 1) amount', function(done) {
     var multiAsset = MultiAsset.deployed();
-    var symbol = bytes32(0);
-    var value = UINT_255;
-    var name = 'Test Name';
-    var description = 'Test Description';
-    var baseUnit = 2;
-    var isReissuable = false;
+    var value = UINT_256_MINUS_1;
     var holder = accounts[0];
     var holder2 = accounts[1];
-    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
-      return multiAsset.transfer(holder2, 10, symbol);
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.transfer(holder2, 10, SYMBOL);
     }).then(function() {
-      return multiAsset.totalSupply.call(symbol);
+      return multiAsset.totalSupply.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), value);
     }).then(done).catch(done);
@@ -321,52 +385,52 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   it('should not be possible to get reissuability of missing asset');
   it('should not be possible to get total supply of missing asset', function(done) {
     var multiAsset = MultiAsset.deployed();
-    var symbol = bytes32(0);
-    multiAsset.totalSupply.call(symbol).then(function(result) {
+    multiAsset.totalSupply.call(SYMBOL).then(function(result) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
   it('should not be possible to transfer missing asset');
   it('should not be possible to transfer amount 1 with balance 0');
   it('should not be possible to transfer amount 2 with balance 1');
-  it('should not be possible to transfer amount 2**255 with balance (2**255 - 1)');
+  it('should not be possible to transfer amount (2**256 - 1) with balance (2**256 - 2)');
   it('should not be possible to transfer amount 0');
-  it('should not be possible to transfer amount 2**255 to holder with 1 balance');
-  it('should not be possible to transfer amount 1 to holder with 2**255 balance');
-  it('should not be possible to transfer amount 2**254 to holder with (2**254 + 1) balance');
-  it('should not be possible to transfer amount (2**254 + 1) to holder with 2**254 balance');
-  it('should be possible to transfer amount 2**254 to holder with 2**254 balance');
-  it('should be possible to transfer amount (2**255 - 1) to holder with 1 balance');
-  it('should be possible to transfer amount 1 to holder with (2**255 - 1) balance');
+  it('should not be possible to transfer amount (2**256 - 1) to holder with 1 balance');
+  it('should not be possible to transfer amount 1 to holder with (2**256 - 1) balance');
+  it('should not be possible to transfer amount 2**255 to holder with 2**255 balance');
+  it('should be possible to transfer amount 2**255 to holder with (2**255 - 1) balance');
+  it('should be possible to transfer amount (2**255 - 1) to holder with 2**255 balance');
+  it('should be possible to transfer amount (2**256 - 2) to holder with 1 balance');
+  it('should be possible to transfer amount 1 to holder with (2**256 - 2) balance');
   it('should be possible to transfer amount 1 to existing holder with 0 balance');
   it('should be possible to transfer amount 1 to existing holder with non-zero balance');
-  it('should be possible to transfer amount 2**255 to holder with 0 balance');
+  it('should be possible to transfer amount (2**256 - 1) to holder with 0 balance');
   it('should be possible to transfer amount 1 to existing holder with non-zero balance');
   it('should be possible to transfer amount 1 to missing holder');
-  it('should be possible to transfer amount 2**255 to missing holder');
+  it('should be possible to transfer amount (2**256 - 1) to missing holder');
   it('should not be possible to reissue fixed asset');
   it('should not be possible to reissue 0 of reissuable asset');
   it('should not be possible to reissue missing asset');
-  it('should not be possible to reissue 1 with total supply 2**255');
-  it('should not be possible to reissue 2**255 with total supply 1');
-  it('should be possible to reissue 1 with total supply (2**255 - 1)');
+  it('should not be possible to reissue 1 with total supply (2**256 - 1)');
+  it('should not be possible to reissue (2**256 - 1) with total supply 1');
+  it('should be possible to reissue 1 with total supply (2**256 - 2)');
   it('should be possible to reissue 1 with total supply 0');
-  it('should be possible to reissue 2**255 with total supply 0');
-  it('should be possible to reissue (2**255 - 1) with total supply 1');
-  it('should be possible to reissue 2**254 with total supply 2**254');
+  it('should be possible to reissue (2**256 - 1) with total supply 0');
+  it('should be possible to reissue (2**256 - 2) with total supply 1');
+  it('should be possible to reissue (2**255 - 1) with total supply 2**255');
+  it('should be possible to reissue 2**255 with total supply (2**255 - 1)');
   it('should not be possible to revoke 1 from missing asset');
   it('should not be possible to revoke 0 from fixed asset');
   it('should not be possible to revoke 0 from reissuable asset');
   it('should not be possible to revoke 1 with balance 0');
   it('should not be possible to revoke 2 with balance 1');
+  it('should not be possible to revoke (2**256 - 1) with balance (2**256 - 2)');
   it('should not be possible to revoke 2**255 with balance (2**255 - 1)');
-  it('should not be possible to revoke 2**254 with balance (2**254 - 1)');
   it('should be possible to revoke 1 from fixed asset with 1 balance');
   it('should be possible to revoke 1 from reissuable asset with 1 balance');
-  it('should be possible to revoke 2**254 with 2**254 balance');
   it('should be possible to revoke 2**255 with 2**255 balance');
+  it('should be possible to revoke (2**256 - 1) with (2**256 - 1) balance');
   it('should be possible to revoke 1 with 2 balance');
-  it('should be possible to revoke 2 with 2**255 balance');
-  it('should be possible to reissue 1 after revoke 1 with total supply 2**255');
+  it('should be possible to revoke 2 with (2**256 - 1) balance');
+  it('should be possible to reissue 1 after revoke 1 with total supply (2**256 - 1)');
   it('should not mess with other assets/holders');
 });
