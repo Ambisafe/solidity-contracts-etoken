@@ -45,6 +45,13 @@ contract MultiAsset is CosignEnabled {
         }
     }
 
+    function isReissuable(bytes32 _symbol) constant returns(bool) {
+        uint posAsset = assetIndex[_symbol];
+        if (posAsset != 0) {
+            return assets[posAsset].isReissuable;
+        }
+    }
+
     function totalSupply(bytes32 _symbol) constant returns(uint256 supply) {
         uint posAsset = assetIndex[_symbol];
         if (posAsset == 0) {
@@ -95,6 +102,9 @@ contract MultiAsset is CosignEnabled {
     }
 
     function issueAsset(bytes32 _symbol, uint _value, string _name, string _description, uint8 _baseUnit, bool _isReissuable) returns(bool) {
+        if (_value < 1 && !_isReissuable) {
+            return false;
+        }
         uint pos = assetIndex[_symbol];
         if (pos > 0) {
             return false;

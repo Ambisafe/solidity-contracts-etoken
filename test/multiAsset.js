@@ -56,7 +56,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return multiAsset.baseUnit.call(symbol);
     }).then(function(result) {
       assert.equal(result.valueOf(), baseUnit);
-      // TODO: check isReissuable;
+      return multiAsset.isReissuable.call(symbol);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), isReissuable);
     }).then(done).catch(done);
   });
   it('should be possible to issue asset with 1 bit 0 symbol', function(done) {
@@ -97,7 +99,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       done();
     });
   });
-  it.skip('should not be possible to issue fixed asset with 0 value', function(done) {
+  it('should not be possible to issue fixed asset with 0 value', function(done) {
     var multiAsset = MultiAsset.deployed();
     var value = 0;
     var isReissuable = false;
@@ -289,7 +291,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return multiAsset.baseUnit.call(symbol2);
     }).then(function(result) {
       assert.equal(result.valueOf(), baseUnit2);
-      // TODO: check isReissuable;
+      return multiAsset.isReissuable.call(symbol);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), isReissuable);
+      return multiAsset.isReissuable.call(symbol2);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), isReissuable2);
     }).then(done).catch(done);
   });
   it('should be possible to get asset name', function(done) {
@@ -316,7 +323,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), BASE_UNIT);
     }).then(done).catch(done);
   });
-  it.skip('should be possible to get asset reissuability', function(done) {
+  it('should be possible to get asset reissuability', function(done) {
     var multiAsset = MultiAsset.deployed();
     var isReissuable = true;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
@@ -456,7 +463,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
-  it.skip('should not be possible to get reissuability of missing asset', function(done) {
+  it('should not be possible to get reissuability of missing asset', function(done) {
     var multiAsset = MultiAsset.deployed();
     var nonAsset = bytes32(33);
     var isReissuable = true;
