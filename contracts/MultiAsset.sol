@@ -125,8 +125,15 @@ contract MultiAsset is CosignEnabled {
     }
     
     function reissueAsset(bytes32 _symbol, uint _value) returns(bool) {
+        if (_value < 1) {
+            return false;
+        }
         uint posAsset = assetIndex[_symbol];
         if (posAsset == 0 || !assets[posAsset].isReissuable || assets[posAsset].owner != tx.origin) {
+            return false;
+        }
+        uint _totalSupply = totalSupply(_symbol);
+        if (_totalSupply + _value < _totalSupply) {
             return false;
         }
         uint pos = assets[posAsset].index[tx.origin];
