@@ -75,7 +75,7 @@ contract MultiAsset is CosignEnabled {
             return false;
         }
         uint bal = balanceOf(tx.origin, _symbol);
-        if (_value <= 1 || bal < _value) {
+        if (_value < 1 || bal < _value) {
             return false;
         }
         uint posTo = assets[posAsset].index[_to];
