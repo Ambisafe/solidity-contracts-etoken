@@ -1014,12 +1014,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var holder = accounts[0];
     var amount = 100;
     var amount2 = 33;
-    multiAsset.issueAsset(symbol, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
+    var isReissuable = true;
+    multiAsset.issueAsset(symbol, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, isReissuable);
     }).then(function() {
-      return multiAsset.reissueAsset(amount, symbol);
+      return multiAsset.reissueAsset(symbol, amount);
     }).then(function() {
-      return multiAsset.reissueAsset(amount2, symbol2);
+      return multiAsset.reissueAsset(symbol2, amount2);
     }).then(function() {
       return multiAsset.balanceOf.call(holder, symbol);
     }).then(function(result) {
@@ -1291,14 +1292,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     multiAsset.issueAsset(symbol, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
     }).then(function() {
-      return multiAsset.revokeAsset(amount, symbol);
+      return multiAsset.revokeAsset(symbol, amount);
     }).then(function() {
-      return multiAsset.revokeAsset(amount2, symbol2);
+      return multiAsset.revokeAsset(symbol2, amount2);
     }).then(function() {
       return multiAsset.balanceOf.call(holder, symbol);
     }).then(function(result) {
       assert.equal(result.valueOf(), value - amount);
-      return multiAsset.totalSupply.call(holder, symbol);
+      return multiAsset.totalSupply.call(symbol);
     }).then(function(result) {
       assert.equal(result.valueOf(), value - amount);
       return multiAsset.balanceOf.call(holder, symbol2);
