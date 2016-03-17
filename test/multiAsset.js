@@ -490,10 +490,158 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), false);
     }).then(done).catch(done);
   });
+  it('should not be possible to get owner of missing asset', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var nonAsset = bytes32(33);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.owner.call(nonAsset);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), '0x0000000000000000000000000000000000000000');
+    }).then(done).catch(done);
+  });
   it('should not be possible to get total supply of missing asset', function(done) {
     var multiAsset = MultiAsset.deployed();
     multiAsset.totalSupply.call(SYMBOL).then(function(result) {
       assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to change ownership by non-owner', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var owner = accounts[0];
+    var nonOwner = accounts[1];
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.changeOwnership(SYMBOL, nonOwner, {from: nonOwner});
+    }).then(function() {
+      return multiAsset.owner.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), owner);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to change ownership to the same owner', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var owner = accounts[0];
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.changeOwnership(SYMBOL, owner);
+    }).then(function() {
+      // TODO: check that event was not emitted.
+      return multiAsset.owner.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), owner);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to change ownership of missing asset', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var owner = accounts[0];
+    var nonOwner = accounts[1];
+    var nonAsset = bytes32(33);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.changeOwnership(nonAsset, nonOwner);
+    }).then(function() {
+      return multiAsset.owner.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), owner);
+      return multiAsset.owner.call(nonAsset);
+    }).then(function(result) {
+      assert.equal(result.valueOf(),'0x0000000000000000000000000000000000000000');
+    }).then(done).catch(done);
+  });
+  it('should be possible to change ownership of asset', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var owner = accounts[0];
+    var newOwner = accounts[1];
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.changeOwnership(SYMBOL, newOwner);
+    }).then(function() {
+      // TODO: check that event was emitted.
+      return multiAsset.owner.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), newOwner);
+    }).then(done).catch(done);
+  });
+  it('should be possible to reissue after ownership change', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var owner = accounts[0];
+    var newOwner = accounts[1];
+    var isReissuable = true;
+    var amount = 100;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      return multiAsset.changeOwnership(SYMBOL, newOwner);
+    }).then(function() {
+      return multiAsset.reissueAsset(SYMBOL, amount, {from: newOwner});
+    }).then(function() {
+      return multiAsset.totalSupply.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE + amount);
+      return multiAsset.balanceOf.call(owner, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+      return multiAsset.balanceOf.call(newOwner, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), amount);
+    }).then(done).catch(done);
+  });
+  it('should be possible to revoke after ownership change to missing account', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var owner = accounts[0];
+    var newOwner = accounts[1];
+    var amount = 100;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.changeOwnership(SYMBOL, newOwner);
+    }).then(function() {
+      return multiAsset.transfer(newOwner, amount, SYMBOL);
+    }).then(function() {
+      return multiAsset.revokeAsset(SYMBOL, amount, {from: newOwner});
+    }).then(function() {
+      return multiAsset.totalSupply.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+      return multiAsset.balanceOf.call(owner, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+      return multiAsset.balanceOf.call(newOwner, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should be possible to revoke after ownership change to existing account', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var owner = accounts[0];
+    var newOwner = accounts[1];
+    var amount = 100;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.transfer(newOwner, amount, SYMBOL);
+    }).then(function() {
+      return multiAsset.changeOwnership(SYMBOL, newOwner);
+    }).then(function() {
+      return multiAsset.revokeAsset(SYMBOL, amount, {from: newOwner});
+    }).then(function() {
+      return multiAsset.totalSupply.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+      return multiAsset.balanceOf.call(owner, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+      return multiAsset.balanceOf.call(newOwner, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should keep ownership change separated between assets', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var owner = accounts[0];
+    var newOwner = accounts[1];
+    var symbol2 = bytes32(10);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.issueAsset(symbol2, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
+    }).then(function() {
+      return multiAsset.changeOwnership(SYMBOL, newOwner);
+    }).then(function() {
+      return multiAsset.owner.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), newOwner);
+      return multiAsset.owner.call(symbol2);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), owner);
     }).then(done).catch(done);
   });
   it('should not be possible to transfer missing asset', function(done) {

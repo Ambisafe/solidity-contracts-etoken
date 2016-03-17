@@ -5,6 +5,7 @@ contract MultiAsset is CosignEnabled {
     event Transfer(address indexed from, address indexed to, bytes32 indexed symbol, uint256 value);
     event Issue(bytes32 indexed symbol, uint256 value, address by);
     event Revoke(bytes32 indexed symbol, uint256 value, address by);
+    event OwnershipChange(address indexed from, address indexed to, bytes32 indexed symbol);
     
     struct Asset {
         bytes32 symbol;
@@ -92,20 +93,25 @@ contract MultiAsset is CosignEnabled {
         if (_value < 1 || bal < _value) {
             return false;
         }
-        uint posTo = assets[posAsset].index[_to];
-        if (posTo == 0) {
-            uint pos = assets[posAsset].amounts.length++;
-            assets[posAsset].holders.length++;
-            assets[posAsset].amounts[pos] = 0;
-            assets[posAsset].holders[pos] = _to;
-            assets[posAsset].index[_to] = pos;
-            posTo = pos;
-        }
+        uint posTo = _getPosHolder(posAsset, _to);
         uint posFrom = assets[posAsset].index[tx.origin];
         assets[posAsset].amounts[posFrom] -= _value;
         assets[posAsset].amounts[posTo] += _value;
         Transfer(tx.origin, _to, _symbol, _value);
         return true;
+    }
+
+    function _getPosHolder(uint _posAsset, address _holder) internal returns(uint) {
+        uint posHolder = assets[_posAsset].index[_holder];
+        if (posHolder == 0) {
+            uint pos = assets[_posAsset].amounts.length++;
+            assets[_posAsset].holders.length++;
+            assets[_posAsset].amounts[pos] = 0;
+            assets[_posAsset].holders[pos] = _holder;
+            assets[_posAsset].index[_holder] = pos;
+            posHolder = pos;
+        }
+        return posHolder;
     }
 
     function issueAsset(bytes32 _symbol, uint _value, string _name, string _description, uint8 _baseUnit, bool _isReissuable) returns(bool) {
@@ -153,7 +159,7 @@ contract MultiAsset is CosignEnabled {
         if (_totalSupply + _value < _totalSupply) {
             return false;
         }
-        uint pos = assets[posAsset].index[tx.origin];
+        uint pos = _getPosHolder(posAsset, tx.origin);
         assets[posAsset].amounts[pos] += _value;
         Issue(_symbol, _value, tx.origin);
         return true;
@@ -164,12 +170,22 @@ contract MultiAsset is CosignEnabled {
         if (posAsset == 0 || assets[posAsset].owner != tx.origin) {
             return false;
         }
-        uint pos = assets[posAsset].index[tx.origin];
+        uint pos = _getPosHolder(posAsset, tx.origin);
         if (assets[posAsset].amounts[pos] < _value) {
             return false;
         }
         assets[posAsset].amounts[pos] -= _value;
         Revoke(_symbol, _value, tx.origin);
+        return true;
+    }
+
+    function changeOwnership(bytes32 _symbol, address _newOwner) returns (bool) {
+        uint posAsset = assetIndex[_symbol];
+        if (posAsset == 0 || assets[posAsset].owner != tx.origin) {
+            return false;
+        }
+        assets[posAsset].owner = _newOwner;
+        OwnershipChange(tx.origin, _newOwner, _symbol);
         return true;
     }
     
