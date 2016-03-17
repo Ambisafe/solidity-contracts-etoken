@@ -255,6 +255,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var multiAsset = MultiAsset.deployed();
     var symbol = bytes32(0);
     var symbol2 = bytes32(1);
+    var owner = accounts[0];
+    var owner2 = accounts[1];
     var value = 1001;
     var value2 = 3021;
     var name = 'Test Name';
@@ -266,7 +268,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var isReissuable = false;
     var isReissuable2 = true;
     multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
-      return multiAsset.issueAsset(symbol2, value2, name2, description2, baseUnit2, isReissuable2);
+      return multiAsset.issueAsset(symbol2, value2, name2, description2, baseUnit2, isReissuable2, {from: owner2});
     }).then(function() {
       return multiAsset.name.call(symbol);
     }).then(function(result) {
@@ -298,6 +300,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return multiAsset.isReissuable.call(symbol2);
     }).then(function(result) {
       assert.equal(result.valueOf(), isReissuable2);
+      return multiAsset.owner.call(symbol);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), owner);
+      return multiAsset.owner.call(symbol2);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), owner2);
     }).then(done).catch(done);
   });
   it('should be possible to get asset name', function(done) {
@@ -331,6 +339,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return multiAsset.isReissuable.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), isReissuable);
+    }).then(done).catch(done);
+  });
+  it('should be possible to get asset owner', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.owner.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), accounts[0]);
     }).then(done).catch(done);
   });
   it('should be possible to get asset total supply with single holder', function(done) {

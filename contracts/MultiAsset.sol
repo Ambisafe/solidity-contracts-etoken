@@ -52,6 +52,13 @@ contract MultiAsset is CosignEnabled {
         }
     }
 
+    function owner(bytes32 _symbol) constant returns(address) {
+        uint posAsset = assetIndex[_symbol];
+        if (posAsset != 0) {
+            return assets[posAsset].owner;
+        }
+    }
+
     function totalSupply(bytes32 _symbol) constant returns(uint256 supply) {
         uint posAsset = assetIndex[_symbol];
         if (posAsset == 0) {
