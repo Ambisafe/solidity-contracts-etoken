@@ -6,6 +6,7 @@ contract MultiAsset is CosignEnabled {
     event Issue(bytes32 indexed symbol, uint256 value, address by);
     event Revoke(bytes32 indexed symbol, uint256 value, address by);
     event OwnershipChange(address indexed from, address indexed to, bytes32 indexed symbol);
+    event Approve(address indexed from, address indexed spender, bytes32 indexed symbol, uint256 value);
     
     struct Asset {
         bytes32 symbol;
@@ -15,9 +16,15 @@ contract MultiAsset is CosignEnabled {
         bool isReissuable;
         address owner;
         mapping(address => uint) index;
-        address[] holders;
+        Holder[] holders;
         uint[] amounts;
     }
+
+    struct Holder {
+        address addr;
+        mapping(address => uint) allowance;
+    }
+
     mapping(bytes32 => uint) public assetIndex;
     Asset[] public assets;
 
@@ -85,6 +92,9 @@ contract MultiAsset is CosignEnabled {
     }
 
     function transfer(address _to, uint256 _value, bytes32 _symbol) checkSigned(sha3(msg.data)) returns(bool) {
+        if (msg.sender == _to) {
+            return false;
+        }
         uint posAsset = assetIndex[_symbol];
         if (posAsset == 0) {
             return false;
@@ -107,7 +117,7 @@ contract MultiAsset is CosignEnabled {
             uint pos = assets[_posAsset].amounts.length++;
             assets[_posAsset].holders.length++;
             assets[_posAsset].amounts[pos] = 0;
-            assets[_posAsset].holders[pos] = _holder;
+            assets[_posAsset].holders[pos].addr = _holder;
             assets[_posAsset].index[_holder] = pos;
             posHolder = pos;
         }
@@ -124,23 +134,16 @@ contract MultiAsset is CosignEnabled {
         }
         pos = assets.length++;
 
-        address[] memory addresses;
-        uint[] memory amounts;
-
-        assets[pos] = Asset({
-            symbol: _symbol,
-            holders: addresses,
-            amounts: amounts,
-            name: _name,
-            isReissuable: _isReissuable,
-            owner: msg.sender,
-            description: _description,
-            baseUnit: _baseUnit
-        });
+        assets[pos].symbol = _symbol;
+        assets[pos].name = _name;
+        assets[pos].isReissuable = _isReissuable;
+        assets[pos].owner = msg.sender;
+        assets[pos].description = _description;
+        assets[pos].baseUnit = _baseUnit;
         assets[pos].amounts.length = 2;
         assets[pos].holders.length = 2;
         assets[pos].amounts[1] = _value;
-        assets[pos].holders[1] = msg.sender;
+        assets[pos].holders[1].addr = msg.sender;
         assets[pos].index[msg.sender] = 1;
         assetIndex[_symbol] = pos;
         Issue(_symbol, _value, msg.sender);
@@ -165,7 +168,7 @@ contract MultiAsset is CosignEnabled {
         return true;
     }
     
-    function revokeAsset(bytes32 _symbol, uint _value) returns (bool) {
+    function revokeAsset(bytes32 _symbol, uint _value) returns(bool) {
         uint posAsset = assetIndex[_symbol];
         if (posAsset == 0 || assets[posAsset].owner != msg.sender) {
             return false;
@@ -179,7 +182,7 @@ contract MultiAsset is CosignEnabled {
         return true;
     }
 
-    function changeOwnership(bytes32 _symbol, address _newOwner) returns (bool) {
+    function changeOwnership(bytes32 _symbol, address _newOwner) returns(bool) {
         uint posAsset = assetIndex[_symbol];
         if (posAsset == 0 || assets[posAsset].owner != msg.sender) {
             return false;
@@ -189,10 +192,36 @@ contract MultiAsset is CosignEnabled {
         return true;
     }
     
-    function recoverAccount(address _from, address _to) returns (bool) {
+    function recoverAccount(address _from, address _to) returns(bool) {
         //todo: implement
         //this would require:
         // - mark recovered addresse and exclude from txns
         // - migrate ownership if owner recovered
+    }
+
+    function approve(address _spender, uint _value, bytes32 _symbol) returns(bool) {
+        if (msg.sender == _spender) {
+            return false;
+        }
+        uint posAsset = assetIndex[_symbol];
+        if (posAsset == 0) {
+            return false;
+        }
+        uint posFrom = _getPosHolder(posAsset, msg.sender);
+        assets[posAsset].holders[posFrom].allowance[_spender] = _value;
+        Approve(msg.sender, _spender, _symbol, _value);
+        return true;
+    }
+
+    function allowance(address _from, address _spender, bytes32 _symbol) constant returns(uint) {
+        uint posAsset = assetIndex[_symbol];
+        if (posAsset == 0) {
+            return 0;
+        }
+        uint pos = assets[posAsset].index[_from];
+        if (pos == 0) {
+            return 0;
+        }
+        return assets[posAsset].holders[pos].allowance[_spender];
     }
 }

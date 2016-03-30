@@ -736,7 +736,26 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), VALUE);
     }).then(done).catch(done);
   });
-  it('should not be possible to transfer to oneself');
+  it('should not be possible to transfer to oneself', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var owner = accounts[0];
+    var amount = 100;
+    var watcher = multiAsset.Transfer({fromBlock: 'latest'});
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      // TODO: check that Transfer event was not emitted.
+      return multiAsset.transfer(owner, amount, SYMBOL);
+    }).then(function() {
+      return watcher.get();
+    }).then(function(events) {
+      assert.equal(events.length, 0);  
+      return multiAsset.balanceOf.call(owner, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+      return multiAsset.balanceOf.call(owner, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
   it('should not be possible to transfer amount (2**256 - 1) to holder with 1 balance', function(done) {
     // Situation is impossible due to impossibility to issue more than (2**256 - 1) tokens for the asset.
     done();
@@ -1496,20 +1515,177 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should work with msg.sender');
 
-  it('should not be possible to set allowance for missing symbol');
-  it('should not be possible to set allowance for missing symbol for oneself');
-  it('should not be possible to set allowance for oneself');
-  it('should be possible to set allowance from missing holder to missing holder');
-  it('should be possible to set allowance from missing holder to existing holder');
-  it('should be possible to set allowance from existing holder to missing holder');
-  it('should be possible to set allowance from existing holder to existing holder');
-  it('should be possible to set allowance with 0 value');
-  it('should be possible to set allowance with (2**256 - 1) value');
-  it('should be possible to set allowance value less then balance');
-  it('should be possible to set allowance value equal to balance');
-  it('should be possible to set allowance value more then balance');
-  it('should be possible to override allowance value with new allowance value');
-  it('should be possible to set allowance');
+  it('should not be possible to set allowance for missing symbol', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var owner = accounts[0];
+    var spender = accounts[1];
+    var missingSymbol = bytes32(33);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(spender, 100, missingSymbol);
+    }).then(function() {
+      return multiAsset.allowance.call(owner, spender, missingSymbol);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to set allowance for missing symbol for oneself', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var owner = accounts[0];
+    var missingSymbol = bytes32(33);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(owner, 100, missingSymbol);
+    }).then(function() {
+      return multiAsset.allowance.call(owner, owner, missingSymbol);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to set allowance for oneself', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var owner = accounts[0];
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(owner, 100, SYMBOL);
+    }).then(function() {
+      return multiAsset.allowance.call(owner, owner, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should be possible to set allowance from missing holder to missing holder', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[1];
+    var spender = accounts[2];
+    var value = 100;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(spender, value, SYMBOL, {from: holder});
+    }).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should be possible to set allowance from missing holder to existing holder', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[1];
+    var spender = accounts[0];
+    var value = 100;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(spender, value, SYMBOL, {from: holder});
+    }).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should be possible to set allowance from existing holder to missing holder', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var spender = accounts[2];
+    var value = 100;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(spender, value, SYMBOL, {from: holder});
+    }).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should be possible to set allowance from existing holder to existing holder', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var spender = accounts[2];
+    var value = 100;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.transfer(spender, 1, SYMBOL, {from: holder});
+    }).then(function() {
+      return multiAsset.approve(spender, value, SYMBOL, {from: holder});
+    }).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should be possible to set allowance value 0', function(done) {
+    // Covered by 'should be possible to override allowance value with 0 value'.
+    done();
+  });
+  it('should be possible to set allowance with (2**256 - 1) value', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var spender = accounts[1];
+    var value = UINT_256_MINUS_1;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(spender, value, SYMBOL);
+    }).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should be possible to set allowance value less then balance', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var spender = accounts[1];
+    var value = 1;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(spender, value, SYMBOL);
+    }).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should be possible to set allowance value equal to balance', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var spender = accounts[1];
+    var value = VALUE;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(spender, value, SYMBOL);
+    }).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should be possible to set allowance value more then balance', function(done) {
+    // Covered by 'should be possible to set allowance with (2**256 - 1) value'.
+    done();
+  });
+  it('should be possible to override allowance value with 0 value', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var spender = accounts[1];
+    var value = 0;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(spender, 100, SYMBOL);
+    }).then(function() {
+      return multiAsset.approve(spender, value, SYMBOL);
+    }).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should be possible to override allowance value with non 0 value', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var spender = accounts[1];
+    var value = 1000;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(spender, 100, SYMBOL);
+    }).then(function() {
+      return multiAsset.approve(spender, value, SYMBOL);
+    }).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should be possible to set allowance', function(done) {
+    // Covered by other tests above.
+    done();
+  });
 
   it('should not be possible to do allowance transfer by not allowed existing holder, from existing holder');
   it('should not be possible to do allowance transfer by not allowed existing holder, from missing holder');
@@ -1538,16 +1714,132 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   it('should be possible to do allowance transfer with value less than balance and equal to allowed after another transfer');
   it('should be possible to do allowance transfer with value (2**256 - 1)');
 
-  it('should return 0 allowance for existing owner and not allowed existing spender');
-  it('should return 0 allowance for existing owner and not allowed missing spender');
-  it('should return 0 allowance for missing owner and existing spender');
-  it('should return 0 allowance for missing owner and missing spender');
-  it('should return 0 allowance for existing oneself');
-  it('should return 0 allowance for missing oneself');
-  it('should return 0 allowance for missing symbol');
-  it('should respect symbol when telling allowance');
-  it('should possible to check allowance of existing owner and allowed existing spender');
-  it('should possible to check allowance of existing owner and allowed missing spender');
+  it('should return 0 allowance for existing owner and not allowed existing spender', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var spender = accounts[1];
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.transfer(spender, 100, SYMBOL);
+    }).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should return 0 allowance for existing owner and not allowed missing spender', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var spender = accounts[1];
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should return 0 allowance for missing owner and existing spender', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[1];
+    var spender = accounts[0];
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should return 0 allowance for missing owner and missing spender', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[1];
+    var spender = accounts[2];
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should return 0 allowance for existing oneself', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var spender = holder;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should return 0 allowance for missing oneself', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[1];
+    var spender = holder;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should return 0 allowance for missing symbol', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var spender = accounts[1];
+    var missingSymbol = bytes32(33);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(spender, 100, SYMBOL);
+    }).then(function() {
+      return multiAsset.allowance.call(holder, spender, missingSymbol);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should respect symbol when telling allowance', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var spender = accounts[1];
+    var symbol = SYMBOL;
+    var symbol2 = bytes32(2);
+    var value = 100;
+    var value2 = 200;
+    multiAsset.issueAsset(symbol, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.issueAsset(symbol2, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
+    }).then(function() {
+      return multiAsset.approve(spender, value, symbol);
+    }).then(function() {
+      return multiAsset.approve(spender, value2, symbol2);
+    }).then(function() {
+      return multiAsset.allowance.call(holder, spender, symbol);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+      return multiAsset.allowance.call(holder, spender, symbol2);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value2);
+    }).then(done).catch(done);
+  });
+  it('should be possible to check allowance of existing owner and allowed existing spender', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var spender = accounts[1];
+    var value = 300;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.transfer(spender, 100, SYMBOL);
+    }).then(function() {
+      return multiAsset.approve(spender, value, SYMBOL);
+    }).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should be possible to check allowance of existing owner and allowed missing spender', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var spender = accounts[1];
+    var value = 300;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(spender, value, SYMBOL);
+    }).then(function() {
+      return multiAsset.allowance.call(holder, spender, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
   it('should return 0 allowance after another transfer');
   it('should return 1 allowance after another transfer');
   it('should return 2**255 allowance after another transfer');
