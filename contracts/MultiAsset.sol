@@ -89,15 +89,15 @@ contract MultiAsset is CosignEnabled {
         if (posAsset == 0) {
             return false;
         }
-        uint bal = balanceOf(tx.origin, _symbol);
+        uint bal = balanceOf(msg.sender, _symbol);
         if (_value < 1 || bal < _value) {
             return false;
         }
         uint posTo = _getPosHolder(posAsset, _to);
-        uint posFrom = assets[posAsset].index[tx.origin];
+        uint posFrom = assets[posAsset].index[msg.sender];
         assets[posAsset].amounts[posFrom] -= _value;
         assets[posAsset].amounts[posTo] += _value;
-        Transfer(tx.origin, _to, _symbol, _value);
+        Transfer(msg.sender, _to, _symbol, _value);
         return true;
     }
 
@@ -133,17 +133,17 @@ contract MultiAsset is CosignEnabled {
             amounts: amounts,
             name: _name,
             isReissuable: _isReissuable,
-            owner: tx.origin,
+            owner: msg.sender,
             description: _description,
             baseUnit: _baseUnit
         });
         assets[pos].amounts.length = 2;
         assets[pos].holders.length = 2;
         assets[pos].amounts[1] = _value;
-        assets[pos].holders[1] = tx.origin;
-        assets[pos].index[tx.origin] = 1;
+        assets[pos].holders[1] = msg.sender;
+        assets[pos].index[msg.sender] = 1;
         assetIndex[_symbol] = pos;
-        Issue(_symbol, _value, tx.origin);
+        Issue(_symbol, _value, msg.sender);
         return true;
     }
     
@@ -152,40 +152,40 @@ contract MultiAsset is CosignEnabled {
             return false;
         }
         uint posAsset = assetIndex[_symbol];
-        if (posAsset == 0 || !assets[posAsset].isReissuable || assets[posAsset].owner != tx.origin) {
+        if (posAsset == 0 || !assets[posAsset].isReissuable || assets[posAsset].owner != msg.sender) {
             return false;
         }
         uint _totalSupply = totalSupply(_symbol);
         if (_totalSupply + _value < _totalSupply) {
             return false;
         }
-        uint pos = _getPosHolder(posAsset, tx.origin);
+        uint pos = _getPosHolder(posAsset, msg.sender);
         assets[posAsset].amounts[pos] += _value;
-        Issue(_symbol, _value, tx.origin);
+        Issue(_symbol, _value, msg.sender);
         return true;
     }
     
     function revokeAsset(bytes32 _symbol, uint _value) returns (bool) {
         uint posAsset = assetIndex[_symbol];
-        if (posAsset == 0 || assets[posAsset].owner != tx.origin) {
+        if (posAsset == 0 || assets[posAsset].owner != msg.sender) {
             return false;
         }
-        uint pos = _getPosHolder(posAsset, tx.origin);
+        uint pos = _getPosHolder(posAsset, msg.sender);
         if (assets[posAsset].amounts[pos] < _value) {
             return false;
         }
         assets[posAsset].amounts[pos] -= _value;
-        Revoke(_symbol, _value, tx.origin);
+        Revoke(_symbol, _value, msg.sender);
         return true;
     }
 
     function changeOwnership(bytes32 _symbol, address _newOwner) returns (bool) {
         uint posAsset = assetIndex[_symbol];
-        if (posAsset == 0 || assets[posAsset].owner != tx.origin) {
+        if (posAsset == 0 || assets[posAsset].owner != msg.sender) {
             return false;
         }
         assets[posAsset].owner = _newOwner;
-        OwnershipChange(tx.origin, _newOwner, _symbol);
+        OwnershipChange(msg.sender, _newOwner, _symbol);
         return true;
     }
     
