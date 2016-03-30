@@ -1,8 +1,8 @@
-import "CosignEnabled.sol";
+import "CosignEnabled";
 
 contract MultiAsset is CosignEnabled {
     
-    event Transfer(address indexed from, address indexed to, bytes32 indexed symbol, uint256 value);
+    event Transfer(address indexed from, address indexed to, bytes32 indexed symbol, uint256 value, string reference);
     event Issue(bytes32 indexed symbol, uint256 value, address by);
     event Revoke(bytes32 indexed symbol, uint256 value, address by);
     event OwnershipChange(address indexed from, address indexed to, bytes32 indexed symbol);
@@ -91,7 +91,7 @@ contract MultiAsset is CosignEnabled {
         return assets[posAsset].amounts[pos];
     }
 
-    function transfer(address _to, uint256 _value, bytes32 _symbol) checkSigned(sha3(msg.data)) returns(bool) {
+    function _transfer(address _to, uint256 _value, bytes32 _symbol, string _reference) internal returns(bool) {
         if (msg.sender == _to) {
             return false;
         }
@@ -107,8 +107,16 @@ contract MultiAsset is CosignEnabled {
         uint posFrom = assets[posAsset].index[msg.sender];
         assets[posAsset].amounts[posFrom] -= _value;
         assets[posAsset].amounts[posTo] += _value;
-        Transfer(msg.sender, _to, _symbol, _value);
+        Transfer(msg.sender, _to, _symbol, _value, _reference);
         return true;
+    }
+
+    function transferWithReference(address _to, uint256 _value, bytes32 _symbol, string _reference) checkSigned(sha3(msg.data)) returns(bool) {
+        return _transfer(_to, _value, _symbol, _reference);
+    }
+
+    function transfer(address _to, uint256 _value, bytes32 _symbol) checkSigned(sha3(msg.data)) returns(bool) {
+        return _transfer(_to, _value, _symbol, "");
     }
 
     function _getPosHolder(uint _posAsset, address _holder) internal returns(uint) {
