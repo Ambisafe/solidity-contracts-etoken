@@ -736,6 +736,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), VALUE);
     }).then(done).catch(done);
   });
+  it('should not be possible to transfer to oneself');
   it('should not be possible to transfer amount (2**256 - 1) to holder with 1 balance', function(done) {
     // Situation is impossible due to impossibility to issue more than (2**256 - 1) tokens for the asset.
     done();
@@ -1493,5 +1494,62 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), value);
     }).then(done).catch(done);
   });
-  it('should work with msg.sender or tx.origin?');
+  it('should work with msg.sender');
+
+  it('should not be possible to set allowance for missing symbol');
+  it('should not be possible to set allowance for missing symbol for oneself');
+  it('should not be possible to set allowance for oneself');
+  it('should be possible to set allowance from missing holder to missing holder');
+  it('should be possible to set allowance from missing holder to existing holder');
+  it('should be possible to set allowance from existing holder to missing holder');
+  it('should be possible to set allowance from existing holder to existing holder');
+  it('should be possible to set allowance with 0 value');
+  it('should be possible to set allowance with (2**256 - 1) value');
+  it('should be possible to set allowance value less then balance');
+  it('should be possible to set allowance value equal to balance');
+  it('should be possible to set allowance value more then balance');
+  it('should be possible to override allowance value with new allowance value');
+  it('should be possible to set allowance');
+
+  it('should not be possible to do allowance transfer by not allowed existing holder, from existing holder');
+  it('should not be possible to do allowance transfer by not allowed existing holder, from missing holder');
+  it('should not be possible to do allowance transfer by not allowed missing holder, from existing holder');
+  it('should not be possible to do allowance transfer by not allowed missing holder, from missing holder');
+  it('should not be possible to do allowance transfer from and to the same holder');
+  it('should not be possible to do allowance transfer from oneself');
+  it('should not be possible to do allowance transfer with 0 value');
+  it('should not be possible to do allowance transfer with value less than balance, more than allowed');
+  it('should not be possible to do allowance transfer with value equal to balance, more than allowed');
+  it('should not be possible to do allowance transfer with value more than balance, less than allowed');
+  it('should not be possible to do allowance transfer with value less than balance, more than allowed after another tranfer');
+  it('should not be possible to do allowance transfer with missing symbol when allowed for another symbol');
+  it('should not be possible to do allowance transfer with when allowed for another symbol');
+  it('should not be possible to do allowance transfer with missing symbol when not allowed');
+  it('should be possible to do allowance transfer by allowed existing holder');
+  it('should be possible to do allowance transfer by allowed missing holder');
+  it('should be possible to do allowance transfer to oneself');
+  it('should be possible to do allowance transfer to existing holder');
+  it('should be possible to do allowance transfer to missing holder');
+  it('should be possible to do allowance transfer with value less than balance and less than allowed');
+  it('should be possible to do allowance transfer with value less than balance and equal to allowed');
+  it('should be possible to do allowance transfer with value equal to balance and less than allowed');
+  it('should be possible to do allowance transfer with value equal to balance and equal to allowed');
+  it('should be possible to do allowance transfer with value less than balance and less than allowed after another transfer');
+  it('should be possible to do allowance transfer with value less than balance and equal to allowed after another transfer');
+  it('should be possible to do allowance transfer with value (2**256 - 1)');
+
+  it('should return 0 allowance for existing owner and not allowed existing spender');
+  it('should return 0 allowance for existing owner and not allowed missing spender');
+  it('should return 0 allowance for missing owner and existing spender');
+  it('should return 0 allowance for missing owner and missing spender');
+  it('should return 0 allowance for existing oneself');
+  it('should return 0 allowance for missing oneself');
+  it('should return 0 allowance for missing symbol');
+  it('should respect symbol when telling allowance');
+  it('should possible to check allowance of existing owner and allowed existing spender');
+  it('should possible to check allowance of existing owner and allowed missing spender');
+  it('should return 0 allowance after another transfer');
+  it('should return 1 allowance after another transfer');
+  it('should return 2**255 allowance after another transfer');
+  it('should return (2**256 - 2) allowance after another transfer');
 });

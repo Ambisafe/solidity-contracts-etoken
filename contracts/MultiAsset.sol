@@ -1,4 +1,4 @@
-import "CosignEnabled";
+import "CosignEnabled.sol";
 
 contract MultiAsset is CosignEnabled {
     
