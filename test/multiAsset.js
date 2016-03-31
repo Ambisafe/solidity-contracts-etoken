@@ -357,7 +357,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), VALUE);
     }).then(done).catch(done);
   });
-  it('should be possible to get asset total supply with multiple holders', function(done) {
+  it.only('should be possible to get asset total supply with multiple holders', function(done) {
     var multiAsset = MultiAsset.deployed();
     var amount = 1001;
     var amount2 = 999;
