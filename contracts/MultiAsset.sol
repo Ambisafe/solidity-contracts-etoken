@@ -1,4 +1,4 @@
-import "CosignEnabled";
+import "CosignEnabled.sol";
 
 contract MultiAsset is CosignEnabled {
 
@@ -17,12 +17,12 @@ contract MultiAsset is CosignEnabled {
         address owner;
         mapping(address => uint) index;
         Holder[] holders;
-        uint[] amounts;
     }
 
     struct Holder {
         address addr;
         mapping(address => uint) allowance;
+        uint balance;
     }
 
     mapping(bytes32 => uint) public assetIndex;
@@ -73,8 +73,8 @@ contract MultiAsset is CosignEnabled {
             return 0;
         }
         uint total = 0;
-        for (uint i = 1; i < assets[posAsset].amounts.length; ++i) {
-            total += assets[posAsset].amounts[i];
+        for (uint i = 1; i < assets[posAsset].holders.length; ++i) {
+            total += assets[posAsset].holders[i].balance;
         }
         return total;
     }
@@ -88,7 +88,7 @@ contract MultiAsset is CosignEnabled {
         if (pos == 0) {
             return 0;
         }
-        return assets[posAsset].amounts[pos];
+        return assets[posAsset].holders[pos].balance;
     }
 
     function _transfer(address _from, address _to, uint _value, bytes32 _symbol, string _reference) internal returns(bool) {
@@ -105,8 +105,8 @@ contract MultiAsset is CosignEnabled {
         }
         uint posTo = _getPosHolder(posAsset, _to);
         uint posFrom = assets[posAsset].index[_from];
-        assets[posAsset].amounts[posFrom] -= _value;
-        assets[posAsset].amounts[posTo] += _value;
+        assets[posAsset].holders[posFrom].balance -= _value;
+        assets[posAsset].holders[posTo].balance += _value;
         Transfer(_from, _to, _symbol, _value, _reference);
         return true;
     }
@@ -122,9 +122,8 @@ contract MultiAsset is CosignEnabled {
     function _getPosHolder(uint _posAsset, address _holder) internal returns(uint) {
         uint posHolder = assets[_posAsset].index[_holder];
         if (posHolder == 0) {
-            uint pos = assets[_posAsset].amounts.length++;
-            assets[_posAsset].holders.length++;
-            assets[_posAsset].amounts[pos] = 0;
+            uint pos = assets[_posAsset].holders.length++;
+            assets[_posAsset].holders[pos].balance = 0;
             assets[_posAsset].holders[pos].addr = _holder;
             assets[_posAsset].index[_holder] = pos;
             posHolder = pos;
@@ -148,9 +147,8 @@ contract MultiAsset is CosignEnabled {
         assets[pos].owner = msg.sender;
         assets[pos].description = _description;
         assets[pos].baseUnit = _baseUnit;
-        assets[pos].amounts.length = 2;
         assets[pos].holders.length = 2;
-        assets[pos].amounts[1] = _value;
+        assets[pos].holders[1].balance = _value;
         assets[pos].holders[1].addr = msg.sender;
         assets[pos].index[msg.sender] = 1;
         assetIndex[_symbol] = pos;
@@ -171,7 +169,7 @@ contract MultiAsset is CosignEnabled {
             return false;
         }
         uint pos = _getPosHolder(posAsset, msg.sender);
-        assets[posAsset].amounts[pos] += _value;
+        assets[posAsset].holders[pos].balance += _value;
         Issue(_symbol, _value, msg.sender);
         return true;
     }
@@ -182,10 +180,10 @@ contract MultiAsset is CosignEnabled {
             return false;
         }
         uint pos = _getPosHolder(posAsset, msg.sender);
-        if (assets[posAsset].amounts[pos] < _value) {
+        if (assets[posAsset].holders[pos].balance < _value) {
             return false;
         }
-        assets[posAsset].amounts[pos] -= _value;
+        assets[posAsset].holders[pos].balance -= _value;
         Revoke(_symbol, _value, msg.sender);
         return true;
     }
