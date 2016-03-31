@@ -1,8 +1,8 @@
-import "CosignEnabled.sol";
+import "CosignEnabled";
 
 contract MultiAsset is CosignEnabled {
-    
-    event Transfer(address indexed from, address indexed to, bytes32 indexed symbol, uint256 value);
+
+    event Transfer(address indexed from, address indexed to, bytes32 indexed symbol, uint256 value, string reference);
     event Issue(bytes32 indexed symbol, uint256 value, address by);
     event Revoke(bytes32 indexed symbol, uint256 value, address by);
     event OwnershipChange(address indexed from, address indexed to, bytes32 indexed symbol);
@@ -91,11 +91,7 @@ contract MultiAsset is CosignEnabled {
         return assets[posAsset].amounts[pos];
     }
 
-    function transfer(address _to, uint256 _value, bytes32 _symbol) checkSigned(sha3(msg.data)) returns(bool) {
-        return _transfer(msg.sender, _to, _value, _symbol);
-    }
-
-    function _transfer(address _from, address _to, uint _value, bytes32 _symbol) internal returns(bool) {
+    function _transfer(address _from, address _to, uint _value, bytes32 _symbol, string _reference) internal returns(bool) {
         if (_from == _to) {
             return false;
         }
@@ -111,8 +107,16 @@ contract MultiAsset is CosignEnabled {
         uint posFrom = assets[posAsset].index[_from];
         assets[posAsset].amounts[posFrom] -= _value;
         assets[posAsset].amounts[posTo] += _value;
-        Transfer(_from, _to, _symbol, _value);
+        Transfer(_from, _to, _symbol, _value, _reference);
         return true;
+    }
+
+    function transfer(address _to, uint256 _value, bytes32 _symbol, string _reference) checkSigned(sha3(msg.data)) returns(bool) {
+        return _transfer(msg.sender, _to, _value, _symbol, _reference);
+    }
+
+    function transfer(address _to, uint256 _value, bytes32 _symbol) checkSigned(sha3(msg.data)) returns(bool) {
+        return _transfer(msg.sender, _to, _value, _symbol, "");
     }
 
     function _getPosHolder(uint _posAsset, address _holder) internal returns(uint) {
@@ -230,18 +234,22 @@ contract MultiAsset is CosignEnabled {
     }
 
     function transferFrom(address _from, address _to, uint _value, bytes32 _symbol) returns(bool) {
+        return transferFrom(_from, _to, _value, _symbol, "");
+    }
+
+    function transferFrom(address _from, address _to, uint _value, bytes32 _symbol, string _reference) returns(bool) {
         if (msg.sender == _from) {
             return false;
         }
         if (allowance(_from, msg.sender, _symbol) < _value) {
             return false;
         }
-        if (!_transfer(_from, _to, _value, _symbol)) {
+        if (!_transfer(_from, _to, _value, _symbol, _reference)) {
             return false;
         }
         uint posAsset = assetIndex[_symbol];
         uint pos = assets[posAsset].index[_from];
         assets[posAsset].holders[pos].allowance[msg.sender] -= _value;
-        return true;
+        return true;   
     }
 }
