@@ -92,22 +92,26 @@ contract MultiAsset is CosignEnabled {
     }
 
     function transfer(address _to, uint256 _value, bytes32 _symbol) checkSigned(sha3(msg.data)) returns(bool) {
-        if (msg.sender == _to) {
+        return _transfer(msg.sender, _to, _value, _symbol);
+    }
+
+    function _transfer(address _from, address _to, uint _value, bytes32 _symbol) internal returns(bool) {
+        if (_from == _to) {
             return false;
         }
         uint posAsset = assetIndex[_symbol];
         if (posAsset == 0) {
             return false;
         }
-        uint bal = balanceOf(msg.sender, _symbol);
+        uint bal = balanceOf(_from, _symbol);
         if (_value < 1 || bal < _value) {
             return false;
         }
         uint posTo = _getPosHolder(posAsset, _to);
-        uint posFrom = assets[posAsset].index[msg.sender];
+        uint posFrom = assets[posAsset].index[_from];
         assets[posAsset].amounts[posFrom] -= _value;
         assets[posAsset].amounts[posTo] += _value;
-        Transfer(msg.sender, _to, _symbol, _value);
+        Transfer(_from, _to, _symbol, _value);
         return true;
     }
 
@@ -223,5 +227,21 @@ contract MultiAsset is CosignEnabled {
             return 0;
         }
         return assets[posAsset].holders[pos].allowance[_spender];
+    }
+
+    function transferFrom(address _from, address _to, uint _value, bytes32 _symbol) returns(bool) {
+        if (msg.sender == _from) {
+            return false;
+        }
+        if (allowance(_from, msg.sender, _symbol) < _value) {
+            return false;
+        }
+        if (!_transfer(_from, _to, _value, _symbol)) {
+            return false;
+        }
+        uint posAsset = assetIndex[_symbol];
+        uint pos = assets[posAsset].index[_from];
+        assets[posAsset].holders[pos].allowance[msg.sender] -= _value;
+        return true;
     }
 }
