@@ -1,0 +1,3 @@
+[submodule "truffle-helpers"]
+	path = truffle-helpers
+	url = git@github.com:Ambisafe/truffle-helpers.git
