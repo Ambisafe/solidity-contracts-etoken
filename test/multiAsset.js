@@ -1,4 +1,6 @@
 contract('MultiAsset', {reset_state: true}, function(accounts) {
+  var eventsHelper = require('../truffle-helpers/eventsHelper.js');
+
   var bytes32 = function(number) {
     var zeros = '000000000000000000000000000000000000000000000000000000000000000';
     var hexNumber = number.toString(16);
@@ -35,14 +37,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var baseUnit2 = 4;
     var isReissuable = false;
     var isReissuable2 = true;
-    var watcher = multiAsset.Issue();
+    var watcher;
     multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
-      return watcher.get();
-    }).then(function(events) {
-      assert.equal(events.length, 1);
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Issue();
       return multiAsset.issueAsset(symbol, value2, name2, description2, baseUnit2, isReissuable2);
-    }).then(function() {
-      return watcher.get();
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
     }).then(function(events) {
       assert.equal(events.length, 0);
       return multiAsset.name.call(symbol);
@@ -228,14 +229,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var baseUnit = 2;
     var isReissuable = false;
     var watcher = multiAsset.Issue();
-    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
-      return watcher.get();
+    eventsHelper.setupEvents(multiAsset);
+    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
     }).then(function(events) {
-      // TODO: uncomment when Truffle/testrpc will stop losing events after exception in prev test.
-      //assert.equal(events.length, 1);
-      //assert.equal(events[0].args.symbol.valueOf(), symbol);
-      //assert.equal(events[0].args.value.valueOf(), value);
-      //assert.equal(events[0].args.by.valueOf(), accounts[0]);
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.symbol.valueOf(), symbol);
+      assert.equal(events[0].args.value.valueOf(), value);
+      assert.equal(events[0].args.by.valueOf(), accounts[0]);
       return multiAsset.name.call(symbol);
     }).then(function(result) {
       assert.equal(result.valueOf(), name);
@@ -248,7 +249,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return multiAsset.baseUnit.call(symbol);
     }).then(function(result) {
       assert.equal(result.valueOf(), baseUnit);
-      // TODO: check isReissuable;
+      return multiAsset.isReissuable.call(symbol);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), isReissuable);
     }).then(done).catch(done);
   });
   it('should be possible to issue multiple assets', function(done) {
@@ -520,10 +523,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   it('should not be possible to change ownership to the same owner', function(done) {
     var multiAsset = MultiAsset.deployed();
     var owner = accounts[0];
+    var watcher = multiAsset.OwnershipChange();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      eventsHelper.setupEvents(multiAsset);
       return multiAsset.changeOwnership(SYMBOL, owner);
-    }).then(function() {
-      // TODO: check that event was not emitted.
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher)
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.owner.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), owner);
@@ -549,10 +556,17 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var multiAsset = MultiAsset.deployed();
     var owner = accounts[0];
     var newOwner = accounts[1];
+    var watcher = multiAsset.OwnershipChange();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      eventsHelper.setupEvents(multiAsset);
       return multiAsset.changeOwnership(SYMBOL, newOwner);
-    }).then(function() {
-      // TODO: check that event was emitted.
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), owner);
+      assert.equal(events[0].args.to.valueOf(), newOwner);
+      assert.equal(events[0].args.symbol.valueOf(), SYMBOL);
       return multiAsset.owner.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), newOwner);
@@ -724,10 +738,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var owner = accounts[0];
     var nonOwner = accounts[1];
     var amount = 0;
+    var watcher = multiAsset.Transfer();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      // TODO: check that Transfer event was not emitted.
+      eventsHelper.setupEvents(multiAsset);
       return multiAsset.transfer(nonOwner, amount, SYMBOL);
-    }).then(function() {
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(nonOwner, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
@@ -740,14 +758,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var multiAsset = MultiAsset.deployed();
     var owner = accounts[0];
     var amount = 100;
-    var watcher = multiAsset.Transfer({fromBlock: 'latest'});
+    var watcher = multiAsset.Transfer();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      // TODO: check that Transfer event was not emitted.
+      eventsHelper.setupEvents(multiAsset);
       return multiAsset.transfer(owner, amount, SYMBOL);
-    }).then(function() {
-      return watcher.get();
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
     }).then(function(events) {
-      assert.equal(events.length, 0);  
+      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(owner, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), VALUE);
@@ -953,13 +971,34 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var holder2 = accounts[1];
     var amount = 100;
     var amount2 = 33;
+    var watcher;
     multiAsset.issueAsset(symbol, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
     }).then(function() {
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Transfer();
       return multiAsset.transfer(holder2, amount, symbol);
-    }).then(function() {
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), holder);
+      assert.equal(events[0].args.to.valueOf(), holder2);
+      assert.equal(events[0].args.symbol.valueOf(), symbol);
+      assert.equal(events[0].args.value.valueOf(), amount);
+      assert.equal(events[0].args.reference.valueOf(), "");
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Transfer();
       return multiAsset.transfer(holder2, amount2, symbol2);
-    }).then(function() {
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), holder);
+      assert.equal(events[0].args.to.valueOf(), holder2);
+      assert.equal(events[0].args.symbol.valueOf(), symbol2);
+      assert.equal(events[0].args.value.valueOf(), amount2);
+      assert.equal(events[0].args.reference.valueOf(), "");
       return multiAsset.balanceOf.call(holder, symbol);
     }).then(function(result) {
       assert.equal(result.valueOf(), value - amount);
@@ -972,6 +1011,33 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return multiAsset.balanceOf.call(holder2, symbol2);
     }).then(function(result) {
       assert.equal(result.valueOf(), amount2);
+    }).then(done).catch(done);
+  });
+  it('should be possible to do transfer with reference', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var holder2 = accounts[1];
+    var reference = "Invoice#AS001";
+    var watcher;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Transfer();
+      return multiAsset.transferWithReference(holder2, VALUE, SYMBOL, reference);
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), holder);
+      assert.equal(events[0].args.to.valueOf(), holder2);
+      assert.equal(events[0].args.symbol.valueOf(), SYMBOL);
+      assert.equal(events[0].args.value.valueOf(), VALUE);
+      assert.equal(events[0].args.reference.valueOf(), reference);
+      return multiAsset.balanceOf.call(holder2, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
   it('should not be possible to reissue asset by non-owner', function(done) {
@@ -1013,10 +1079,15 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var owner = accounts[0];
     var isReissuable = true;
     var amount = 0;
+    var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      // TODO: check that event was not emitted.
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Issue();
       return multiAsset.reissueAsset(SYMBOL, amount);
-    }).then(function() {
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(owner, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), VALUE);
@@ -1053,10 +1124,15 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var value = UINT_256_MINUS_1;
     var isReissuable = true;
     var amount = 1;
+    var watcher;
     multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      // TODO: check that event was not emitted.
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Issue();
       return multiAsset.reissueAsset(SYMBOL, amount);
-    }).then(function() {
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(owner, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), value);
@@ -1071,10 +1147,15 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var value = 1;
     var isReissuable = true;
     var amount = UINT_256_MINUS_1;
+    var watcher;
     multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      // TODO: check that event was not emitted.
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Issue();
       return multiAsset.reissueAsset(SYMBOL, amount);
-    }).then(function() {
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(owner, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), value);
@@ -1244,10 +1325,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var owner = accounts[0];
     var amount = 0;
     var isReissuable = false;
+    var watcher = multiAsset.Revoke();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      eventsHelper.setupEvents(multiAsset);
       return multiAsset.revokeAsset(SYMBOL, amount);
-    }).then(function() {
-      // TODO: check that event was not emitted.
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(owner, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), VALUE);
@@ -1261,10 +1346,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var owner = accounts[0];
     var amount = 0;
     var isReissuable = true;
+    var watcher = multiAsset.Revoke();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      eventsHelper.setupEvents(multiAsset);
       return multiAsset.revokeAsset(SYMBOL, amount);
-    }).then(function() {
-      // TODO: check that event was not emitted.
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(owner, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), VALUE);
@@ -1279,10 +1368,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var value = 0;
     var amount = 1;
     var isReissuable = true;
+    var watcher = multiAsset.Revoke();
     multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      eventsHelper.setupEvents(multiAsset);
       return multiAsset.revokeAsset(SYMBOL, amount);
-    }).then(function() {
-      // TODO: check that event was not emitted.
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(owner, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), value);
@@ -1296,10 +1389,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var owner = accounts[0];
     var value = 1;
     var amount = 2;
+    var watcher = multiAsset.Revoke();
     multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      eventsHelper.setupEvents(multiAsset);
       return multiAsset.revokeAsset(SYMBOL, amount);
-    }).then(function() {
-      // TODO: check that event was not emitted.
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(owner, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), value);
@@ -1314,10 +1411,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var value = UINT_256_MINUS_2;
     var amount = UINT_256_MINUS_1;
     var isReissuable = true;
+    var watcher = multiAsset.Revoke();
     multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      eventsHelper.setupEvents(multiAsset);
       return multiAsset.revokeAsset(SYMBOL, amount);
-    }).then(function() {
-      // TODO: check that event was not emitted.
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(owner, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), value);
@@ -1332,10 +1433,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var value = UINT_255_MINUS_1;
     var amount = UINT_255;
     var isReissuable = true;
+    var watcher = multiAsset.Revoke();
     multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      eventsHelper.setupEvents(multiAsset);
       return multiAsset.revokeAsset(SYMBOL, amount);
-    }).then(function() {
-      // TODO: check that event was not emitted.
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(owner, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), value);
@@ -1349,12 +1454,16 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var owner = accounts[0];
     var nonOwner = accounts[1];
     var balance = 100;
+    var watcher = multiAsset.Revoke();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.transfer(nonOwner, balance, SYMBOL);
     }).then(function() {
+      eventsHelper.setupEvents(multiAsset);
       return multiAsset.revokeAsset(SYMBOL, 10, {from: nonOwner});
-    }).then(function() {
-      // TODO: check that event was not emitted.
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(owner, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), VALUE - balance);
@@ -1372,10 +1481,16 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var value = 1;
     var amount = 1;
     var isReissuable = false;
+    var watcher = multiAsset.Revoke();
     multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      eventsHelper.setupEvents(multiAsset);
       return multiAsset.revokeAsset(SYMBOL, amount);
-    }).then(function() {
-      // TODO: check that event was emitted.
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.symbol.valueOf(), SYMBOL);
+      assert.equal(events[0].args.value.valueOf(), amount);
       return multiAsset.balanceOf.call(owner, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
@@ -1520,9 +1635,15 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var owner = accounts[0];
     var spender = accounts[1];
     var missingSymbol = bytes32(33);
+    var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Approve();
       return multiAsset.approve(spender, 100, missingSymbol);
-    }).then(function() {
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.allowance.call(owner, spender, missingSymbol);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
@@ -1532,9 +1653,15 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var multiAsset = MultiAsset.deployed();
     var owner = accounts[0];
     var missingSymbol = bytes32(33);
+    var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Approve();
       return multiAsset.approve(owner, 100, missingSymbol);
-    }).then(function() {
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.allowance.call(owner, owner, missingSymbol);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
@@ -1543,9 +1670,15 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   it('should not be possible to set allowance for oneself', function(done) {
     var multiAsset = MultiAsset.deployed();
     var owner = accounts[0];
+    var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Approve();
       return multiAsset.approve(owner, 100, SYMBOL);
-    }).then(function() {
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.allowance.call(owner, owner, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
@@ -1556,9 +1689,19 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var holder = accounts[1];
     var spender = accounts[2];
     var value = 100;
+    var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Approve();
       return multiAsset.approve(spender, value, SYMBOL, {from: holder});
-    }).then(function() {
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), holder);
+      assert.equal(events[0].args.spender.valueOf(), spender);
+      assert.equal(events[0].args.symbol.valueOf(), SYMBOL);
+      assert.equal(events[0].args.value.valueOf(), value);
       return multiAsset.allowance.call(holder, spender, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), value);
@@ -1776,12 +1919,17 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var multiAsset = MultiAsset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
+    var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.approve(spender, 50, SYMBOL);
     }).then(function() {
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Transfer();
       return multiAsset.transferFrom(holder, holder, 50, SYMBOL, {from: spender});
-    }).then(function() {
-      // TODO: check that no Transfer event occurred.
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(holder, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), VALUE);
@@ -1791,11 +1939,17 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var multiAsset = MultiAsset.deployed();
     var holder = accounts[0];
     var receiver = accounts[1];
+    var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.approve(holder, 50, SYMBOL);
     }).then(function() {
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Transfer();
       return multiAsset.transferFrom(holder, receiver, 50, SYMBOL);
-    }).then(function() {
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(holder, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), VALUE);
@@ -1810,12 +1964,17 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var spender = accounts[1];
     var value = 0;
     var resultValue = 0;
+    var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.approve(spender, 100, SYMBOL);
     }).then(function() {
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Transfer();
       return multiAsset.transferFrom(holder, spender, value, SYMBOL, {from: spender});
-    }).then(function() {
-      // TODO: check that no Transfer event occurred.
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(holder, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), VALUE);
@@ -2051,13 +2210,24 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var value = 300;
     var expectedHolderBalance = VALUE - existValue - value;
     var expectedReceiverBalance = existValue + value;
+    var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.transfer(receiver, existValue, SYMBOL);
     }).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Transfer();
       return multiAsset.transferFrom(holder, receiver, value, SYMBOL, {from: spender});
-    }).then(function() {
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), holder);
+      assert.equal(events[0].args.to.valueOf(), receiver);
+      assert.equal(events[0].args.symbol.valueOf(), SYMBOL);
+      assert.equal(events[0].args.value.valueOf(), value);
+      assert.equal(events[0].args.reference.valueOf(), "");
       return multiAsset.balanceOf.call(holder, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), expectedHolderBalance);
@@ -2237,6 +2407,39 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return multiAsset.balanceOf.call(spender, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should be possible to do allowance transfer with reference', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var spender = accounts[1];
+    var receiver = accounts[2];
+    var value = 300;
+    var expectedHolderBalance = VALUE - value;
+    var expectedReceiverBalance = value;
+    var reference = "just some arbitrary string.";
+    var watcher;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(spender, value, SYMBOL);
+    }).then(function() {
+      eventsHelper.setupEvents(multiAsset);
+      watcher = multiAsset.Transfer();
+      return multiAsset.transferFromWithReference(holder, receiver, value, SYMBOL, reference, {from: spender});
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), holder);
+      assert.equal(events[0].args.to.valueOf(), receiver);
+      assert.equal(events[0].args.symbol.valueOf(), SYMBOL);
+      assert.equal(events[0].args.value.valueOf(), value);
+      assert.equal(events[0].args.reference.valueOf(), reference);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), expectedHolderBalance);
+      return multiAsset.balanceOf.call(receiver, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), expectedReceiverBalance);
     }).then(done).catch(done);
   });
 
