@@ -11,11 +11,11 @@ contract CosignEnabled {
 
 contract MultiAsset is CosignEnabled {
 
-    event Transfer(address indexed from, address indexed to, bytes32 indexed symbol, uint256 value, string reference);
-    event Issue(bytes32 indexed symbol, uint256 value, address by);
-    event Revoke(bytes32 indexed symbol, uint256 value, address by);
+    event Transfer(address indexed from, address indexed to, bytes32 indexed symbol, uint value, string reference);
+    event Issue(bytes32 indexed symbol, uint value, address by);
+    event Revoke(bytes32 indexed symbol, uint value, address by);
     event OwnershipChange(address indexed from, address indexed to, bytes32 indexed symbol);
-    event Approve(address indexed from, address indexed spender, bytes32 indexed symbol, uint256 value);
+    event Approve(address indexed from, address indexed spender, bytes32 indexed symbol, uint value);
     
     struct Asset {
         bytes32 symbol;
@@ -23,23 +23,30 @@ contract MultiAsset is CosignEnabled {
         string name;
         string description;
         bool isReissuable;
-        address owner;
-        Holder[] holders;
+        uint owner;
         uint totalSupply;
-        mapping(address => uint) index;
+        Wallet[] wallets;
+        mapping(uint => uint) index;
+    }
+
+    struct Wallet {
+        uint balance;
+        mapping(uint => uint) allowance;
     }
 
     struct Holder {
         address addr;
-        mapping(address => uint) allowance;
-        uint balance;
     }
+
+    mapping(address => uint) public holderIndex;
+    Holder[] public holders;
 
     mapping(bytes32 => uint) public assetIndex;
     Asset[] public assets;
 
     function MultiAsset() {
-        assets.length++;
+        assets.length = 1;
+        holders.length = 1;
     }
 
     function baseUnit(bytes32 _symbol) constant returns(uint8) {
@@ -73,28 +80,24 @@ contract MultiAsset is CosignEnabled {
     function owner(bytes32 _symbol) constant returns(address) {
         uint posAsset = assetIndex[_symbol];
         if (posAsset != 0) {
-            return assets[posAsset].owner;
+            return holders[assets[posAsset].owner].addr;
         }
     }
 
-    function totalSupply(bytes32 _symbol) constant returns(uint256 supply) {
+    function totalSupply(bytes32 _symbol) constant returns(uint) {
+        uint posAsset = assetIndex[_symbol];
+        if (posAsset != 0) {
+            return assets[posAsset].totalSupply;
+        }
+    }
+
+    function balanceOf(address _owner, bytes32 _symbol) constant returns(uint) {
         uint posAsset = assetIndex[_symbol];
         if (posAsset == 0) {
             return 0;
         }
-        return assets[posAsset].totalSupply;
-    }
-
-    function balanceOf(address _owner, bytes32 _symbol) constant returns(uint256 balance) {
-        uint posAsset = assetIndex[_symbol];
-        if (posAsset == 0) {
-            return 0;
-        }
-        uint pos = assets[posAsset].index[_owner];
-        if (pos == 0) {
-            return 0;
-        }
-        return assets[posAsset].holders[pos].balance;
+        uint posWallet = _getPosWallet(posAsset, _owner);
+        return assets[posAsset].wallets[posWallet].balance;
     }
 
     function _transfer(address _from, address _to, uint _value, bytes32 _symbol, string _reference) internal returns(bool) {
@@ -109,30 +112,39 @@ contract MultiAsset is CosignEnabled {
         if (_value < 1 || bal < _value) {
             return false;
         }
-        uint posTo = _getPosHolder(posAsset, _to);
-        uint posFrom = assets[posAsset].index[_from];
-        assets[posAsset].holders[posFrom].balance -= _value;
-        assets[posAsset].holders[posTo].balance += _value;
+        uint posFrom = _getPosWallet(posAsset, _from);
+        uint posTo = _getPosWallet(posAsset, _to);
+        assets[posAsset].wallets[posFrom].balance -= _value;
+        assets[posAsset].wallets[posTo].balance += _value;
         Transfer(_from, _to, _symbol, _value, _reference);
         return true;
     }
 
-    function transferWithReference(address _to, uint256 _value, bytes32 _symbol, string _reference) checkSigned(sha3(msg.data)) returns(bool) {
+    function transferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) checkSigned(sha3(msg.data)) returns(bool) {
         return _transfer(msg.sender, _to, _value, _symbol, _reference);
     }
 
-    function transfer(address _to, uint256 _value, bytes32 _symbol) checkSigned(sha3(msg.data)) returns(bool) {
+    function transfer(address _to, uint _value, bytes32 _symbol) checkSigned(sha3(msg.data)) returns(bool) {
         return _transfer(msg.sender, _to, _value, _symbol, "");
     }
 
-    function _getPosHolder(uint _posAsset, address _holder) internal returns(uint) {
-        uint posHolder = assets[_posAsset].index[_holder];
+    function _getPosWallet(uint _posAsset, address _holder) internal returns(uint) {
+        uint posHolder = _getPosHolder(_holder);
+        uint posWallet = assets[_posAsset].index[posHolder];
+        if (posWallet == 0) {
+            posWallet = assets[_posAsset].wallets.length++;
+            assets[_posAsset].wallets[posWallet].balance = 0;
+            assets[_posAsset].index[posHolder] = posWallet;
+        }
+        return posWallet;
+    }
+
+    function _getPosHolder(address _holder) internal returns(uint) {
+        uint posHolder = holderIndex[_holder];
         if (posHolder == 0) {
-            uint pos = assets[_posAsset].holders.length++;
-            assets[_posAsset].holders[pos].balance = 0;
-            assets[_posAsset].holders[pos].addr = _holder;
-            assets[_posAsset].index[_holder] = pos;
-            posHolder = pos;
+            posHolder = holders.length++;
+            holders[posHolder].addr = _holder;
+            holderIndex[_holder] = posHolder;
         }
         return posHolder;
     }
@@ -146,17 +158,17 @@ contract MultiAsset is CosignEnabled {
             return false;
         }
         pos = assets.length++;
+        uint posHolder = _getPosHolder(msg.sender);
 
         assets[pos].symbol = _symbol;
         assets[pos].name = _name;
         assets[pos].isReissuable = _isReissuable;
-        assets[pos].owner = msg.sender;
+        assets[pos].owner = posHolder;
         assets[pos].description = _description;
         assets[pos].baseUnit = _baseUnit;
-        assets[pos].holders.length = 2;
-        assets[pos].holders[1].balance = _value;
-        assets[pos].holders[1].addr = msg.sender;
-        assets[pos].index[msg.sender] = 1;
+        assets[pos].wallets.length = 2;
+        assets[pos].wallets[1].balance = _value;
+        assets[pos].index[posHolder] = 1;
         assets[pos].totalSupply = _value;
         assetIndex[_symbol] = pos;
         Issue(_symbol, _value, msg.sender);
@@ -168,15 +180,15 @@ contract MultiAsset is CosignEnabled {
             return false;
         }
         uint posAsset = assetIndex[_symbol];
-        if (posAsset == 0 || !assets[posAsset].isReissuable || assets[posAsset].owner != msg.sender) {
+        if (posAsset == 0 || !assets[posAsset].isReissuable || owner(_symbol) != msg.sender) {
             return false;
         }
         uint _totalSupply = totalSupply(_symbol);
         if (_totalSupply + _value < _totalSupply) {
             return false;
         }
-        uint pos = _getPosHolder(posAsset, msg.sender);
-        assets[posAsset].holders[pos].balance += _value;
+        uint pos = _getPosWallet(posAsset, msg.sender);
+        assets[posAsset].wallets[pos].balance += _value;
         assets[posAsset].totalSupply += _value;
         Issue(_symbol, _value, msg.sender);
         return true;
@@ -187,14 +199,14 @@ contract MultiAsset is CosignEnabled {
             return false;
         }
         uint posAsset = assetIndex[_symbol];
-        if (posAsset == 0 || assets[posAsset].owner != msg.sender) {
+        if (posAsset == 0 || owner(_symbol) != msg.sender) {
             return false;
         }
-        uint pos = _getPosHolder(posAsset, msg.sender);
-        if (assets[posAsset].holders[pos].balance < _value) {
+        uint pos = _getPosWallet(posAsset, msg.sender);
+        if (assets[posAsset].wallets[pos].balance < _value) {
             return false;
         }
-        assets[posAsset].holders[pos].balance -= _value;
+        assets[posAsset].wallets[pos].balance -= _value;
         assets[posAsset].totalSupply -= _value;
         Revoke(_symbol, _value, msg.sender);
         return true;
@@ -202,10 +214,10 @@ contract MultiAsset is CosignEnabled {
 
     function changeOwnership(bytes32 _symbol, address _newOwner) returns(bool) {
         uint posAsset = assetIndex[_symbol];
-        if (posAsset == 0 || assets[posAsset].owner != msg.sender || assets[posAsset].owner == _newOwner) {
+        if (posAsset == 0 || owner(_symbol) != msg.sender || owner(_symbol) == _newOwner) {
             return false;
         }
-        assets[posAsset].owner = _newOwner;
+        assets[posAsset].owner = _getPosHolder(_newOwner);
         OwnershipChange(msg.sender, _newOwner, _symbol);
         return true;
     }
@@ -225,8 +237,9 @@ contract MultiAsset is CosignEnabled {
         if (posAsset == 0) {
             return false;
         }
-        uint posFrom = _getPosHolder(posAsset, msg.sender);
-        assets[posAsset].holders[posFrom].allowance[_spender] = _value;
+        uint posFrom = _getPosWallet(posAsset, msg.sender);
+        uint posTo = _getPosHolder(_spender);
+        assets[posAsset].wallets[posFrom].allowance[posTo] = _value;
         Approve(msg.sender, _spender, _symbol, _value);
         return true;
     }
@@ -236,11 +249,12 @@ contract MultiAsset is CosignEnabled {
         if (posAsset == 0) {
             return 0;
         }
-        uint pos = assets[posAsset].index[_from];
+        uint pos = _getPosWallet(posAsset, _from);
         if (pos == 0) {
             return 0;
         }
-        return assets[posAsset].holders[pos].allowance[_spender];
+        uint posSpender = _getPosHolder(_spender);
+        return assets[posAsset].wallets[pos].allowance[posSpender];
     }
 
     function transferFrom(address _from, address _to, uint _value, bytes32 _symbol) returns(bool) {
@@ -258,8 +272,9 @@ contract MultiAsset is CosignEnabled {
             return false;
         }
         uint posAsset = assetIndex[_symbol];
-        uint pos = assets[posAsset].index[_from];
-        assets[posAsset].holders[pos].allowance[msg.sender] -= _value;
+        uint pos = _getPosWallet(posAsset, _from);
+        uint posSpender = _getPosHolder(msg.sender);
+        assets[posAsset].wallets[pos].allowance[posSpender] -= _value;
         return true;   
     }
 }
