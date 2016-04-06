@@ -25,8 +25,7 @@ contract MultiAsset is CosignEnabled {
         bool isReissuable;
         uint owner;
         uint totalSupply;
-        Wallet[] wallets;
-        mapping(uint => uint) index;
+        mapping(uint => Wallet) wallets;
     }
 
     struct Wallet {
@@ -96,8 +95,8 @@ contract MultiAsset is CosignEnabled {
         if (posAsset == 0) {
             return 0;
         }
-        uint posWallet = _getPosWallet(posAsset, _owner);
-        return assets[posAsset].wallets[posWallet].balance;
+        uint posHolder = _getPosHolder(_owner);
+        return assets[posAsset].wallets[posHolder].balance;
     }
 
     function _transfer(address _from, address _to, uint _value, bytes32 _symbol, string _reference) internal returns(bool) {
@@ -112,8 +111,8 @@ contract MultiAsset is CosignEnabled {
         if (_value < 1 || bal < _value) {
             return false;
         }
-        uint posFrom = _getPosWallet(posAsset, _from);
-        uint posTo = _createPosWallet(posAsset, _to);
+        uint posFrom = _getPosHolder(_from);
+        uint posTo = _createPosHolder(_to);
         assets[posAsset].wallets[posFrom].balance -= _value;
         assets[posAsset].wallets[posTo].balance += _value;
         Transfer(_from, _to, _symbol, _value, _reference);
@@ -128,24 +127,8 @@ contract MultiAsset is CosignEnabled {
         return _transfer(msg.sender, _to, _value, _symbol, "");
     }
 
-    function _getPosWallet(uint _posAsset, address _holder) constant internal returns(uint) {
-        uint posHolder = _getPosHolder(_holder);
-        return assets[_posAsset].index[posHolder];
-    }
-
     function _getPosHolder(address _holder) constant internal returns(uint) {
         return holderIndex[_holder];
-    }
-
-    function _createPosWallet(uint _posAsset, address _holder) internal returns(uint) {
-        uint posHolder = _createPosHolder(_holder);
-        uint posWallet = assets[_posAsset].index[posHolder];
-        if (posWallet == 0) {
-            posWallet = assets[_posAsset].wallets.length++;
-            assets[_posAsset].wallets[posWallet].balance = 0;
-            assets[_posAsset].index[posHolder] = posWallet;
-        }
-        return posWallet;
     }
 
     function _createPosHolder(address _holder) internal returns(uint) {
@@ -175,9 +158,7 @@ contract MultiAsset is CosignEnabled {
         assets[pos].owner = posHolder;
         assets[pos].description = _description;
         assets[pos].baseUnit = _baseUnit;
-        assets[pos].wallets.length = 2;
-        assets[pos].wallets[1].balance = _value;
-        assets[pos].index[posHolder] = 1;
+        assets[pos].wallets[posHolder].balance = _value;
         assets[pos].totalSupply = _value;
         assetIndex[_symbol] = pos;
         Issue(_symbol, _value, msg.sender);
@@ -196,7 +177,7 @@ contract MultiAsset is CosignEnabled {
         if (_totalSupply + _value < _totalSupply) {
             return false;
         }
-        uint pos = _getPosWallet(posAsset, msg.sender);
+        uint pos = _getPosHolder(msg.sender);
         assets[posAsset].wallets[pos].balance += _value;
         assets[posAsset].totalSupply += _value;
         Issue(_symbol, _value, msg.sender);
@@ -211,7 +192,7 @@ contract MultiAsset is CosignEnabled {
         if (posAsset == 0 || owner(_symbol) != msg.sender) {
             return false;
         }
-        uint pos = _getPosWallet(posAsset, msg.sender);
+        uint pos = _getPosHolder(msg.sender);
         if (assets[posAsset].wallets[pos].balance < _value) {
             return false;
         }
@@ -246,7 +227,7 @@ contract MultiAsset is CosignEnabled {
         if (posAsset == 0) {
             return false;
         }
-        uint posFrom = _createPosWallet(posAsset, msg.sender);
+        uint posFrom = _createPosHolder(msg.sender);
         uint posTo = _createPosHolder(_spender);
         assets[posAsset].wallets[posFrom].allowance[posTo] = _value;
         Approve(msg.sender, _spender, _symbol, _value);
@@ -258,10 +239,7 @@ contract MultiAsset is CosignEnabled {
         if (posAsset == 0) {
             return 0;
         }
-        uint pos = _getPosWallet(posAsset, _from);
-        if (pos == 0) {
-            return 0;
-        }
+        uint pos = _getPosHolder(_from);
         uint posSpender = _getPosHolder(_spender);
         return assets[posAsset].wallets[pos].allowance[posSpender];
     }
@@ -281,7 +259,7 @@ contract MultiAsset is CosignEnabled {
             return false;
         }
         uint posAsset = assetIndex[_symbol];
-        uint pos = _getPosWallet(posAsset, _from);
+        uint pos = _getPosHolder(_from);
         uint posSpender = _getPosHolder(msg.sender);
         assets[posAsset].wallets[pos].allowance[posSpender] -= _value;
         return true;   
