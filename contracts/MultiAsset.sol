@@ -1,4 +1,13 @@
-import "CosignEnabled.sol";
+contract CosignEnabled {
+
+    uint public signChecks;
+
+    modifier checkSigned(bytes32 _opHash) {
+        signChecks++;
+        _
+    }
+
+}
 
 contract MultiAsset is CosignEnabled {
 
@@ -15,8 +24,9 @@ contract MultiAsset is CosignEnabled {
         string description;
         bool isReissuable;
         address owner;
-        mapping(address => uint) index;
         Holder[] holders;
+        uint totalSupply;
+        mapping(address => uint) index;
     }
 
     struct Holder {
@@ -72,11 +82,7 @@ contract MultiAsset is CosignEnabled {
         if (posAsset == 0) {
             return 0;
         }
-        uint total = 0;
-        for (uint i = 1; i < assets[posAsset].holders.length; ++i) {
-            total += assets[posAsset].holders[i].balance;
-        }
-        return total;
+        return assets[posAsset].totalSupply;
     }
 
     function balanceOf(address _owner, bytes32 _symbol) constant returns(uint256 balance) {
@@ -151,6 +157,7 @@ contract MultiAsset is CosignEnabled {
         assets[pos].holders[1].balance = _value;
         assets[pos].holders[1].addr = msg.sender;
         assets[pos].index[msg.sender] = 1;
+        assets[pos].totalSupply = _value;
         assetIndex[_symbol] = pos;
         Issue(_symbol, _value, msg.sender);
         return true;
@@ -170,6 +177,7 @@ contract MultiAsset is CosignEnabled {
         }
         uint pos = _getPosHolder(posAsset, msg.sender);
         assets[posAsset].holders[pos].balance += _value;
+        assets[posAsset].totalSupply += _value;
         Issue(_symbol, _value, msg.sender);
         return true;
     }
@@ -187,6 +195,7 @@ contract MultiAsset is CosignEnabled {
             return false;
         }
         assets[posAsset].holders[pos].balance -= _value;
+        assets[posAsset].totalSupply -= _value;
         Revoke(_symbol, _value, msg.sender);
         return true;
     }
