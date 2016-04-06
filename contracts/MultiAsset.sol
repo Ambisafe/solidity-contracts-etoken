@@ -113,7 +113,7 @@ contract MultiAsset is CosignEnabled {
             return false;
         }
         uint posFrom = _getPosWallet(posAsset, _from);
-        uint posTo = _getPosWallet(posAsset, _to);
+        uint posTo = _createPosWallet(posAsset, _to);
         assets[posAsset].wallets[posFrom].balance -= _value;
         assets[posAsset].wallets[posTo].balance += _value;
         Transfer(_from, _to, _symbol, _value, _reference);
@@ -128,8 +128,17 @@ contract MultiAsset is CosignEnabled {
         return _transfer(msg.sender, _to, _value, _symbol, "");
     }
 
-    function _getPosWallet(uint _posAsset, address _holder) internal returns(uint) {
+    function _getPosWallet(uint _posAsset, address _holder) constant internal returns(uint) {
         uint posHolder = _getPosHolder(_holder);
+        return assets[_posAsset].index[posHolder];
+    }
+
+    function _getPosHolder(address _holder) constant internal returns(uint) {
+        return holderIndex[_holder];
+    }
+
+    function _createPosWallet(uint _posAsset, address _holder) internal returns(uint) {
+        uint posHolder = _createPosHolder(_holder);
         uint posWallet = assets[_posAsset].index[posHolder];
         if (posWallet == 0) {
             posWallet = assets[_posAsset].wallets.length++;
@@ -139,7 +148,7 @@ contract MultiAsset is CosignEnabled {
         return posWallet;
     }
 
-    function _getPosHolder(address _holder) internal returns(uint) {
+    function _createPosHolder(address _holder) internal returns(uint) {
         uint posHolder = holderIndex[_holder];
         if (posHolder == 0) {
             posHolder = holders.length++;
@@ -158,7 +167,7 @@ contract MultiAsset is CosignEnabled {
             return false;
         }
         pos = assets.length++;
-        uint posHolder = _getPosHolder(msg.sender);
+        uint posHolder = _createPosHolder(msg.sender);
 
         assets[pos].symbol = _symbol;
         assets[pos].name = _name;
@@ -217,7 +226,7 @@ contract MultiAsset is CosignEnabled {
         if (posAsset == 0 || owner(_symbol) != msg.sender || owner(_symbol) == _newOwner) {
             return false;
         }
-        assets[posAsset].owner = _getPosHolder(_newOwner);
+        assets[posAsset].owner = _createPosHolder(_newOwner);
         OwnershipChange(msg.sender, _newOwner, _symbol);
         return true;
     }
@@ -237,8 +246,8 @@ contract MultiAsset is CosignEnabled {
         if (posAsset == 0) {
             return false;
         }
-        uint posFrom = _getPosWallet(posAsset, msg.sender);
-        uint posTo = _getPosHolder(_spender);
+        uint posFrom = _createPosWallet(posAsset, msg.sender);
+        uint posTo = _createPosHolder(_spender);
         assets[posAsset].wallets[posFrom].allowance[posTo] = _value;
         Approve(msg.sender, _spender, _symbol, _value);
         return true;
