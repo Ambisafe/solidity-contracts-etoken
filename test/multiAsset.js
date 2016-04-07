@@ -490,7 +490,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
       return multiAsset.isReissuable.call(nonAsset);
     }).then(function(result) {
-      assert.equal(result.valueOf(), false);
+      assert.isFalse(result);
     }).then(done).catch(done);
   });
   it('should not be possible to get owner of missing asset', function(done) {
@@ -2674,6 +2674,620 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return multiAsset.allowance.call(holder, spender, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), resultValue);
+    }).then(done).catch(done);
+  });
+
+  it('should not be possible to trust to already trusted address', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    multiAsset.trust(trusty).then(function() {
+      return multiAsset.trust.call(trusty);
+    }).then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to trust to oneself', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    multiAsset.trust.call(holder).then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+  it('should be possible to trust by existing holder', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.trust.call(trusty);
+    }).then(function(result) {
+      assert.isTrue(result);
+    }).then(done).catch(done);
+  });
+  it('should be possible to trust by missing holder', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    multiAsset.trust.call(trusty).then(function(result) {
+      assert.isTrue(result);
+    }).then(done).catch(done);
+  });
+  it('should be possible to trust to multiple addresses', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty1 = accounts[1];
+    var trusty2 = accounts[2];
+    multiAsset.trust(trusty1).then(function(result) {
+      return multiAsset.trust(trusty2);
+    }).then(function() {
+      return multiAsset.isTrusted.call(holder, trusty1);
+    }).then(function(result) {
+      assert.isTrue(result);
+      return multiAsset.isTrusted.call(holder, trusty2);
+    }).then(function(result) {
+      assert.isTrue(result);
+    }).then(done).catch(done);
+  });
+
+  it('should not be possible to distrust an untrusted address', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var untrusty = accounts[2];
+    multiAsset.trust(trusty).then(function() {
+      return multiAsset.distrust.call(untrusty);
+    }).then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to distrust by missing holder', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var untrusty = accounts[1];
+    multiAsset.distrust.call(untrusty).then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to distrust oneself', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    multiAsset.distrust.call(holder).then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+  it('should be possible to distrust a trusted address', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    multiAsset.trust(trusty).then(function() {
+      return multiAsset.distrust(trusty);
+    }).then(function() {
+      return multiAsset.isTrusted.call(holder, trusty);
+    }).then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+  it('should be possible to distrust a last trusted address', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty1 = accounts[1];
+    var trusty2 = accounts[2];
+    multiAsset.trust(trusty1).then(function() {
+      return multiAsset.trust(trusty2);
+    }).then(function() {
+      return multiAsset.distrust(trusty2);
+    }).then(function() {
+      return multiAsset.isTrusted.call(holder, trusty2);
+    }).then(function(result) {
+      assert.isFalse(result);
+      return multiAsset.isTrusted.call(holder, trusty1);
+    }).then(function(result) {
+      assert.isTrue(result);
+    }).then(done).catch(done);
+  });
+  it('should be possible to distrust a not last trusted address', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty1 = accounts[1];
+    var trusty2 = accounts[2];
+    multiAsset.trust(trusty1).then(function() {
+      return multiAsset.trust(trusty2);
+    }).then(function() {
+      return multiAsset.distrust(trusty1);
+    }).then(function() {
+      return multiAsset.isTrusted.call(holder, trusty1);
+    }).then(function(result) {
+      assert.isFalse(result);
+      return multiAsset.isTrusted.call(holder, trusty2);
+    }).then(function(result) {
+      assert.isTrue(result);
+    }).then(done).catch(done);
+  });
+
+  it('should not be possible to distrust all without trusted addresses', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.distrustAll.call();
+    }).then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to distrust all by missing holder', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    multiAsset.distrustAll.call().then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+  it('should be possible to distrust all', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty1 = accounts[1];
+    var trusty2 = accounts[2];
+    multiAsset.trust(trusty1).then(function() {
+      return multiAsset.trust(trusty2);
+    }).then(function() {
+      return multiAsset.distrustAll();
+    }).then(function() {
+      return multiAsset.isTrusted.call(holder, trusty1);
+    }).then(function(result) {
+      assert.isFalse(result);
+      return multiAsset.isTrusted.call(holder, trusty2);
+    }).then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+
+  it('should not be possible to recover to existing holder', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var recoverTo = accounts[2];
+    multiAsset.trust(trusty).then(function() {
+      return multiAsset.trust(accounts[3], {from: recoverTo});
+    }).then(function() {
+      return multiAsset.recover.call(holder, recoverTo, {from: trusty});
+    }).then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to recover by untrusted', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var untrusty = accounts[2];
+    var recoverTo = accounts[3];
+    multiAsset.trust(trusty).then(function() {
+      return multiAsset.recover.call(holder, recoverTo, {from: untrusty});
+    }).then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to recover from missing holder', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var untrusty = accounts[2];
+    var recoverTo = accounts[3];
+    multiAsset.recover.call(holder, recoverTo, {from: untrusty}).then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to recover by oneself', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var recoverTo = accounts[3];
+    multiAsset.trust(trusty).then(function() {
+      return multiAsset.recover.call(holder, recoverTo, {from: holder});
+    }).then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to recover to oneself', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    multiAsset.trust(trusty).then(function() {
+      return multiAsset.recover.call(holder, holder, {from: trusty});
+    }).then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to recover to the same address', function(done) {
+    // Covered by 'should not be possible to recover to oneself'.
+    done(); 
+  });
+  it('should not be possible to do transfer by target after failed recovery', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var untrusty = accounts[2];
+    var recoverTo = accounts[3];
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: untrusty});
+    }).then(function() {
+      return multiAsset.transfer(untrusty, 100, SYMBOL, {from: recoverTo});
+    }).then(function() {
+      return multiAsset.balanceOf.call(untrusty, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should be possible to do transfer by holder after failed recovery', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var untrusty = accounts[2];
+    var recoverTo = accounts[3];
+    var amount = 100;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: untrusty});
+    }).then(function() {
+      return multiAsset.transfer(untrusty, amount, SYMBOL, {from: holder});
+    }).then(function() {
+      return multiAsset.balanceOf.call(untrusty, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), amount);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+    }).then(done).catch(done);
+  });
+  it('should be possible to recover', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var recoverTo = accounts[2];
+    var watcher;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.trust(trusty);
+    }).then(function() {
+      watcher = multiAsset.Recovery();
+      eventsHelper.setupEvents(multiAsset);
+      return multiAsset.recover(holder, recoverTo, {from: trusty});
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), holder);
+      assert.equal(events[0].args.to.valueOf(), recoverTo);
+      assert.equal(events[0].args.by.valueOf(), trusty); 
+      return multiAsset.balanceOf.call(recoverTo, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should be possible to recover multiple times', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var recoverTo = accounts[2];
+    var recoverTo2 = accounts[3];
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.trust(trusty);
+    }).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: trusty});
+    }).then(function() {
+      return multiAsset.recover(recoverTo, recoverTo2, {from: trusty});
+    }).then(function() {
+      return multiAsset.balanceOf.call(recoverTo2, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should be possible to recover recovered address', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var recoverTo = accounts[2];
+    var recoverTo2 = accounts[3];
+    var watcher;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.trust(trusty);
+    }).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: trusty});
+    }).then(function() {
+      watcher = multiAsset.Recovery();
+      eventsHelper.setupEvents(multiAsset);
+      return multiAsset.recover(holder, recoverTo2, {from: trusty});
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), recoverTo);
+      assert.equal(events[0].args.to.valueOf(), recoverTo2);
+      assert.equal(events[0].args.by.valueOf(), trusty); 
+      return multiAsset.balanceOf.call(recoverTo2, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should be possible to do transfers after recovery by holder', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var untrusty = accounts[2];
+    var recoverTo = accounts[3];
+    var amount = 100;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.trust(trusty);
+    }).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: trusty});
+    }).then(function() {
+      return multiAsset.transfer(untrusty, amount, SYMBOL, {from: holder});
+    }).then(function() {
+      return multiAsset.balanceOf.call(untrusty, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), amount);
+      return multiAsset.balanceOf.call(recoverTo, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+    }).then(done).catch(done);
+  });
+  it('should be possible to reissue after recovery', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var recoverTo = accounts[3];
+    var amount = 100;
+    var isReissuable = true;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      return multiAsset.trust(trusty);
+    }).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: trusty});
+    }).then(function() {
+      return multiAsset.reissueAsset(SYMBOL, amount, {from: recoverTo});
+    }).then(function() {
+      return multiAsset.balanceOf.call(recoverTo, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE + amount);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE + amount);
+    }).then(done).catch(done);
+  });
+  it('should be possible to revoke after recovery', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var recoverTo = accounts[3];
+    var amount = 100;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.trust(trusty);
+    }).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: trusty});
+    }).then(function() {
+      return multiAsset.revokeAsset(SYMBOL, amount, {from: recoverTo});
+    }).then(function() {
+      return multiAsset.balanceOf.call(recoverTo, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+    }).then(done).catch(done);
+  });
+  it('should be possible to change ownership after recovery', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var newOwner = accounts[2];
+    var recoverTo = accounts[3];
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.trust(trusty);
+    }).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: trusty});
+    }).then(function() {
+      return multiAsset.changeOwnership(SYMBOL, newOwner, {from: recoverTo});
+    }).then(function() {
+      return multiAsset.owner.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), newOwner);
+      return multiAsset.isOwner.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.isFalse(result.valueOf());
+      return multiAsset.isOwner.call(recoverTo, SYMBOL);
+    }).then(function(result) {
+      assert.isFalse(result.valueOf());
+    }).then(done).catch(done);
+  });
+  it('should be possible to reissue after recovery by holder', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var recoverTo = accounts[3];
+    var amount = 100;
+    var isReissuable = true;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+      return multiAsset.trust(trusty);
+    }).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: trusty});
+    }).then(function() {
+      return multiAsset.reissueAsset(SYMBOL, amount);
+    }).then(function() {
+      return multiAsset.balanceOf.call(recoverTo, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE + amount);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE + amount);
+    }).then(done).catch(done);
+  });
+  it('should be possible to revoke after recovery by holder', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var recoverTo = accounts[3];
+    var amount = 100;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.trust(trusty);
+    }).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: trusty});
+    }).then(function() {
+      return multiAsset.revokeAsset(SYMBOL, amount);
+    }).then(function() {
+      return multiAsset.balanceOf.call(recoverTo, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+    }).then(done).catch(done);
+  });
+  it('should be possible to change ownership after recovery by holder', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var newOwner = accounts[2];
+    var recoverTo = accounts[3];
+    var watcher;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.trust(trusty);
+    }).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: trusty});
+    }).then(function() {
+      watcher = multiAsset.OwnershipChange();
+      eventsHelper.setupEvents(multiAsset);
+      return multiAsset.changeOwnership(SYMBOL, newOwner, {from: holder});
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), recoverTo);
+      assert.equal(events[0].args.to.valueOf(), newOwner);
+      assert.equal(events[0].args.symbol.valueOf(), SYMBOL); 
+      return multiAsset.owner.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), newOwner);
+      return multiAsset.isOwner.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.isFalse(result.valueOf());
+      return multiAsset.isOwner.call(recoverTo, SYMBOL);
+    }).then(function(result) {
+      assert.isFalse(result.valueOf());
+    }).then(done).catch(done);
+  });
+  it('should be possible to do transfers after recovery by recovered address', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var untrusty = accounts[2];
+    var recoverTo = accounts[3];
+    var amount = 100;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.trust(trusty);
+    }).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: trusty});
+    }).then(function() {
+      return multiAsset.transfer(untrusty, amount, SYMBOL, {from: recoverTo});
+    }).then(function() {
+      return multiAsset.balanceOf.call(untrusty, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), amount);
+      return multiAsset.balanceOf.call(recoverTo, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+    }).then(done).catch(done);
+  });
+  it('should recover asset ownership', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var recoverTo = accounts[2];
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.trust(trusty);
+    }).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: trusty});
+    }).then(function() {
+      return multiAsset.owner.call(SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), recoverTo);
+    }).then(done).catch(done);
+  });
+  it('should recover balances', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var recoverTo = accounts[2];
+    var symbol1 = bytes32(31);
+    var symbol2 = bytes32(32);
+    var value1 = 100;
+    var value2 = 200;
+    multiAsset.issueAsset(symbol1, value1, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
+    }).then(function() {
+      return multiAsset.trust(trusty);
+    }).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: trusty});
+    }).then(function() {
+      return multiAsset.balanceOf.call(recoverTo, symbol1);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value1);
+      return multiAsset.balanceOf.call(recoverTo, symbol2);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value2);
+    }).then(done).catch(done);
+  });
+  it('should recover allowances', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty = accounts[1];
+    var recoverTo = accounts[2];
+    var symbol1 = bytes32(31);
+    var symbol2 = bytes32(32);
+    var spender1 = accounts[3];
+    var spender2 = accounts[4];
+    var value1 = 100;
+    var value2 = 200;
+    multiAsset.issueAsset(symbol1, value1, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
+    }).then(function() {
+      return multiAsset.approve(spender1, value1, symbol1);
+    }).then(function() {
+      return multiAsset.approve(spender2, value2, symbol2);
+    }).then(function() {
+      return multiAsset.trust(trusty);
+    }).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: trusty});
+    }).then(function() {
+      return multiAsset.allowance.call(recoverTo, spender1, symbol1);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value1);
+      return multiAsset.allowance.call(recoverTo, spender2, symbol2);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), value2);
+    }).then(done).catch(done);
+  });
+  it('should recover trusts', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    var holder = accounts[0];
+    var trusty1 = accounts[1];
+    var trusty2 = accounts[2];
+    var recoverTo = accounts[3];
+    var untrusty = accounts[5];
+    multiAsset.trust(trusty1).then(function() {
+      return multiAsset.trust(trusty2);
+    }).then(function() {
+      return multiAsset.recover(holder, recoverTo, {from: trusty1});
+    }).then(function() {
+      return multiAsset.isTrusted.call(recoverTo, trusty1);
+    }).then(function(result) {
+      assert.isTrue(result);
+      return multiAsset.isTrusted.call(recoverTo, trusty2);
+    }).then(function(result) {
+      assert.isTrue(result);
+      return multiAsset.isTrusted.call(recoverTo, untrusty);
+    }).then(function(result) {
+      assert.isFalse(result);
     }).then(done).catch(done);
   });
 });
