@@ -184,15 +184,6 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
-  it.skip('should not be possible to issue asset with base unit 0', function(done) {
-    var multiAsset = MultiAsset.deployed();
-    var baseUnit = 0;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, baseUnit, IS_REISSUABLE).then(function() {
-      return multiAsset.name.call(SYMBOL);
-    }).then(function(result) {
-      assert.equal(result.valueOf(), '');
-    }).then(done).catch(done);
-  });
   it('should be possible to issue asset with base unit 1', function(done) {
     var multiAsset = MultiAsset.deployed();
     var baseUnit = 1;

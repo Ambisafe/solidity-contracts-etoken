@@ -358,7 +358,7 @@ contract MultiAsset is CosignEnabled {
         return assets[posAsset].wallets[pos].allowance[posSpender];
     }
 
-    function transferFrom(address _from, address _to, uint _value, bytes32 _symbol) checkSigned(sha3(msg.data), _symbol)  returns(bool) {
+    function transferFrom(address _from, address _to, uint _value, bytes32 _symbol) returns(bool) {
         return transferFromWithReference(_from, _to, _value, _symbol, "");
     }
 
