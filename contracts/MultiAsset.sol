@@ -2,13 +2,10 @@ contract Cosigner {
     function isSigned(bytes32) returns(bool);
 }
 
-contract CosignEnabled {
+contract Owned {
     address public contractOwner;
-    mapping(bytes32 => address) public cosignerAddresses;
-    mapping(bytes32 => Cosigner) cosigners;
-    uint public signChecks; // DEPLOY REMOVE
 
-    function CosignEnabled() {
+    function Owned() {
         contractOwner = msg.sender;
     }
 
@@ -22,6 +19,27 @@ contract CosignEnabled {
         contractOwner = _to;
         return true;
     }
+}
+
+contract Switchable is Owned {
+    mapping(bytes32 => bool) public switchedOff;
+
+    modifier checkEnabledSwitch(bytes32 _switch) {
+        if (!switchedOff[_switch]) {
+            _
+        }
+    }
+
+    function setSwitch(bytes32 _switch, bool _enabled) onlyContractOwner() returns (bool) {
+        switchedOff[_switch] = !_enabled;
+        return true;
+    }
+}
+
+contract CosignEnabled is Owned {
+    mapping(bytes32 => address) public cosignerAddresses;
+    mapping(bytes32 => Cosigner) cosigners;
+    uint public signChecks; // DEPLOY REMOVE
 
     modifier checkSigned(bytes32 _opHash, bytes32 _symbol) {
         signChecks++; // DEPLOY REMOVE
@@ -40,7 +58,7 @@ contract CosignEnabled {
     }
 }
 
-contract MultiAsset is CosignEnabled {
+contract MultiAsset is CosignEnabled, Switchable {
 
     event Transfer(address indexed from, address indexed to, bytes32 indexed symbol, uint value, string reference);
     event Issue(bytes32 indexed symbol, uint value, address by);
@@ -176,7 +194,7 @@ contract MultiAsset is CosignEnabled {
         return true;
     }
 
-    function transferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) checkSigned(sha3(msg.data), _symbol) returns(bool) {
+    function transferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) checkEnabledSwitch(sha3(_symbol, "transferWithReference")) checkSigned(sha3(msg.data), _symbol) returns(bool) {
         return _transfer(msg.sender, _to, _value, _symbol, _reference);
     }
 
@@ -277,7 +295,7 @@ contract MultiAsset is CosignEnabled {
         return holders[posFrom].trustIndex[_to] != 0;
     }
 
-    function trust(address _to) returns(bool) {
+    function trust(address _to) checkEnabledSwitch(sha3(msg.sender, "recovery")) returns(bool) {
         uint posFrom = _createPosHolder(msg.sender);
         if (posFrom == _getPosHolder(_to)) {
             return false;
@@ -291,7 +309,7 @@ contract MultiAsset is CosignEnabled {
         return true;
     }
 
-    function distrust(address _to) checkTrust(msg.sender, _to) returns(bool) {
+    function distrust(address _to) checkEnabledSwitch(sha3(msg.sender, "recovery")) checkTrust(msg.sender, _to) returns(bool) {
         uint posFrom = _getPosHolder(msg.sender);
         uint trustPos = holders[posFrom].trustIndex[_to];
         address[] trusts = holders[posFrom].trusts;
@@ -305,7 +323,7 @@ contract MultiAsset is CosignEnabled {
         return true;
     }
 
-    function distrustAll() returns(bool) {
+    function distrustAll() checkEnabledSwitch(sha3(msg.sender, "recovery")) returns(bool) {
         uint posFrom = _getPosHolder(msg.sender);
         if (posFrom == 0) {
             return false;
@@ -321,7 +339,7 @@ contract MultiAsset is CosignEnabled {
         return true;
     }
     
-    function recover(address _from, address _to) checkTrust(_from, msg.sender) returns(bool) {
+    function recover(address _from, address _to) checkEnabledSwitch(sha3(_from, "recovery")) checkTrust(_from, msg.sender) returns(bool) {
         uint posFrom = _getPosHolder(_from);
         if (_getPosHolder(_to) != 0) {
             return false;
@@ -333,7 +351,7 @@ contract MultiAsset is CosignEnabled {
         return true;
     }
 
-    function approve(address _spender, uint _value, bytes32 _symbol) returns(bool) {
+    function approve(address _spender, uint _value, bytes32 _symbol) checkEnabledSwitch(sha3(_symbol, "allowances")) returns(bool) {
         uint posAsset = assetIndex[_symbol];
         if (posAsset == 0) {
             return false;
@@ -358,11 +376,11 @@ contract MultiAsset is CosignEnabled {
         return assets[posAsset].wallets[pos].allowance[posSpender];
     }
 
-    function transferFrom(address _from, address _to, uint _value, bytes32 _symbol) returns(bool) {
+    function transferFrom(address _from, address _to, uint _value, bytes32 _symbol) checkEnabledSwitch(sha3(_symbol, "allowances")) returns(bool) {
         return transferFromWithReference(_from, _to, _value, _symbol, "");
     }
 
-    function transferFromWithReference(address _from, address _to, uint _value, bytes32 _symbol, string _reference) checkSigned(sha3(msg.data), _symbol)  returns(bool) {
+    function transferFromWithReference(address _from, address _to, uint _value, bytes32 _symbol, string _reference) checkEnabledSwitch(sha3(_symbol, "allowances")) checkEnabledSwitch(sha3(_symbol, "transferWithReference")) checkSigned(sha3(msg.data), _symbol)  returns(bool) {
         if (allowance(_from, msg.sender, _symbol) < _value) {
             return false;
         }
