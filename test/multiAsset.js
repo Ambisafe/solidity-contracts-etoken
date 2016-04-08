@@ -961,6 +961,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 1);
     }).then(done).catch(done);
   });
+  it('should checkSigned on transfer with reference', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    multiAsset.transferWithReference(accounts[0], 10, SYMBOL, "ref").then(function() {
+      return multiAsset.signChecks.call();
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 1);
+    }).then(done).catch(done);
+  });
   it('should keep transfers separated between assets', function(done) {
     var multiAsset = MultiAsset.deployed();
     var symbol = bytes32(0);
@@ -2440,6 +2448,22 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return multiAsset.balanceOf.call(receiver, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), expectedReceiverBalance);
+    }).then(done).catch(done);
+  });
+  it('should checkSigned on allowance transfer', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    multiAsset.transferFrom(accounts[0], accounts[1], 10, SYMBOL).then(function() {
+      return multiAsset.signChecks.call();
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 1);
+    }).then(done).catch(done);
+  });
+  it('should checkSigned on allowance transfer with reference', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    multiAsset.transferFromWithReference(accounts[0], accounts[1], 10, SYMBOL, "ref").then(function() {
+      return multiAsset.signChecks.call();
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 1);
     }).then(done).catch(done);
   });
 
