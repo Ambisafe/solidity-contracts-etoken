@@ -25,40 +25,18 @@ contract Switchable is Owned {
     mapping(bytes32 => bool) public switchedOff;
 
     modifier checkEnabledSwitch(bytes32 _switch) {
-        if (!switchedOff[_switch]) {
+        if (!switchedOff[_switch]) { // ! - means everything is enabled by default
             _
         }
     }
 
-    function setSwitch(bytes32 _switch, bool _enabled) onlyContractOwner() returns (bool) {
-        switchedOff[_switch] = !_enabled;
+    function setSwitch(bytes32 _switch, bool _state) onlyContractOwner() returns (bool) {
+        switchedOff[_switch] = !_state; // ! - means everything is enabled by default
         return true;
     }
 }
 
-contract CosignEnabled is Owned {
-    mapping(bytes32 => address) public cosignerAddresses;
-    mapping(bytes32 => Cosigner) cosigners;
-    uint public signChecks; // DEPLOY REMOVE
-
-    modifier checkSigned(bytes32 _opHash, bytes32 _symbol) {
-        signChecks++; // DEPLOY REMOVE
-        if (cosignerAddresses[_symbol] == 0x0 || cosigners[_symbol].isSigned(_opHash)) {
-            _
-        }
-    }
-
-    function setCosignAddress(address _address, bytes32 _symbol) onlyContractOwner() returns(bool) {
-        if(cosignerAddresses[_symbol] == _address) {
-            return false;
-        }
-        cosignerAddresses[_symbol] = _address;
-        cosigners[_symbol] = Cosigner(cosignerAddresses[_symbol]);
-        return true;
-    }
-}
-
-contract MultiAsset is CosignEnabled, Switchable {
+contract MultiAsset is Owned, Switchable {
 
     event Transfer(address indexed from, address indexed to, bytes32 indexed symbol, uint value, string reference);
     event Issue(bytes32 indexed symbol, uint value, address by);
@@ -66,15 +44,17 @@ contract MultiAsset is CosignEnabled, Switchable {
     event OwnershipChange(address indexed from, address indexed to, bytes32 indexed symbol);
     event Approve(address indexed from, address indexed spender, bytes32 indexed symbol, uint value);
     event Recovery(address indexed from, address indexed to, address by);
+
+    enum Features { Issue, TransferWithReference, Revoke, ChangeOwnership, Recovery, Allowances, Cosigning }
     
     struct Asset {
         bytes32 symbol;
-        uint8 baseUnit;
+        uint owner;
+        uint totalSupply;
         string name;
         string description;
         bool isReissuable;
-        uint owner;
-        uint totalSupply;
+        uint8 baseUnit;
         mapping(uint => Wallet) wallets;
     }
 
@@ -113,61 +93,36 @@ contract MultiAsset is CosignEnabled, Switchable {
     }
 
     function baseUnit(bytes32 _symbol) constant returns(uint8) {
-        uint posAsset = assetIndex[_symbol];
-        if (posAsset != 0) {
-            return assets[posAsset].baseUnit;
-        }
+        return assets[assetIndex[_symbol]].baseUnit;
     }
 
     function name(bytes32 _symbol) constant returns(string) {
-        uint posAsset = assetIndex[_symbol];
-        if (posAsset != 0) {
-            return assets[posAsset].name;
-        }
+        return assets[assetIndex[_symbol]].name;
     }
 
     function description(bytes32 _symbol) constant returns(string) {
-        uint posAsset = assetIndex[_symbol];
-        if (posAsset != 0) {
-            return assets[posAsset].description;
-        }
+        return assets[assetIndex[_symbol]].description;
     }
 
     function isReissuable(bytes32 _symbol) constant returns(bool) {
-        uint posAsset = assetIndex[_symbol];
-        if (posAsset != 0) {
-            return assets[posAsset].isReissuable;
-        }
+        return assets[assetIndex[_symbol]].isReissuable;
     }
 
-    function owner(bytes32 _symbol) constant returns(address) {
-        uint posAsset = assetIndex[_symbol];
-        if (posAsset != 0) {
-            return holders[assets[posAsset].owner].addr;
-        }
+    function owner(bytes32 _symbol) constant  returns(address) {
+        return holders[assets[assetIndex[_symbol]].owner].addr;
     }
 
     function isOwner(address _owner, bytes32 _symbol) constant returns(bool) {
-        uint posAsset = assetIndex[_symbol];
-        if (posAsset != 0) {
-            return assets[posAsset].owner == _getPosHolder(_owner);
-        }
+        return assets[assetIndex[_symbol]].owner == _getPosHolder(_owner);
     }
 
     function totalSupply(bytes32 _symbol) constant returns(uint) {
-        uint posAsset = assetIndex[_symbol];
-        if (posAsset != 0) {
-            return assets[posAsset].totalSupply;
-        }
+        return assets[assetIndex[_symbol]].totalSupply;
     }
 
     function balanceOf(address _owner, bytes32 _symbol) constant returns(uint) {
-        uint posAsset = assetIndex[_symbol];
-        if (posAsset == 0) {
-            return 0;
-        }
         uint posHolder = _getPosHolder(_owner);
-        return assets[posAsset].wallets[posHolder].balance;
+        return assets[assetIndex[_symbol]].wallets[posHolder].balance;
     }
 
     function _address(uint pos) constant internal returns(address) {
@@ -194,7 +149,7 @@ contract MultiAsset is CosignEnabled, Switchable {
         return true;
     }
 
-    function transferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) checkEnabledSwitch(sha3(_symbol, "transferWithReference")) checkSigned(sha3(msg.data), _symbol) returns(bool) {
+    function transferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) checkEnabledSwitch(sha3(_symbol, Features.TransferWithReference)) checkSigned(sha3(msg.data), _symbol) returns(bool) {
         return _transfer(msg.sender, _to, _value, _symbol, _reference);
     }
 
@@ -217,7 +172,7 @@ contract MultiAsset is CosignEnabled, Switchable {
         return posHolder;
     }
 
-    function issueAsset(bytes32 _symbol, uint _value, string _name, string _description, uint8 _baseUnit, bool _isReissuable) returns(bool) {
+    function issueAsset(bytes32 _symbol, uint _value, string _name, string _description, uint8 _baseUnit, bool _isReissuable) checkEnabledSwitch(sha3(_symbol, _isReissuable, Features.Issue)) returns(bool) {
         if (_value < 1 && !_isReissuable) {
             return false;
         }
@@ -228,14 +183,9 @@ contract MultiAsset is CosignEnabled, Switchable {
         pos = assets.length++;
         uint posHolder = _createPosHolder(msg.sender);
 
-        assets[pos].symbol = _symbol;
-        assets[pos].name = _name;
-        assets[pos].isReissuable = _isReissuable;
-        assets[pos].owner = posHolder;
-        assets[pos].description = _description;
-        assets[pos].baseUnit = _baseUnit;
+        assets[pos] = Asset(_symbol, posHolder, _value, _name, _description, _isReissuable, _baseUnit);
+
         assets[pos].wallets[posHolder].balance = _value;
-        assets[pos].totalSupply = _value;
         assetIndex[_symbol] = pos;
         Issue(_symbol, _value, _address(posHolder));
         return true;
@@ -260,7 +210,7 @@ contract MultiAsset is CosignEnabled, Switchable {
         return true;
     }
     
-    function revokeAsset(bytes32 _symbol, uint _value) onlyOwner(_symbol) returns(bool) {
+    function revokeAsset(bytes32 _symbol, uint _value) checkEnabledSwitch(sha3(_symbol, Features.Revoke)) onlyOwner(_symbol) returns(bool) {
         if (_value < 1) {
             return false;
         }
@@ -275,7 +225,7 @@ contract MultiAsset is CosignEnabled, Switchable {
         return true;
     }
 
-    function changeOwnership(bytes32 _symbol, address _newOwner) onlyOwner(_symbol) returns(bool) {
+    function changeOwnership(bytes32 _symbol, address _newOwner) checkEnabledSwitch(sha3(_symbol, Features.ChangeOwnership)) onlyOwner(_symbol) returns(bool) {
         uint posAsset = assetIndex[_symbol];
         uint posNewOwner = _createPosHolder(_newOwner);
         if (assets[posAsset].owner == posNewOwner) {
@@ -295,7 +245,7 @@ contract MultiAsset is CosignEnabled, Switchable {
         return holders[posFrom].trustIndex[_to] != 0;
     }
 
-    function trust(address _to) checkEnabledSwitch(sha3(msg.sender, "recovery")) returns(bool) {
+    function trust(address _to) checkEnabledSwitch(sha3(msg.sender, Features.Recovery)) returns(bool) {
         uint posFrom = _createPosHolder(msg.sender);
         if (posFrom == _getPosHolder(_to)) {
             return false;
@@ -309,7 +259,7 @@ contract MultiAsset is CosignEnabled, Switchable {
         return true;
     }
 
-    function distrust(address _to) checkEnabledSwitch(sha3(msg.sender, "recovery")) checkTrust(msg.sender, _to) returns(bool) {
+    function distrust(address _to) checkTrust(msg.sender, _to) returns(bool) {
         uint posFrom = _getPosHolder(msg.sender);
         uint trustPos = holders[posFrom].trustIndex[_to];
         address[] trusts = holders[posFrom].trusts;
@@ -323,7 +273,7 @@ contract MultiAsset is CosignEnabled, Switchable {
         return true;
     }
 
-    function distrustAll() checkEnabledSwitch(sha3(msg.sender, "recovery")) returns(bool) {
+    function distrustAll() returns(bool) {
         uint posFrom = _getPosHolder(msg.sender);
         if (posFrom == 0) {
             return false;
@@ -339,7 +289,7 @@ contract MultiAsset is CosignEnabled, Switchable {
         return true;
     }
     
-    function recover(address _from, address _to) checkEnabledSwitch(sha3(_from, "recovery")) checkTrust(_from, msg.sender) returns(bool) {
+    function recover(address _from, address _to) checkTrust(_from, msg.sender) returns(bool) {
         uint posFrom = _getPosHolder(_from);
         if (_getPosHolder(_to) != 0) {
             return false;
@@ -351,7 +301,7 @@ contract MultiAsset is CosignEnabled, Switchable {
         return true;
     }
 
-    function approve(address _spender, uint _value, bytes32 _symbol) checkEnabledSwitch(sha3(_symbol, "allowances")) returns(bool) {
+    function approve(address _spender, uint _value, bytes32 _symbol) checkEnabledSwitch(sha3(_symbol, Features.Allowances)) returns(bool) {
         uint posAsset = assetIndex[_symbol];
         if (posAsset == 0) {
             return false;
@@ -376,11 +326,11 @@ contract MultiAsset is CosignEnabled, Switchable {
         return assets[posAsset].wallets[pos].allowance[posSpender];
     }
 
-    function transferFrom(address _from, address _to, uint _value, bytes32 _symbol) checkEnabledSwitch(sha3(_symbol, "allowances")) returns(bool) {
+    function transferFrom(address _from, address _to, uint _value, bytes32 _symbol) returns(bool) {
         return transferFromWithReference(_from, _to, _value, _symbol, "");
     }
 
-    function transferFromWithReference(address _from, address _to, uint _value, bytes32 _symbol, string _reference) checkEnabledSwitch(sha3(_symbol, "allowances")) checkEnabledSwitch(sha3(_symbol, "transferWithReference")) checkSigned(sha3(msg.data), _symbol)  returns(bool) {
+    function transferFromWithReference(address _from, address _to, uint _value, bytes32 _symbol, string _reference) checkEnabledSwitch(sha3(_symbol, Features.TransferWithReference)) checkSigned(sha3(msg.data), _symbol)  returns(bool) {
         if (allowance(_from, msg.sender, _symbol) < _value) {
             return false;
         }
@@ -392,5 +342,33 @@ contract MultiAsset is CosignEnabled, Switchable {
         uint posSpender = _getPosHolder(msg.sender);
         assets[posAsset].wallets[pos].allowance[posSpender] -= _value;
         return true;   
+    }
+
+    mapping(bytes32 => address) public cosignerAddresses;
+    mapping(bytes32 => Cosigner) cosigners;
+    uint public signChecks; // DEPLOY REMOVE
+
+    modifier checkSigned(bytes32 _opHash, bytes32 _symbol) {
+        signChecks++; // DEPLOY REMOVE
+        bytes32 perUserPerAsset = sha3(_getPosHolder(msg.sender), _symbol);
+        bytes32 perUser = sha3(_getPosHolder(msg.sender), bytes32(""));
+        if (cosignerAddresses[perUserPerAsset] != 0x0) {
+            if (cosigners[perUserPerAsset].isSigned(_opHash)) {
+                _
+            }
+        } else if (cosignerAddresses[perUser] != 0x0) {
+            if (cosigners[perUser].isSigned(_opHash)) {
+                _
+            }
+        } else {
+            _
+        }
+    }
+
+    function setCosignerAddress(address _address, bytes32 _symbol) checkEnabledSwitch(sha3(_getPosHolder(msg.sender), Features.Cosigning)) returns(bool) {
+        bytes32 _identity = sha3(_getPosHolder(msg.sender), _symbol);
+        cosignerAddresses[_identity] = _address;
+        cosigners[_identity] = Cosigner(_address);
+        return true;
     }
 }
