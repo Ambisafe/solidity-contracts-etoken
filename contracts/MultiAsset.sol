@@ -2,26 +2,26 @@ contract Cosigner {
     function isSigned(bytes32) returns(bool);
 }
 
-contract Owned {
-    address public contractOwner;
+contract MultiOwned {
+    mapping(address => bool) public contractOwners;
 
     function Owned() {
-        contractOwner = msg.sender;
+        contractOwners[msg.sender] = true;
     }
 
     modifier onlyContractOwner() {
-        if (contractOwner == msg.sender) {
+        if (contractOwners[msg.sender]) {
             _
         }
     }
 
-    function changeContractOwnership(address _to) onlyContractOwner() returns(bool) {
-        contractOwner = _to;
-        return true;
+    function setContractOwnership(address _to, bool _enabled) onlyContractOwner() returns(bool) {
+        contractOwners[_to] = _enabled;
+        return _enabled;
     }
 }
 
-contract Switchable is Owned {
+contract Switchable is MultiOwned {
     mapping(bytes32 => bool) public switchedOff;
 
     modifier checkEnabledSwitch(bytes32 _switch) {
@@ -32,11 +32,11 @@ contract Switchable is Owned {
 
     function setSwitch(bytes32 _switch, bool _state) onlyContractOwner() returns (bool) {
         switchedOff[_switch] = !_state; // ! - means everything is enabled by default
-        return true;
+        return !_state; // ! - means everything is enabled by default
     }
 }
 
-contract MultiAsset is Owned, Switchable {
+contract MultiAsset is Switchable {
 
     event Transfer(address indexed from, address indexed to, bytes32 indexed symbol, uint value, string reference);
     event Issue(bytes32 indexed symbol, uint value, address by);
