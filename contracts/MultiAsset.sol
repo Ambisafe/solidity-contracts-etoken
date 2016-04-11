@@ -121,8 +121,7 @@ contract MultiAsset is Switchable {
     }
 
     function balanceOf(address _owner, bytes32 _symbol) constant returns(uint) {
-        uint posHolder = _getPosHolder(_owner);
-        return assets[assetIndex[_symbol]].wallets[posHolder].balance;
+        return assets[assetIndex[_symbol]].wallets[_getPosHolder(_owner)].balance;
     }
 
     function _address(uint pos) constant internal returns(address) {
