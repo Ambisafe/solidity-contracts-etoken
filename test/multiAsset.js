@@ -1,11 +1,8 @@
 contract('MultiAsset', {reset_state: true}, function(accounts) {
   var eventsHelper = require('../truffle-helpers/eventsHelper.js');
-
-  var bytes32 = function(number) {
-    var zeros = '000000000000000000000000000000000000000000000000000000000000000';
-    var hexNumber = number.toString(16);
-    return '0x' + (zeros + hexNumber).substring(hexNumber.length - 1);
-  };
+  var testHelper = require('../truffle-helpers/testHelper.js');
+  var bytes32 = testHelper.bytes32;
+  var sha3 = testHelper.sha3;
 
   var UINT_256_MINUS_3 = '1.15792089237316195423570985008687907853269984665640564039457584007913129639933e+77';
   var UINT_256_MINUS_2 = '1.15792089237316195423570985008687907853269984665640564039457584007913129639934e+77';
@@ -23,6 +20,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   var VALUE = 1001;
   var BASE_UNIT = 2;
   var IS_REISSUABLE = false;
+
+  var Features = { Issue: 0, TransferWithReference: 1, Revoke: 2, ChangeOwnership: 3, Recovery: 4, Allowances: 5, Cosigning: 6 };
 
   it('should not be possible to issue asset with existing symbol', function(done) {
     var multiAsset = MultiAsset.deployed();
@@ -3303,6 +3302,89 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return multiAsset.isTrusted.call(recoverTo, untrusty);
     }).then(function(result) {
       assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+
+  it('should be possible to switch off asset issue', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    multiAsset.setSwitch(sha3(SYMBOL, IS_REISSUABLE, Features.Issue), true).then(function() {
+      return multiAsset.issueAsset.call(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
+    }).then(function(result) {
+      assert.isFalse(result.valueOf());
+    }).then(done).catch(done);
+  });
+  it('should be possible to switch off transfer with reference', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setSwitch(sha3(SYMBOL, Features.TransferWithReference), true);
+    }).then(function() {
+      return multiAsset.transferWithReference.call(accounts[1], VALUE, SYMBOL, "Invoice#AS001");
+    }).then(function(result) {
+      assert.isFalse(result.valueOf());
+    }).then(done).catch(done);
+  });
+  it('should be possible to switch off transfer from with reference', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setSwitch(sha3(SYMBOL, Features.TransferWithReference), true);
+    }).then(function() {
+      return multiAsset.approve(accounts[1], 100, SYMBOL);
+    }).then(function(result) {
+      return multiAsset.transferFromWithReference.call(accounts[0], accounts[1], 50, SYMBOL, "Invoice#AS001", {from: accounts[1]});
+    }).then(function(result) {
+      assert.isFalse(result.valueOf());
+    }).then(done).catch(done);
+  });
+  it('should be possible to switch off revokation', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setSwitch(sha3(SYMBOL, Features.Revoke), true);
+    }).then(function() {
+      return multiAsset.revokeAsset.call(SYMBOL, 100);
+    }).then(function(result) {
+      assert.isFalse(result.valueOf());
+    }).then(done).catch(done);
+  });
+  it('should be possible to switch off ownership change', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setSwitch(sha3(SYMBOL, Features.ChangeOwnership), true);
+    }).then(function() {
+      return multiAsset.changeOwnership.call(SYMBOL, accounts[1]);
+    }).then(function(result) {
+      assert.isFalse(result.valueOf());
+    }).then(done).catch(done);
+  });
+  it('should be possible to switch off recovery', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setSwitch(sha3(bytes32(1), Features.Recovery), true);
+    }).then(function() {
+      return multiAsset.trust(accounts[1]);
+    }).then(function() {
+      return multiAsset.recover.call(accounts[0], accounts[2], {from: accounts[1]});
+    }).then(function(result) {
+      assert.isFalse(result.valueOf());
+    }).then(done).catch(done);
+  });
+  it('should be possible to switch off allowances', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setSwitch(sha3(SYMBOL, Features.Allowances), true);
+    }).then(function() {
+      return multiAsset.approve.call(accounts[1], 100, SYMBOL);
+    }).then(function(result) {
+      assert.isFalse(result.valueOf());
+    }).then(done).catch(done);
+  });
+  it('should be possible to switch off cosigning configuration', function(done) {
+    var multiAsset = MultiAsset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setSwitch(sha3(bytes32(1), Features.Cosigning), true);
+    }).then(function() {
+      return multiAsset.setCosignerAddress.call(accounts[1], SYMBOL);
+    }).then(function(result) {
+      assert.isFalse(result.valueOf());
     }).then(done).catch(done);
   });
 });

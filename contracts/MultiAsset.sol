@@ -5,7 +5,7 @@ contract Cosigner {
 contract MultiOwned {
     mapping(address => bool) public contractOwners;
 
-    function Owned() {
+    function MultiOwned() {
         contractOwners[msg.sender] = true;
     }
 
@@ -22,17 +22,17 @@ contract MultiOwned {
 }
 
 contract Switchable is MultiOwned {
-    mapping(bytes32 => bool) public switchedOff;
+    mapping(bytes32 => bool) public switches;
 
     modifier checkEnabledSwitch(bytes32 _switch) {
-        if (!switchedOff[_switch]) { // ! - means everything is enabled by default
+        if (!switches[_switch]) { // ! - means everything is enabled by default
             _
         }
     }
 
     function setSwitch(bytes32 _switch, bool _state) onlyContractOwner() returns (bool) {
-        switchedOff[_switch] = !_state; // ! - means everything is enabled by default
-        return !_state; // ! - means everything is enabled by default
+        switches[_switch] = _state;
+        return _state;
     }
 }
 
@@ -244,7 +244,7 @@ contract MultiAsset is Switchable {
         return holders[posFrom].trustIndex[_to] != 0;
     }
 
-    function trust(address _to) checkEnabledSwitch(sha3(msg.sender, Features.Recovery)) returns(bool) {
+    function trust(address _to) returns(bool) {
         uint posFrom = _createPosHolder(msg.sender);
         if (posFrom == _getPosHolder(_to)) {
             return false;
@@ -288,7 +288,7 @@ contract MultiAsset is Switchable {
         return true;
     }
     
-    function recover(address _from, address _to) checkTrust(_from, msg.sender) returns(bool) {
+    function recover(address _from, address _to) checkEnabledSwitch(sha3(_getPosHolder(_from), Features.Recovery)) checkTrust(_from, msg.sender) returns(bool) {
         uint posFrom = _getPosHolder(_from);
         if (_getPosHolder(_to) != 0) {
             return false;
