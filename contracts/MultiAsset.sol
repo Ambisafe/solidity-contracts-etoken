@@ -352,7 +352,11 @@ contract MultiAsset is Owned, Switchable {
         signChecks++; // DEPLOY REMOVE
         bytes32 perUserPerAsset = sha3(_getPosHolder(msg.sender), _symbol);
         bytes32 perUser = sha3(_getPosHolder(msg.sender), bytes32(""));
-        if (cosignerAddresses[perUserPerAsset] != 0x0) {
+        if (cosignerAddresses[_symbol] != 0x0) {
+            if (cosigners[_symbol].isSigned(_opHash)) {
+                _
+            }
+        } else if (cosignerAddresses[perUserPerAsset] != 0x0) {
             if (cosigners[perUserPerAsset].isSigned(_opHash)) {
                 _
             }
