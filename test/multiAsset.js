@@ -2440,20 +2440,28 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), expectedReceiverBalance);
     }).then(done).catch(done);
   });
-  it('should checkSigned on allowance transfer', function(done) {
+  it('should checkSigned approve and allowance transfer', function(done) {
     var multiAsset = MultiAsset.deployed();
-    multiAsset.transferFrom(accounts[0], accounts[1], 10, SYMBOL).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(accounts[1], 100, SYMBOL);
+    }).then(function() {
+      return multiAsset.transferFrom(accounts[0], accounts[1], 10, SYMBOL, {from: accounts[1]});
+    }).then(function() {
       return multiAsset.signChecks.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), 1);
+      assert.equal(result.valueOf(), 2);
     }).then(done).catch(done);
   });
-  it('should checkSigned on allowance transfer with reference', function(done) {
+  it('should checkSigned approve and allowance transfer with reference', function(done) {
     var multiAsset = MultiAsset.deployed();
-    multiAsset.transferFromWithReference(accounts[0], accounts[1], 10, SYMBOL, "ref").then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.approve(accounts[1], 100, SYMBOL);
+    }).then(function() {
+      return multiAsset.transferFromWithReference(accounts[0], accounts[1], 10, SYMBOL, "Ref", {from: accounts[1]});
+    }).then(function() {
       return multiAsset.signChecks.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), 1);
+      assert.equal(result.valueOf(), 2);
     }).then(done).catch(done);
   });
 
