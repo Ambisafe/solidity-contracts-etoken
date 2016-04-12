@@ -26,6 +26,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
 
   it('should not be possible to issue asset with existing symbol', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
+    var asset2 = Asset.deployed();
     var symbol = bytes32(0);
     var value = 1001;
     var value2 = 3021;
@@ -38,10 +40,10 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var isReissuable = false;
     var isReissuable2 = true;
     var watcher;
-    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Issue();
-      return multiAsset.issueAsset(symbol, value2, name2, description2, baseUnit2, isReissuable2);
+    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable, asset.address).then(function() {
+      eventsHelper.setupEvents(asset2);
+      watcher = asset2.Issue();
+      return multiAsset.issueAsset(symbol, value2, name2, description2, baseUnit2, isReissuable2, asset2.address);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
     }).then(function(events) {
@@ -65,8 +67,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to issue asset with 1 bit 0 symbol', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var symbol = bytes32(0);
-    multiAsset.issueAsset(symbol, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(symbol, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.name.call(symbol);
     }).then(function(result) {
       assert.equal(result.valueOf(), NAME);
@@ -74,8 +77,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to issue asset with 1 bit 1 symbol', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var symbol = bytes32(1);
-    multiAsset.issueAsset(symbol, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(symbol, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.name.call(symbol);
     }).then(function(result) {
       assert.equal(result.valueOf(), NAME);
@@ -83,8 +87,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to issue asset with 32 bytes symbol', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var symbol = BYTES_32;
-    multiAsset.issueAsset(symbol, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(symbol, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.name.call(symbol);
     }).then(function(result) {
       assert.equal(result.valueOf(), NAME);
@@ -92,8 +97,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it.skip('should not be possible to issue asset with 257 bits symbol', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var symbol = BITS_257;
-    multiAsset.issueAsset(symbol, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(symbol, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.assets.call(1);
     }).then(function() {
       done('Exception did not happen, asset created.');
@@ -103,9 +109,10 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should not be possible to issue fixed asset with 0 value', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var value = 0;
     var isReissuable = false;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.name.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), '');
@@ -113,9 +120,10 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to issue fixed asset with 1 value', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var value = 1;
     var isReissuable = false;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.totalSupply.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), value);
@@ -123,9 +131,10 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to issue fixed asset with (2**256 - 1) value', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var value = UINT_256_MINUS_1;
     var isReissuable = false;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.totalSupply.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), value);
@@ -133,9 +142,10 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should not be possible to issue fixed asset with 2**256 value', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var value = UINT_256;
     var isReissuable = false;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.name.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), '');
@@ -143,9 +153,10 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to issue reissuable asset with 0 value', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var value = 0;
     var isReissuable = true;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.name.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), NAME);
@@ -153,9 +164,10 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to issue reissuable asset with 1 value', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var value = 1;
     var isReissuable = true;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.totalSupply.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), value);
@@ -163,9 +175,10 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to issue reissuable asset with (2**256 - 1) value', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var value = UINT_256_MINUS_1;
     var isReissuable = true;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.totalSupply.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), value);
@@ -173,9 +186,10 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should not be possible to issue reissuable asset with 2**256 value', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var value = UINT_256;
     var isReissuable = true;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.name.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), '');
@@ -186,8 +200,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to issue asset with base unit 1', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var baseUnit = 1;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, baseUnit, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, baseUnit, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.baseUnit.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 1);
@@ -195,8 +210,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to issue asset with base unit 255', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var baseUnit = 255;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, baseUnit, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, baseUnit, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.baseUnit.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 255);
@@ -204,8 +220,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it.skip('should not be possible to issue asset with base unit 256', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var baseUnit = 256;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, baseUnit, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, baseUnit, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.name.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), '');
@@ -213,19 +230,19 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to issue asset', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var symbol = bytes32(0);
     var value = 1001;
     var name = 'Test Name';
     var description = 'Test Description';
     var baseUnit = 2;
     var isReissuable = false;
-    var watcher = multiAsset.Issue();
-    eventsHelper.setupEvents(multiAsset);
-    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function(txHash) {
+    var watcher = asset.Issue();
+    eventsHelper.setupEvents(asset);
+    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable, asset.address).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
     }).then(function(events) {
       assert.equal(events.length, 1);
-      assert.equal(events[0].args.symbol.valueOf(), symbol);
       assert.equal(events[0].args.value.valueOf(), value);
       assert.equal(events[0].args.by.valueOf(), accounts[0]);
       return multiAsset.name.call(symbol);
@@ -247,6 +264,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to issue multiple assets', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset1 = Asset.deployed();
+    var asset2 = undefined;
     var symbol = bytes32(0);
     var symbol2 = bytes32(1);
     var owner = accounts[0];
@@ -261,8 +280,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var baseUnit2 = 4;
     var isReissuable = false;
     var isReissuable2 = true;
-    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
-      return multiAsset.issueAsset(symbol2, value2, name2, description2, baseUnit2, isReissuable2, {from: owner2});
+    multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable, asset1.address).then(function() {
+      return Asset.new();
+    }).then(function(instance) {
+      asset2 = instance;
+      return multiAsset.issueAsset(symbol2, value2, name2, description2, baseUnit2, isReissuable2, asset2.address, {from: owner2});
     }).then(function() {
       return multiAsset.name.call(symbol);
     }).then(function(result) {
@@ -304,7 +326,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to get asset name', function(done) {
     var multiAsset = MultiAsset.deployed();
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    var asset = Asset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.name.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), NAME);
@@ -312,7 +335,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to get asset description', function(done) {
     var multiAsset = MultiAsset.deployed();
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    var asset = Asset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.description.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), DESCRIPTION);
@@ -320,7 +344,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to get asset base unit', function(done) {
     var multiAsset = MultiAsset.deployed();
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    var asset = Asset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.baseUnit.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), BASE_UNIT);
@@ -328,35 +353,36 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to get asset reissuability', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var isReissuable = true;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.isReissuable.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), isReissuable);
     }).then(done).catch(done);
   });
   it('should be possible to get asset owner', function(done) {
-    var multiAsset = MultiAsset.deployed();
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.owner.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), accounts[0]);
     }).then(done).catch(done);
   });
   it('should be possible to get asset total supply with single holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.totalSupply.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), VALUE);
     }).then(done).catch(done);
   });
   it('should be possible to get asset total supply with multiple holders', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var amount = 1001;
     var amount2 = 999;
     var holder2 = accounts[1];
-    multiAsset.issueAsset(SYMBOL, amount + amount2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, amount + amount2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(holder2, amount2, SYMBOL);
     }).then(function() {
       return multiAsset.totalSupply.call(SYMBOL);
@@ -366,9 +392,10 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to get asset total supply with multiple holders holding 0 amount', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var holder2 = accounts[1];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(holder2, VALUE, SYMBOL);
     }).then(function() {
       return multiAsset.transfer(holder, VALUE, SYMBOL, {from: holder2});
@@ -381,11 +408,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to get asset total supply with multiple holders holding (2**256 - 1) amount', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var value = UINT_256_MINUS_1;
     var holder = accounts[0];
     var holder2 = accounts[1];
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(holder2, 10, SYMBOL);
     }).then(function() {
       return multiAsset.totalSupply.call(SYMBOL);
@@ -395,10 +422,15 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to get asset balance for holder', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
+    var asset2 = undefined;
     var owner = accounts[0];
     var symbol2 = bytes32(10);
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.issueAsset(symbol2, VALUE-10, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      return Asset.new();
+    }).then(function(instance) {
+      asset2 = instance;
+      return multiAsset.issueAsset(symbol2, VALUE-10, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset2.address);
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
     }).then(function(result) {
@@ -406,11 +438,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to get asset balance for non owner', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var nonOwner = accounts[1];
     var amount = 100;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(nonOwner, amount, SYMBOL);
     }).then(function() {
       return multiAsset.balanceOf.call(nonOwner, SYMBOL);
@@ -419,91 +451,91 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to get asset balance for missing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var nonOwner = accounts[1];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.balanceOf.call(nonOwner, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
   it('should be possible to get missing asset balance for holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var nonAsset = bytes32(33);
     var owner = accounts[0];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.balanceOf.call(owner, nonAsset);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
   it('should be possible to get missing asset balance for missing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var nonAsset = bytes32(33);
     var nonOwner = accounts[1];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.balanceOf.call(nonOwner, nonAsset);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
   it('should not be possible to get name of missing asset', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var nonAsset = bytes32(33);
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.name.call(nonAsset);
     }).then(function(result) {
       assert.equal(result.valueOf(), '');
     }).then(done).catch(done);
   });
   it('should not be possible to get description of missing asset', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var nonAsset = bytes32(33);
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.description.call(nonAsset);
     }).then(function(result) {
       assert.equal(result.valueOf(), '');
     }).then(done).catch(done);
   });
   it('should not be possible to get base unit of missing asset', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var nonAsset = bytes32(33);
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.baseUnit.call(nonAsset);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
   it('should not be possible to get reissuability of missing asset', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var nonAsset = bytes32(33);
     var isReissuable = true;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.isReissuable.call(nonAsset);
     }).then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
   });
   it('should not be possible to get owner of missing asset', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var nonAsset = bytes32(33);
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.owner.call(nonAsset);
     }).then(function(result) {
       assert.equal(result.valueOf(), '0x0000000000000000000000000000000000000000');
     }).then(done).catch(done);
   });
   it('should not be possible to get total supply of missing asset', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     multiAsset.totalSupply.call(SYMBOL).then(function(result) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
   it('should not be possible to change ownership by non-owner', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var nonOwner = accounts[1];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.changeOwnership(SYMBOL, nonOwner, {from: nonOwner});
     }).then(function() {
       return multiAsset.owner.call(SYMBOL);
@@ -513,10 +545,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should not be possible to change ownership to the same owner', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var owner = accounts[0];
-    var watcher = multiAsset.OwnershipChange();
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+    var watcher = asset.OwnershipChange();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
       return multiAsset.changeOwnership(SYMBOL, owner);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher)
@@ -528,11 +561,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to change ownership of missing asset', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var nonOwner = accounts[1];
     var nonAsset = bytes32(33);
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.changeOwnership(nonAsset, nonOwner);
     }).then(function() {
       return multiAsset.owner.call(SYMBOL);
@@ -545,11 +578,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to change ownership of asset', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var owner = accounts[0];
     var newOwner = accounts[1];
-    var watcher = multiAsset.OwnershipChange();
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+    var watcher = asset.OwnershipChange();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
       return multiAsset.changeOwnership(SYMBOL, newOwner);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -557,19 +591,18 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(events.length, 1);
       assert.equal(events[0].args.from.valueOf(), owner);
       assert.equal(events[0].args.to.valueOf(), newOwner);
-      assert.equal(events[0].args.symbol.valueOf(), SYMBOL);
       return multiAsset.owner.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), newOwner);
     }).then(done).catch(done);
   });
   it('should be possible to reissue after ownership change', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var newOwner = accounts[1];
     var isReissuable = true;
     var amount = 100;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.changeOwnership(SYMBOL, newOwner);
     }).then(function() {
       return multiAsset.reissueAsset(SYMBOL, amount, {from: newOwner});
@@ -586,11 +619,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to revoke after ownership change to missing account', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var newOwner = accounts[1];
     var amount = 100;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.changeOwnership(SYMBOL, newOwner);
     }).then(function() {
       return multiAsset.transfer(newOwner, amount, SYMBOL);
@@ -609,11 +642,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to revoke after ownership change to existing account', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var newOwner = accounts[1];
     var amount = 100;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(newOwner, amount, SYMBOL);
     }).then(function() {
       return multiAsset.changeOwnership(SYMBOL, newOwner);
@@ -633,11 +666,16 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should keep ownership change separated between assets', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset1 = Asset.deployed();
+    var asset2 = undefined;
     var owner = accounts[0];
     var newOwner = accounts[1];
     var symbol2 = bytes32(10);
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.issueAsset(symbol2, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset1.address).then(function() {
+      return Asset.new();
+    }).then(function(instance) {
+      asset2 = instance;
+      return multiAsset.issueAsset(symbol2, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset2.address);
     }).then(function() {
       return multiAsset.changeOwnership(SYMBOL, newOwner);
     }).then(function() {
@@ -650,12 +688,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to transfer missing asset', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var nonOwner = accounts[1];
     var amount = 100;
     var nonAsset = bytes32(33);
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(nonOwner, amount, nonAsset);
     }).then(function() {
       return multiAsset.balanceOf.call(nonOwner, SYMBOL);
@@ -673,11 +711,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to transfer amount 1 with balance 0', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var nonOwner = accounts[1];
     var amount = 1;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(nonOwner, VALUE, SYMBOL);
     }).then(function() {
       return multiAsset.transfer(nonOwner, amount, SYMBOL);
@@ -691,12 +729,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to transfer amount 2 with balance 1', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var nonOwner = accounts[1];
     var value = 1;
     var amount = 2;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(nonOwner, amount, SYMBOL);
     }).then(function() {
       return multiAsset.balanceOf.call(nonOwner, SYMBOL);
@@ -708,12 +746,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to transfer amount (2**256 - 1) with balance (2**256 - 2)', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var nonOwner = accounts[1];
     var value = UINT_256_MINUS_2;
     var amount = UINT_256_MINUS_1;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(nonOwner, amount, SYMBOL);
     }).then(function() {
       return multiAsset.balanceOf.call(nonOwner, SYMBOL);
@@ -725,13 +763,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to transfer amount 0', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var nonOwner = accounts[1];
     var amount = 0;
-    var watcher = multiAsset.Transfer();
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+    var watcher = asset.Transfer();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
       return multiAsset.transfer(nonOwner, amount, SYMBOL);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -746,12 +784,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to transfer to oneself', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var amount = 100;
-    var watcher = multiAsset.Transfer();
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+    var watcher = asset.Transfer();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
       return multiAsset.transfer(owner, amount, SYMBOL);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -778,13 +816,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     done();
   });
   it('should be possible to transfer amount 2**255 to holder with (2**255 - 1) balance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var holder2 = accounts[1];
     var value = UINT_256_MINUS_1;
     var amount = UINT_255;
     var balance2 = UINT_255_MINUS_1;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(holder2, balance2, SYMBOL);
     }).then(function() {
       return multiAsset.transfer(holder2, amount, SYMBOL);
@@ -798,13 +836,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to transfer amount (2**255 - 1) to holder with 2**255 balance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var holder2 = accounts[1];
     var value = UINT_256_MINUS_1;
     var amount = UINT_255_MINUS_1;
     var balance2 = UINT_255;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(holder2, balance2, SYMBOL);
     }).then(function() {
       return multiAsset.transfer(holder2, amount, SYMBOL);
@@ -818,13 +856,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to transfer amount (2**256 - 2) to holder with 1 balance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var holder2 = accounts[1];
     var value = UINT_256_MINUS_1;
     var amount = UINT_256_MINUS_2;
     var balance2 = 1;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(holder2, balance2, SYMBOL);
     }).then(function() {
       return multiAsset.transfer(holder2, amount, SYMBOL);
@@ -838,13 +876,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to transfer amount 1 to holder with (2**256 - 2) balance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var holder2 = accounts[1];
     var value = UINT_256_MINUS_1;
     var amount = 1;
     var balance2 = UINT_256_MINUS_2;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(holder2, balance2, SYMBOL);
     }).then(function() {
       return multiAsset.transfer(holder2, amount, SYMBOL);
@@ -858,11 +896,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to transfer amount 1 to existing holder with 0 balance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var holder2 = accounts[1];
     var amount = 1;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(holder2, VALUE, SYMBOL);
     }).then(function() {
       return multiAsset.transfer(holder, amount, SYMBOL, {from: holder2});
@@ -876,11 +914,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to transfer amount 1 to missing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var holder2 = accounts[1];
     var amount = 1;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(holder2, amount, SYMBOL);
     }).then(function() {
       return multiAsset.balanceOf.call(holder2, SYMBOL);
@@ -892,12 +930,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to transfer amount 1 to holder with non-zero balance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var holder2 = accounts[1];
     var balance2 = 100;
     var amount = 1;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(holder2, balance2, SYMBOL);
     }).then(function() {
       return multiAsset.transfer(holder2, amount, SYMBOL);
@@ -911,11 +949,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to transfer amount (2**256 - 1) to existing holder with 0 balance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var holder2 = accounts[1];
     var amount = UINT_256_MINUS_1;
-    multiAsset.issueAsset(SYMBOL, amount, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, amount, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(holder2, amount, SYMBOL);
     }).then(function() {
       return multiAsset.transfer(holder, amount, SYMBOL, {from: holder2});
@@ -929,11 +967,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to transfer amount (2**256 - 1) to missing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var holder2 = accounts[1];
     var amount = UINT_256_MINUS_1;
-    multiAsset.issueAsset(SYMBOL, amount, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, amount, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(holder2, amount, SYMBOL);
     }).then(function() {
       return multiAsset.balanceOf.call(holder2, SYMBOL);
@@ -945,23 +983,25 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should checkSigned on transfer', function(done) {
-    var multiAsset = MultiAsset.deployed();
-    multiAsset.transfer(accounts[0], 10, SYMBOL).then(function() {
-      return multiAsset.signChecks.call();
+    var asset = Asset.deployed();
+    asset.transfer(accounts[0], 10).then(function() {
+      return asset.signChecks.call();
     }).then(function(result) {
       assert.equal(result.valueOf(), 1);
     }).then(done).catch(done);
   });
   it('should checkSigned on transfer with reference', function(done) {
-    var multiAsset = MultiAsset.deployed();
-    multiAsset.transferWithReference(accounts[0], 10, SYMBOL, "ref").then(function() {
-      return multiAsset.signChecks.call();
+    var asset = Asset.deployed();
+    asset.transferWithReference(accounts[0], 10, "ref").then(function() {
+      return asset.signChecks.call();
     }).then(function(result) {
       assert.equal(result.valueOf(), 1);
     }).then(done).catch(done);
   });
   it('should keep transfers separated between assets', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset1 = Asset.deployed();
+    var asset2 = undefined;
     var symbol = bytes32(0);
     var symbol2 = bytes32(1);
     var value = 500;
@@ -971,11 +1011,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var amount = 100;
     var amount2 = 33;
     var watcher;
-    multiAsset.issueAsset(symbol, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
+    multiAsset.issueAsset(symbol, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset1.address).then(function() {
+      return Asset.new();
+    }).then(function(instance) {  
+      asset2 = instance;
+      return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset2.address);
     }).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+      eventsHelper.setupEvents(asset1);
+      watcher = asset1.Transfer();
       return multiAsset.transfer(holder2, amount, symbol);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -983,11 +1026,10 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(events.length, 1);
       assert.equal(events[0].args.from.valueOf(), holder);
       assert.equal(events[0].args.to.valueOf(), holder2);
-      assert.equal(events[0].args.symbol.valueOf(), symbol);
       assert.equal(events[0].args.value.valueOf(), amount);
       assert.equal(events[0].args.reference.valueOf(), "");
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+      eventsHelper.setupEvents(asset2);
+      watcher = asset2.Transfer();
       return multiAsset.transfer(holder2, amount2, symbol2);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -995,7 +1037,6 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(events.length, 1);
       assert.equal(events[0].args.from.valueOf(), holder);
       assert.equal(events[0].args.to.valueOf(), holder2);
-      assert.equal(events[0].args.symbol.valueOf(), symbol2);
       assert.equal(events[0].args.value.valueOf(), amount2);
       assert.equal(events[0].args.reference.valueOf(), "");
       return multiAsset.balanceOf.call(holder, symbol);
@@ -1013,14 +1054,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to do transfer with reference', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var holder2 = accounts[1];
     var reference = "Invoice#AS001";
     var watcher;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Transfer();
       return multiAsset.transferWithReference(holder2, VALUE, SYMBOL, reference);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1028,7 +1069,6 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(events.length, 1);
       assert.equal(events[0].args.from.valueOf(), holder);
       assert.equal(events[0].args.to.valueOf(), holder2);
-      assert.equal(events[0].args.symbol.valueOf(), SYMBOL);
       assert.equal(events[0].args.value.valueOf(), VALUE);
       assert.equal(events[0].args.reference.valueOf(), reference);
       return multiAsset.balanceOf.call(holder2, SYMBOL);
@@ -1040,11 +1080,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to reissue asset by non-owner', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var nonOwner = accounts[1];
     var isReissuable = true;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.reissueAsset(SYMBOL, 100, {from: nonOwner});
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
@@ -1059,10 +1099,10 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to reissue fixed asset', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var isReissuable = false;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.reissueAsset(SYMBOL, 100);
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
@@ -1074,14 +1114,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to reissue 0 of reissuable asset', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var isReissuable = true;
     var amount = 0;
     var watcher;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Issue();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Issue();
       return multiAsset.reissueAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1096,11 +1136,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to reissue missing asset', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var isReissuable = true;
     var nonAsset = bytes32(33);
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.reissueAsset(nonAsset, 100);
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
@@ -1118,15 +1158,15 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to reissue 1 with total supply (2**256 - 1)', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = UINT_256_MINUS_1;
     var isReissuable = true;
     var amount = 1;
     var watcher;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Issue();
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Issue();
       return multiAsset.reissueAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1141,15 +1181,15 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to reissue (2**256 - 1) with total supply 1', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = 1;
     var isReissuable = true;
     var amount = UINT_256_MINUS_1;
     var watcher;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Issue();
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Issue();
       return multiAsset.reissueAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1164,13 +1204,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to reissue 1 with total supply (2**256 - 2)', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = UINT_256_MINUS_2;
     var isReissuable = true;
     var amount = 1;
     var resultValue = UINT_256_MINUS_1;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.reissueAsset(SYMBOL, amount);
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
@@ -1182,12 +1222,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to reissue 1 with total supply 0', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = 0;
     var isReissuable = true;
     var amount = 1;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.reissueAsset(SYMBOL, amount);
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
@@ -1199,12 +1239,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to reissue (2**256 - 1) with total supply 0', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = 0;
     var isReissuable = true;
     var amount = UINT_256_MINUS_1;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.reissueAsset(SYMBOL, amount);
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
@@ -1216,13 +1256,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to reissue (2**256 - 2) with total supply 1', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = 1;
     var isReissuable = true;
     var amount = UINT_256_MINUS_2;
     var resultValue = UINT_256_MINUS_1;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.reissueAsset(SYMBOL, amount);
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
@@ -1234,13 +1274,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to reissue (2**255 - 1) with total supply 2**255', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = UINT_255;
     var isReissuable = true;
     var amount = UINT_255_MINUS_1;
     var resultValue = UINT_256_MINUS_1;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.reissueAsset(SYMBOL, amount);
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
@@ -1252,13 +1292,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to reissue 2**255 with total supply (2**255 - 1)', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = UINT_255_MINUS_1;
     var isReissuable = true;
     var amount = UINT_255;
     var resultValue = UINT_256_MINUS_1;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.reissueAsset(SYMBOL, amount);
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
@@ -1271,6 +1311,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should keep reissuance separated between assets', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset1 = Asset.deployed();
+    var asset2 = undefined;
     var symbol = bytes32(0);
     var symbol2 = bytes32(1);
     var value = 500;
@@ -1279,8 +1321,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var amount = 100;
     var amount2 = 33;
     var isReissuable = true;
-    multiAsset.issueAsset(symbol, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, isReissuable);
+    multiAsset.issueAsset(symbol, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset1.address).then(function() {
+      return Asset.new();
+    }).then(function(instance) {
+      asset2 = instance;
+      return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset2.address);
     }).then(function() {
       return multiAsset.reissueAsset(symbol, amount);
     }).then(function() {
@@ -1301,11 +1346,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to revoke 1 from missing asset', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var amount = 1;
     var nonAsset = bytes32(33);
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.revokeAsset(nonAsset, amount);
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
@@ -1320,13 +1365,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to revoke 0 from fixed asset', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var amount = 0;
     var isReissuable = false;
-    var watcher = multiAsset.Revoke();
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+    var watcher = asset.Revoke();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1341,13 +1386,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to revoke 0 from reissuable asset', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var amount = 0;
     var isReissuable = true;
-    var watcher = multiAsset.Revoke();
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+    var watcher = asset.Revoke();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1362,14 +1407,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to revoke 1 with balance 0', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = 0;
     var amount = 1;
     var isReissuable = true;
-    var watcher = multiAsset.Revoke();
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+    var watcher = asset.Revoke();
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1384,13 +1429,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to revoke 2 with balance 1', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = 1;
     var amount = 2;
-    var watcher = multiAsset.Revoke();
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+    var watcher = asset.Revoke();
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1405,14 +1450,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to revoke (2**256 - 1) with balance (2**256 - 2)', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = UINT_256_MINUS_2;
     var amount = UINT_256_MINUS_1;
     var isReissuable = true;
-    var watcher = multiAsset.Revoke();
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+    var watcher = asset.Revoke();
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1427,14 +1472,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to revoke 2**255 with balance (2**255 - 1)', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = UINT_255_MINUS_1;
     var amount = UINT_255;
     var isReissuable = true;
-    var watcher = multiAsset.Revoke();
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+    var watcher = asset.Revoke();
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1449,15 +1494,15 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to revoke by non-owner', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var nonOwner = accounts[1];
     var balance = 100;
-    var watcher = multiAsset.Revoke();
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    var watcher = asset.Revoke();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(nonOwner, balance, SYMBOL);
     }).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+      eventsHelper.setupEvents(asset);
       return multiAsset.revokeAsset(SYMBOL, 10, {from: nonOwner});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1475,20 +1520,19 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to revoke 1 from fixed asset with 1 balance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = 1;
     var amount = 1;
     var isReissuable = false;
-    var watcher = multiAsset.Revoke();
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+    var watcher = asset.Revoke();
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
     }).then(function(events) {
       assert.equal(events.length, 1);
-      assert.equal(events[0].args.symbol.valueOf(), SYMBOL);
       assert.equal(events[0].args.value.valueOf(), amount);
       return multiAsset.balanceOf.call(owner, SYMBOL);
     }).then(function(result) {
@@ -1499,12 +1543,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to revoke 1 from reissuable asset with 1 balance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = 1;
     var amount = 1;
     var isReissuable = true;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
@@ -1516,10 +1560,10 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to revoke 2**255 with 2**255 balance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = UINT_255;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.revokeAsset(SYMBOL, value);
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
@@ -1531,10 +1575,10 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to revoke (2**256 - 1) with (2**256 - 1) balance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = UINT_256_MINUS_1;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.revokeAsset(SYMBOL, value);
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
@@ -1546,11 +1590,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to revoke 1 with 2 balance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = 2;
     var amount = 1;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
@@ -1562,12 +1606,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to revoke 2 with (2**256 - 1) balance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = UINT_256_MINUS_1;
     var amount = 2;
     var resultValue = UINT_256_MINUS_3;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function() {
       return multiAsset.balanceOf.call(owner, SYMBOL);
@@ -1579,7 +1623,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should keep revokes separated between assets', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); 
+    var asset1 = Asset.deployed();
+    var asset2 = undefined;
     var symbol = bytes32(0);
     var symbol2 = bytes32(1);
     var value = 500;
@@ -1587,8 +1633,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var holder = accounts[0];
     var amount = 100;
     var amount2 = 33;
-    multiAsset.issueAsset(symbol, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
+    multiAsset.issueAsset(symbol, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset1.address).then(function() {
+      return Asset.new();
+    }).then(function(instance) {
+      asset2 = instance;
+      return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset2.address);
     }).then(function() {
       return multiAsset.revokeAsset(symbol, amount);
     }).then(function() {
@@ -1609,12 +1658,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to reissue 1 after revoke 1 with total supply (2**256 - 1)', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var value = UINT_256_MINUS_1;
     var amount = 1;
     var isReissuable = true;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function() {
       return multiAsset.reissueAsset(SYMBOL, amount);
@@ -1630,14 +1679,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   it('should work with msg.sender');
 
   it('should not be possible to set allowance for missing symbol', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var spender = accounts[1];
     var missingSymbol = bytes32(33);
     var watcher;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Approve();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Approve();
       return multiAsset.approve(spender, 100, missingSymbol);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1649,13 +1698,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to set allowance for missing symbol for oneself', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var missingSymbol = bytes32(33);
     var watcher;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Approve();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Approve();
       return multiAsset.approve(owner, 100, missingSymbol);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1667,12 +1716,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to set allowance for oneself', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var owner = accounts[0];
     var watcher;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Approve();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Approve();
       return multiAsset.approve(owner, 100, SYMBOL);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1684,14 +1733,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to set allowance from missing holder to missing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[1];
     var spender = accounts[2];
     var value = 100;
     var watcher;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Approve();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Approve();
       return multiAsset.approve(spender, value, SYMBOL, {from: holder});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1699,7 +1748,6 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(events.length, 1);
       assert.equal(events[0].args.from.valueOf(), holder);
       assert.equal(events[0].args.spender.valueOf(), spender);
-      assert.equal(events[0].args.symbol.valueOf(), SYMBOL);
       assert.equal(events[0].args.value.valueOf(), value);
       return multiAsset.allowance.call(holder, spender, SYMBOL);
     }).then(function(result) {
@@ -1707,11 +1755,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to set allowance from missing holder to existing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[1];
     var spender = accounts[0];
     var value = 100;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL, {from: holder});
     }).then(function() {
       return multiAsset.allowance.call(holder, spender, SYMBOL);
@@ -1720,11 +1768,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to set allowance from existing holder to missing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[2];
     var value = 100;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL, {from: holder});
     }).then(function() {
       return multiAsset.allowance.call(holder, spender, SYMBOL);
@@ -1733,11 +1781,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to set allowance from existing holder to existing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[2];
     var value = 100;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(spender, 1, SYMBOL, {from: holder});
     }).then(function() {
       return multiAsset.approve(spender, value, SYMBOL, {from: holder});
@@ -1752,11 +1800,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     done();
   });
   it('should be possible to set allowance with (2**256 - 1) value', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var value = UINT_256_MINUS_1;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
       return multiAsset.allowance.call(holder, spender, SYMBOL);
@@ -1765,11 +1813,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to set allowance value less then balance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var value = 1;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
       return multiAsset.allowance.call(holder, spender, SYMBOL);
@@ -1778,11 +1826,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to set allowance value equal to balance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var value = VALUE;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
       return multiAsset.allowance.call(holder, spender, SYMBOL);
@@ -1795,11 +1843,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     done();
   });
   it('should be possible to override allowance value with 0 value', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var value = 0;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, 100, SYMBOL);
     }).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
@@ -1810,11 +1858,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to override allowance value with non 0 value', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var value = 1000;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, 100, SYMBOL);
     }).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
@@ -1825,9 +1873,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not affect balance when setting allowance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(accounts[1], 100, SYMBOL);
     }).then(function() {
       return multiAsset.balanceOf.call(holder, SYMBOL);
@@ -1841,13 +1889,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
 
   it('should not be possible to do allowance transfer by not allowed existing spender, from existing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var value = 100;
     var expectedSpenderBalance = 100;
     var expectedHolderBalance = VALUE - value;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(spender, value, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, 50, SYMBOL, {from: spender});
@@ -1861,13 +1909,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to do allowance transfer by not allowed existing spender, from missing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[2];
     var spender = accounts[1];
     var value = 100;
     var expectedSpenderBalance = 100;
     var expectedHolderBalance = 0;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(spender, value, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, 50, SYMBOL, {from: spender});
@@ -1881,12 +1929,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to do allowance transfer by not allowed missing spender, from existing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var expectedSpenderBalance = 0;
     var expectedHolderBalance = VALUE;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transferFrom(holder, spender, 50, SYMBOL, {from: spender});
     }).then(function() {
       return multiAsset.balanceOf.call(spender, SYMBOL);
@@ -1898,12 +1946,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to do allowance transfer by not allowed missing spender, from missing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[2];
     var spender = accounts[1];
     var expectedSpenderBalance = 0;
     var expectedHolderBalance = 0;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transferFrom(holder, spender, 50, SYMBOL, {from: spender});
     }).then(function() {
       return multiAsset.balanceOf.call(spender, SYMBOL);
@@ -1915,15 +1963,15 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to do allowance transfer from and to the same holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var watcher;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, 50, SYMBOL);
     }).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Transfer();
       return multiAsset.transferFrom(holder, holder, 50, SYMBOL, {from: spender});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1935,15 +1983,15 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to do allowance transfer from oneself', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var receiver = accounts[1];
     var watcher;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(holder, 50, SYMBOL);
     }).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Transfer();
       return multiAsset.transferFrom(holder, receiver, 50, SYMBOL);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1958,17 +2006,17 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to do allowance transfer with 0 value', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var value = 0;
     var resultValue = 0;
     var watcher;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, 100, SYMBOL);
     }).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Transfer();
       return multiAsset.transferFrom(holder, spender, value, SYMBOL, {from: spender});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1983,14 +2031,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to do allowance transfer with value less than balance, more than allowed', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var balance = 1000;
     var value = 999;
     var allowed = 998;
     var resultValue = 0;
-    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, allowed, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, value, SYMBOL, {from: spender});
@@ -2004,14 +2052,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to do allowance transfer with value equal to balance, more than allowed', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var balance = 1000;
     var value = 1000;
     var allowed = 999;
     var resultValue = 0;
-    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, allowed, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, value, SYMBOL, {from: spender});
@@ -2025,14 +2073,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to do allowance transfer with value more than balance, less than allowed', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var balance = 199;
     var value = 200;
     var allowed = 201;
     var resultValue = 0;
-    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, allowed, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, value, SYMBOL, {from: spender});
@@ -2046,7 +2094,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to do allowance transfer with value less than balance, more than allowed after another tranfer', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var balance = 102;
@@ -2055,7 +2103,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var allowed = 100;
     var expectedHolderBalance = balance - anotherValue;
     var resultValue = anotherValue;
-    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, allowed, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, anotherValue, SYMBOL, {from: spender});
@@ -2071,7 +2119,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to do allowance transfer with missing symbol when allowed for another symbol', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var balance = 1000;
@@ -2079,7 +2127,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var allowed = 1000;
     var missingSymbol = bytes32(33);
     var resultValue = 0;
-    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, allowed, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, value, missingSymbol, {from: spender});
@@ -2100,6 +2148,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should not be possible to do allowance transfer when allowed for another symbol', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset1 = Asset.deployed();
+    var asset2 = undefined;
     var holder = accounts[0];
     var spender = accounts[1];
     var balance = 1000;
@@ -2107,8 +2157,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var allowed = 1000;
     var symbol2 = bytes32(2);
     var resultValue = 0;
-    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.issueAsset(symbol2, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
+    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset1.address).then(function() {
+      return Asset.new();
+    }).then(function(instance) {
+      asset2 = instance;
+      return multiAsset.issueAsset(symbol2, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset2.address);
     }).then(function() {  
       return multiAsset.approve(spender, allowed, SYMBOL);
     }).then(function() {
@@ -2129,14 +2182,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should not be possible to do allowance transfer with missing symbol when not allowed', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var balance = 1000;
     var value = 200;
     var missingSymbol = bytes32(33);
     var resultValue = 0;
-    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transferFrom(holder, spender, value, missingSymbol, {from: spender});
     }).then(function() {
       return multiAsset.balanceOf.call(holder, SYMBOL);
@@ -2154,14 +2207,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to do allowance transfer by allowed existing spender', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var existValue = 100;
     var value = 300;
     var expectedHolderBalance = VALUE - existValue - value;
     var expectedSpenderBalance = existValue + value;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(spender, existValue, SYMBOL);
     }).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
@@ -2177,13 +2230,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to do allowance transfer by allowed missing spender', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var value = 300;
     var expectedHolderBalance = VALUE - value;
     var expectedSpenderBalance = value;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, value, SYMBOL, {from: spender});
@@ -2201,7 +2254,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     done();
   });
   it('should be possible to do allowance transfer to existing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var receiver = accounts[2];
@@ -2210,13 +2263,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var expectedHolderBalance = VALUE - existValue - value;
     var expectedReceiverBalance = existValue + value;
     var watcher;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(receiver, existValue, SYMBOL);
     }).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Transfer();
       return multiAsset.transferFrom(holder, receiver, value, SYMBOL, {from: spender});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -2224,7 +2277,6 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(events.length, 1);
       assert.equal(events[0].args.from.valueOf(), holder);
       assert.equal(events[0].args.to.valueOf(), receiver);
-      assert.equal(events[0].args.symbol.valueOf(), SYMBOL);
       assert.equal(events[0].args.value.valueOf(), value);
       assert.equal(events[0].args.reference.valueOf(), "");
       return multiAsset.balanceOf.call(holder, SYMBOL);
@@ -2236,14 +2288,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to do allowance transfer to missing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var receiver = accounts[2];
     var value = 300;
     var expectedHolderBalance = VALUE - value;
     var expectedReceiverBalance = value;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, receiver, value, SYMBOL, {from: spender});
@@ -2257,14 +2309,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to do allowance transfer with value less than balance and less than allowed', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var balance = 201;
     var value = 200;
     var allowed = 201;
     var expectedHolderBalance = balance - value;
-    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, allowed, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, value, SYMBOL, {from: spender});
@@ -2278,14 +2330,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to do allowance transfer with value less than balance and equal to allowed', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var balance = 201;
     var value = 200;
     var allowed = 200;
     var expectedHolderBalance = balance - value;
-    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, allowed, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, value, SYMBOL, {from: spender});
@@ -2299,14 +2351,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to do allowance transfer with value equal to balance and less than allowed', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var balance = 200;
     var value = 200;
     var allowed = 201;
     var expectedHolderBalance = balance - value;
-    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, allowed, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, value, SYMBOL, {from: spender});
@@ -2320,14 +2372,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to do allowance transfer with value equal to balance and equal to allowed', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var balance = 200;
     var value = 200;
     var allowed = 200;
     var expectedHolderBalance = balance - value;
-    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, allowed, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, value, SYMBOL, {from: spender});
@@ -2341,7 +2393,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to do allowance transfer with value less than balance and less than allowed after another transfer', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var balance = 201;
@@ -2350,7 +2402,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var allowed = 201;
     var expectedSpenderBalance = anotherValue + value;
     var expectedHolderBalance = balance - anotherValue - value;
-    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, allowed, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, anotherValue, SYMBOL, {from: spender});
@@ -2366,7 +2418,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to do allowance transfer with value less than balance and equal to allowed after another transfer', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var balance = 201;
@@ -2375,7 +2427,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var allowed = 200;
     var expectedSpenderBalance = anotherValue + value;
     var expectedHolderBalance = balance - anotherValue - value;
-    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, balance, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, allowed, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, anotherValue, SYMBOL, {from: spender});
@@ -2391,11 +2443,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to do allowance transfer with value (2**256 - 1)', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var value = UINT_256_MINUS_1;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, value, SYMBOL, {from: spender});
@@ -2409,7 +2461,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to do allowance transfer with reference', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var receiver = accounts[2];
@@ -2418,11 +2470,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var expectedReceiverBalance = value;
     var reference = "just some arbitrary string.";
     var watcher;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Transfer();
       return multiAsset.transferFromWithReference(holder, receiver, value, SYMBOL, reference, {from: spender});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -2430,7 +2482,6 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(events.length, 1);
       assert.equal(events[0].args.from.valueOf(), holder);
       assert.equal(events[0].args.to.valueOf(), receiver);
-      assert.equal(events[0].args.symbol.valueOf(), SYMBOL);
       assert.equal(events[0].args.value.valueOf(), value);
       assert.equal(events[0].args.reference.valueOf(), reference);
       return multiAsset.balanceOf.call(holder, SYMBOL);
@@ -2442,27 +2493,27 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should checkSigned on allowance transfer', function(done) {
-    var multiAsset = MultiAsset.deployed();
-    multiAsset.transferFrom(accounts[0], accounts[1], 10, SYMBOL).then(function() {
-      return multiAsset.signChecks.call();
+    var asset = Asset.deployed();
+    asset.transferFrom(accounts[0], accounts[1], 10).then(function() {
+      return asset.signChecks.call();
     }).then(function(result) {
       assert.equal(result.valueOf(), 1);
     }).then(done).catch(done);
   });
   it('should checkSigned on allowance transfer with reference', function(done) {
-    var multiAsset = MultiAsset.deployed();
-    multiAsset.transferFromWithReference(accounts[0], accounts[1], 10, SYMBOL, "ref").then(function() {
-      return multiAsset.signChecks.call();
+    var asset = Asset.deployed();
+    asset.transferFromWithReference(accounts[0], accounts[1], 10, "ref").then(function() {
+      return asset.signChecks.call();
     }).then(function(result) {
       assert.equal(result.valueOf(), 1);
     }).then(done).catch(done);
   });
 
   it('should return 0 allowance for existing owner and not allowed existing spender', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(spender, 100, SYMBOL);
     }).then(function() {
       return multiAsset.allowance.call(holder, spender, SYMBOL);
@@ -2471,61 +2522,61 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should return 0 allowance for existing owner and not allowed missing spender', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.allowance.call(holder, spender, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
   it('should return 0 allowance for missing owner and existing spender', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[1];
     var spender = accounts[0];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.allowance.call(holder, spender, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
   it('should return 0 allowance for missing owner and missing spender', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[1];
     var spender = accounts[2];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.allowance.call(holder, spender, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
   it('should return 0 allowance for existing oneself', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = holder;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.allowance.call(holder, spender, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
   it('should return 0 allowance for missing oneself', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[1];
     var spender = holder;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.allowance.call(holder, spender, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
   it('should return 0 allowance for missing symbol', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var missingSymbol = bytes32(33);
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, 100, SYMBOL);
     }).then(function() {
       return multiAsset.allowance.call(holder, spender, missingSymbol);
@@ -2535,14 +2586,19 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should respect symbol when telling allowance', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset1 = Asset.deployed();
+    var asset2 = undefined;
     var holder = accounts[0];
     var spender = accounts[1];
     var symbol = SYMBOL;
     var symbol2 = bytes32(2);
     var value = 100;
     var value2 = 200;
-    multiAsset.issueAsset(symbol, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.issueAsset(symbol2, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
+    multiAsset.issueAsset(symbol, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset1.address).then(function() {
+      return Asset.new();
+    }).then(function(instance) {  
+      asset2 = instance;
+      return multiAsset.issueAsset(symbol2, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset2.address);
     }).then(function() {
       return multiAsset.approve(spender, value, symbol);
     }).then(function() {
@@ -2557,13 +2613,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should respect holder when telling allowance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var holder2 = accounts[1];
     var spender = accounts[2];
     var value = 100;
     var value2 = 200;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
       return multiAsset.approve(spender, value2, SYMBOL, {from: holder2});
@@ -2577,13 +2633,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should respect spender when telling allowance', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var spender2 = accounts[2];
     var value = 100;
     var value2 = 200;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
       return multiAsset.approve(spender2, value2, SYMBOL);
@@ -2597,11 +2653,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to check allowance of existing owner and allowed existing spender', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var value = 300;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.transfer(spender, 100, SYMBOL);
     }).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
@@ -2612,11 +2668,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to check allowance of existing owner and allowed missing spender', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var value = 300;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
       return multiAsset.allowance.call(holder, spender, SYMBOL);
@@ -2625,12 +2681,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should return 0 allowance after another transfer', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var value = 300;
     var resultValue = 0;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, value, SYMBOL, {from: spender});
@@ -2641,13 +2697,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should return 1 allowance after another transfer', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var value = 300;
     var transfer = 299;
     var resultValue = 1;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, transfer, SYMBOL, {from: spender});
@@ -2658,13 +2714,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should return 2**255 allowance after another transfer', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var value = UINT_256_MINUS_1;
     var transfer = UINT_255_MINUS_1;
     var resultValue = UINT_255;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, transfer, SYMBOL, {from: spender});
@@ -2675,13 +2731,13 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should return (2**256 - 2) allowance after another transfer', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var spender = accounts[1];
     var value = UINT_256_MINUS_1;
     var transfer = 1;
     var resultValue = UINT_256_MINUS_2;
-    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+    multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
       return multiAsset.transferFrom(holder, spender, transfer, SYMBOL, {from: spender});
@@ -2693,218 +2749,218 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
 
   it('should not be possible to trust to already trusted address', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
-    multiAsset.trust(trusty).then(function() {
-      return multiAsset.trust.call(trusty);
+    asset.trust(trusty).then(function() {
+      return asset.trust.call(trusty);
     }).then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
   });
   it('should not be possible to trust to oneself', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
-    multiAsset.trust.call(holder).then(function(result) {
+    asset.trust.call(holder).then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
   });
   it('should be possible to trust by existing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.trust.call(trusty);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      return asset.trust.call(trusty);
     }).then(function(result) {
       assert.isTrue(result);
     }).then(done).catch(done);
   });
   it('should be possible to trust by missing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
-    multiAsset.trust.call(trusty).then(function(result) {
+    asset.trust.call(trusty).then(function(result) {
       assert.isTrue(result);
     }).then(done).catch(done);
   });
   it('should be possible to trust to multiple addresses', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty1 = accounts[1];
     var trusty2 = accounts[2];
-    multiAsset.trust(trusty1).then(function(result) {
-      return multiAsset.trust(trusty2);
+    asset.trust(trusty1).then(function(result) {
+      return asset.trust(trusty2);
     }).then(function() {
-      return multiAsset.isTrusted.call(holder, trusty1);
+      return asset.isTrusted.call(holder, trusty1);
     }).then(function(result) {
       assert.isTrue(result);
-      return multiAsset.isTrusted.call(holder, trusty2);
+      return asset.isTrusted.call(holder, trusty2);
     }).then(function(result) {
       assert.isTrue(result);
     }).then(done).catch(done);
   });
 
   it('should not be possible to distrust an untrusted address', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var untrusty = accounts[2];
-    multiAsset.trust(trusty).then(function() {
-      return multiAsset.distrust.call(untrusty);
+    asset.trust(trusty).then(function() {
+      return asset.distrust.call(untrusty);
     }).then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
   });
   it('should not be possible to distrust by missing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var untrusty = accounts[1];
-    multiAsset.distrust.call(untrusty).then(function(result) {
+    asset.distrust.call(untrusty).then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
   });
   it('should not be possible to distrust oneself', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
-    multiAsset.distrust.call(holder).then(function(result) {
+    asset.distrust.call(holder).then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
   });
   it('should be possible to distrust a trusted address', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
-    multiAsset.trust(trusty).then(function() {
-      return multiAsset.distrust(trusty);
+    asset.trust(trusty).then(function() {
+      return asset.distrust(trusty);
     }).then(function() {
-      return multiAsset.isTrusted.call(holder, trusty);
+      return asset.isTrusted.call(holder, trusty);
     }).then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
   });
   it('should be possible to distrust a last trusted address', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty1 = accounts[1];
     var trusty2 = accounts[2];
-    multiAsset.trust(trusty1).then(function() {
-      return multiAsset.trust(trusty2);
+    asset.trust(trusty1).then(function() {
+      return asset.trust(trusty2);
     }).then(function() {
-      return multiAsset.distrust(trusty2);
+      return asset.distrust(trusty2);
     }).then(function() {
-      return multiAsset.isTrusted.call(holder, trusty2);
+      return asset.isTrusted.call(holder, trusty2);
     }).then(function(result) {
       assert.isFalse(result);
-      return multiAsset.isTrusted.call(holder, trusty1);
+      return asset.isTrusted.call(holder, trusty1);
     }).then(function(result) {
       assert.isTrue(result);
     }).then(done).catch(done);
   });
   it('should be possible to distrust a not last trusted address', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty1 = accounts[1];
     var trusty2 = accounts[2];
-    multiAsset.trust(trusty1).then(function() {
-      return multiAsset.trust(trusty2);
+    asset.trust(trusty1).then(function() {
+      return asset.trust(trusty2);
     }).then(function() {
-      return multiAsset.distrust(trusty1);
+      return asset.distrust(trusty1);
     }).then(function() {
-      return multiAsset.isTrusted.call(holder, trusty1);
+      return asset.isTrusted.call(holder, trusty1);
     }).then(function(result) {
       assert.isFalse(result);
-      return multiAsset.isTrusted.call(holder, trusty2);
+      return asset.isTrusted.call(holder, trusty2);
     }).then(function(result) {
       assert.isTrue(result);
     }).then(done).catch(done);
   });
 
   it('should not be possible to distrust all without trusted addresses', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.distrustAll.call();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      return asset.distrustAll.call();
     }).then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
   });
   it('should not be possible to distrust all by missing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
-    multiAsset.distrustAll.call().then(function(result) {
+    asset.distrustAll.call().then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
   });
   it('should be possible to distrust all', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty1 = accounts[1];
     var trusty2 = accounts[2];
-    multiAsset.trust(trusty1).then(function() {
-      return multiAsset.trust(trusty2);
+    asset.trust(trusty1).then(function() {
+      return asset.trust(trusty2);
     }).then(function() {
-      return multiAsset.distrustAll();
+      return asset.distrustAll();
     }).then(function() {
-      return multiAsset.isTrusted.call(holder, trusty1);
+      return asset.isTrusted.call(holder, trusty1);
     }).then(function(result) {
       assert.isFalse(result);
-      return multiAsset.isTrusted.call(holder, trusty2);
+      return asset.isTrusted.call(holder, trusty2);
     }).then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
   });
 
   it('should not be possible to recover to existing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var recoverTo = accounts[2];
-    multiAsset.trust(trusty).then(function() {
-      return multiAsset.trust(accounts[3], {from: recoverTo});
+    asset.trust(trusty).then(function() {
+      return asset.trust(accounts[3], {from: recoverTo});
     }).then(function() {
-      return multiAsset.recover.call(holder, recoverTo, {from: trusty});
+      return asset.recover.call(holder, recoverTo, {from: trusty});
     }).then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
   });
   it('should not be possible to recover by untrusted', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var untrusty = accounts[2];
     var recoverTo = accounts[3];
-    multiAsset.trust(trusty).then(function() {
-      return multiAsset.recover.call(holder, recoverTo, {from: untrusty});
+    asset.trust(trusty).then(function() {
+      return asset.recover.call(holder, recoverTo, {from: untrusty});
     }).then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
   });
   it('should not be possible to recover from missing holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var untrusty = accounts[2];
     var recoverTo = accounts[3];
-    multiAsset.recover.call(holder, recoverTo, {from: untrusty}).then(function(result) {
+    asset.recover.call(holder, recoverTo, {from: untrusty}).then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
   });
   it('should not be possible to recover by oneself', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var recoverTo = accounts[3];
-    multiAsset.trust(trusty).then(function() {
-      return multiAsset.recover.call(holder, recoverTo, {from: holder});
+    asset.trust(trusty).then(function() {
+      return asset.recover.call(holder, recoverTo, {from: holder});
     }).then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
   });
   it('should not be possible to recover to oneself', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
-    multiAsset.trust(trusty).then(function() {
-      return multiAsset.recover.call(holder, holder, {from: trusty});
+    asset.trust(trusty).then(function() {
+      return asset.recover.call(holder, holder, {from: trusty});
     }).then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
@@ -2914,12 +2970,12 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     done(); 
   });
   it('should not be possible to do transfer by target after failed recovery', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var untrusty = accounts[2];
     var recoverTo = accounts[3];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: untrusty});
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      return asset.recover(holder, recoverTo, {from: untrusty});
     }).then(function() {
       return multiAsset.transfer(untrusty, 100, SYMBOL, {from: recoverTo});
     }).then(function() {
@@ -2932,14 +2988,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to do transfer by holder after failed recovery', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var untrusty = accounts[2];
     var recoverTo = accounts[3];
     var amount = 100;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: untrusty});
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      return asset.recover(holder, recoverTo, {from: untrusty});
     }).then(function() {
       return multiAsset.transfer(untrusty, amount, SYMBOL, {from: holder});
     }).then(function() {
@@ -2952,17 +3008,17 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to recover', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var recoverTo = accounts[2];
     var watcher;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.trust(trusty);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      return asset.trust(trusty);
     }).then(function() {
-      watcher = multiAsset.Recovery();
-      eventsHelper.setupEvents(multiAsset);
-      return multiAsset.recover(holder, recoverTo, {from: trusty});
+      watcher = asset.Recovery();
+      eventsHelper.setupEvents(asset);
+      return asset.recover(holder, recoverTo, {from: trusty});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
     }).then(function(events) {
@@ -2976,17 +3032,17 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to recover multiple times', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var recoverTo = accounts[2];
     var recoverTo2 = accounts[3];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.trust(trusty);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      return asset.trust(trusty);
     }).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: trusty});
+      return asset.recover(holder, recoverTo, {from: trusty});
     }).then(function() {
-      return multiAsset.recover(recoverTo, recoverTo2, {from: trusty});
+      return asset.recover(recoverTo, recoverTo2, {from: trusty});
     }).then(function() {
       return multiAsset.balanceOf.call(recoverTo2, SYMBOL);
     }).then(function(result) {
@@ -2994,20 +3050,20 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to recover recovered address', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var recoverTo = accounts[2];
     var recoverTo2 = accounts[3];
     var watcher;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.trust(trusty);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      return asset.trust(trusty);
     }).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: trusty});
+      return asset.recover(holder, recoverTo, {from: trusty});
     }).then(function() {
-      watcher = multiAsset.Recovery();
-      eventsHelper.setupEvents(multiAsset);
-      return multiAsset.recover(holder, recoverTo2, {from: trusty});
+      watcher = asset.Recovery();
+      eventsHelper.setupEvents(asset);
+      return asset.recover(holder, recoverTo2, {from: trusty});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
     }).then(function(events) {
@@ -3021,16 +3077,16 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to do transfers after recovery by holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var untrusty = accounts[2];
     var recoverTo = accounts[3];
     var amount = 100;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.trust(trusty);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      return asset.trust(trusty);
     }).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: trusty});
+      return asset.recover(holder, recoverTo, {from: trusty});
     }).then(function() {
       return multiAsset.transfer(untrusty, amount, SYMBOL, {from: holder});
     }).then(function() {
@@ -3046,16 +3102,16 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to reissue after recovery', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var recoverTo = accounts[3];
     var amount = 100;
     var isReissuable = true;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      return multiAsset.trust(trusty);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
+      return asset.trust(trusty);
     }).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: trusty});
+      return asset.recover(holder, recoverTo, {from: trusty});
     }).then(function() {
       return multiAsset.reissueAsset(SYMBOL, amount, {from: recoverTo});
     }).then(function() {
@@ -3068,15 +3124,15 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to revoke after recovery', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var recoverTo = accounts[3];
     var amount = 100;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.trust(trusty);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      return asset.trust(trusty);
     }).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: trusty});
+      return asset.recover(holder, recoverTo, {from: trusty});
     }).then(function() {
       return multiAsset.revokeAsset(SYMBOL, amount, {from: recoverTo});
     }).then(function() {
@@ -3089,40 +3145,40 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to change ownership after recovery', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var newOwner = accounts[2];
     var recoverTo = accounts[3];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.trust(trusty);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      return asset.trust(trusty);
     }).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: trusty});
+      return asset.recover(holder, recoverTo, {from: trusty});
     }).then(function() {
       return multiAsset.changeOwnership(SYMBOL, newOwner, {from: recoverTo});
     }).then(function() {
       return multiAsset.owner.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), newOwner);
-      return multiAsset.isOwner.call(holder, SYMBOL);
+      return asset.isOwner.call(holder, SYMBOL);
     }).then(function(result) {
       assert.isFalse(result.valueOf());
-      return multiAsset.isOwner.call(recoverTo, SYMBOL);
+      return asset.isOwner.call(recoverTo, SYMBOL);
     }).then(function(result) {
       assert.isFalse(result.valueOf());
     }).then(done).catch(done);
   });
   it('should be possible to reissue after recovery by holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var recoverTo = accounts[3];
     var amount = 100;
     var isReissuable = true;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      return multiAsset.trust(trusty);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable, asset.address).then(function() {
+      return asset.trust(trusty);
     }).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: trusty});
+      return asset.recover(holder, recoverTo, {from: trusty});
     }).then(function() {
       return multiAsset.reissueAsset(SYMBOL, amount);
     }).then(function() {
@@ -3135,70 +3191,70 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should be possible to revoke after recovery by holder', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var recoverTo = accounts[3];
     var amount = 100;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.trust(trusty);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      return asset.trust(trusty);
     }).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: trusty});
+      return asset.recover(holder, recoverTo, {from: trusty});
     }).then(function() {
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function() {
       return multiAsset.balanceOf.call(recoverTo, SYMBOL);
     }).then(function(result) {
-      assert.equal(result.valueOf(), VALUE - amount);
+      assert.equal(result.valueOf(), VALUE - amount, "recoverTo balance wrong");
       return multiAsset.balanceOf.call(holder, SYMBOL);
     }).then(function(result) {
-      assert.equal(result.valueOf(), VALUE - amount);
+      assert.equal(result.valueOf(), VALUE - amount, "holder balance wrong");
     }).then(done).catch(done);
   });
   it('should be possible to change ownership after recovery by holder', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var newOwner = accounts[2];
     var recoverTo = accounts[3];
     var watcher;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.trust(trusty);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      return asset.trust(trusty);
     }).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: trusty});
+      return asset.recover(holder, recoverTo, {from: trusty});
     }).then(function() {
-      watcher = multiAsset.OwnershipChange();
-      eventsHelper.setupEvents(multiAsset);
-      return multiAsset.changeOwnership(SYMBOL, newOwner, {from: holder});
+      watcher = asset.OwnershipChange();
+      eventsHelper.setupEvents(asset);
+      return asset.changeOwnership(newOwner, {from: holder});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
     }).then(function(events) {
       assert.equal(events.length, 1);
       assert.equal(events[0].args.from.valueOf(), recoverTo);
       assert.equal(events[0].args.to.valueOf(), newOwner);
-      assert.equal(events[0].args.symbol.valueOf(), SYMBOL); 
       return multiAsset.owner.call(SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), newOwner);
-      return multiAsset.isOwner.call(holder, SYMBOL);
+      return asset.isOwner.call(holder, SYMBOL);
     }).then(function(result) {
       assert.isFalse(result.valueOf());
-      return multiAsset.isOwner.call(recoverTo, SYMBOL);
+      return asset.isOwner.call(recoverTo, SYMBOL);
     }).then(function(result) {
       assert.isFalse(result.valueOf());
     }).then(done).catch(done);
   });
   it('should be possible to do transfers after recovery by recovered address', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var untrusty = accounts[2];
     var recoverTo = accounts[3];
     var amount = 100;
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.trust(trusty);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      return asset.trust(trusty);
     }).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: trusty});
+      return asset.recover(holder, recoverTo, {from: trusty});
     }).then(function() {
       return multiAsset.transfer(untrusty, amount, SYMBOL, {from: recoverTo});
     }).then(function() {
@@ -3214,14 +3270,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should recover asset ownership', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var multiAsset = MultiAsset.deployed(); var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty = accounts[1];
     var recoverTo = accounts[2];
-    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.trust(trusty);
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset.address).then(function() {
+      return asset.trust(trusty);
     }).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: trusty});
+      return asset.recover(holder, recoverTo, {from: trusty});
     }).then(function() {
       return multiAsset.owner.call(SYMBOL);
     }).then(function(result) {
@@ -3230,6 +3286,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should recover balances', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset1 = Asset.deployed();
+    var asset2 = undefined;
     var holder = accounts[0];
     var trusty = accounts[1];
     var recoverTo = accounts[2];
@@ -3237,12 +3295,19 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var symbol2 = bytes32(32);
     var value1 = 100;
     var value2 = 200;
-    multiAsset.issueAsset(symbol1, value1, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
+    multiAsset.issueAsset(symbol1, value1, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset1.address).then(function() {
+      return Asset.new();
+    }).then(function(instance) {
+      asset2 = instance;
+      return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset2.address);
     }).then(function() {
-      return multiAsset.trust(trusty);
+      return asset1.trust(trusty);
     }).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: trusty});
+      return asset2.trust(trusty);
+    }).then(function() {
+      return asset1.recover(holder, recoverTo, {from: trusty});
+    }).then(function() {
+      return asset2.recover(holder, recoverTo, {from: trusty});
     }).then(function() {
       return multiAsset.balanceOf.call(recoverTo, symbol1);
     }).then(function(result) {
@@ -3254,6 +3319,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should recover allowances', function(done) {
     var multiAsset = MultiAsset.deployed();
+    var asset1 = Asset.deployed();
+    var asset2 = undefined;
     var holder = accounts[0];
     var trusty = accounts[1];
     var recoverTo = accounts[2];
@@ -3263,16 +3330,23 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var spender2 = accounts[4];
     var value1 = 100;
     var value2 = 200;
-    multiAsset.issueAsset(symbol1, value1, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
+    multiAsset.issueAsset(symbol1, value1, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset1.address).then(function() {
+      return Asset.new();
+    }).then(function(instance) {
+      asset2 = instance;
+      return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE, asset2.address);
     }).then(function() {
       return multiAsset.approve(spender1, value1, symbol1);
     }).then(function() {
       return multiAsset.approve(spender2, value2, symbol2);
     }).then(function() {
-      return multiAsset.trust(trusty);
+      return asset1.trust(trusty);
     }).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: trusty});
+      return asset2.trust(trusty);
+    }).then(function() {
+      return asset1.recover(holder, recoverTo, {from: trusty});
+    }).then(function() {
+      return asset2.recover(holder, recoverTo, {from: trusty});
     }).then(function() {
       return multiAsset.allowance.call(recoverTo, spender1, symbol1);
     }).then(function(result) {
@@ -3283,24 +3357,24 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should recover trusts', function(done) {
-    var multiAsset = MultiAsset.deployed();
+    var asset = Asset.deployed();
     var holder = accounts[0];
     var trusty1 = accounts[1];
     var trusty2 = accounts[2];
     var recoverTo = accounts[3];
     var untrusty = accounts[5];
-    multiAsset.trust(trusty1).then(function() {
-      return multiAsset.trust(trusty2);
+    asset.trust(trusty1).then(function() {
+      return asset.trust(trusty2);
     }).then(function() {
-      return multiAsset.recover(holder, recoverTo, {from: trusty1});
+      return asset.recover(holder, recoverTo, {from: trusty1});
     }).then(function() {
-      return multiAsset.isTrusted.call(recoverTo, trusty1);
+      return asset.isTrusted.call(recoverTo, trusty1);
     }).then(function(result) {
       assert.isTrue(result);
-      return multiAsset.isTrusted.call(recoverTo, trusty2);
+      return asset.isTrusted.call(recoverTo, trusty2);
     }).then(function(result) {
       assert.isTrue(result);
-      return multiAsset.isTrusted.call(recoverTo, untrusty);
+      return asset.isTrusted.call(recoverTo, untrusty);
     }).then(function(result) {
       assert.isFalse(result);
     }).then(done).catch(done);
