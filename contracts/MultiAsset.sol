@@ -62,15 +62,20 @@ contract MultiAsset is Switchable {
     }
 
     struct Holder {
-        address[] trusts;
+        uint trustsCount;
         address addr;
+        mapping(uint => address) trusts;
         mapping(address => uint) trustIndex;
     }
 
-    Holder[] public holders;
+    uint holdersCount;
+    mapping(uint => Holder) holders;
     mapping(address => uint) public holderIndex;
-
     mapping(bytes32 => Asset) public assets;
+
+    function MultiAsset() {
+        holdersCount = 1;
+    }
 
     modifier onlyOwner(bytes32 _symbol) {
         if (_isSignedOwner(_symbol)) {
@@ -92,10 +97,6 @@ contract MultiAsset is Switchable {
         if (isEnabled(_switch)) {
             _
         }
-    }
-
-    function MultiAsset() {
-        holders.length = 1;
     }
 
     function baseUnit(bytes32 _symbol) constant returns(uint8) {
@@ -168,9 +169,9 @@ contract MultiAsset is Switchable {
     function _createPosHolder(address _holder) internal returns(uint) {
         uint posHolder = holderIndex[_holder];
         if (posHolder == 0) {
-            posHolder = holders.length++;
+            posHolder = holdersCount++;
             holders[posHolder].addr = _holder;
-            holders[posHolder].trusts.length = 1;
+            holders[posHolder].trustsCount = 1;
             holderIndex[_holder] = posHolder;
         }
         return posHolder;
@@ -248,22 +249,21 @@ contract MultiAsset is Switchable {
         if (isTrusted(msg.sender, _to)) {
             return false;
         }
-        uint trustPos = holders[posFrom].trusts.length++;
-        holders[posFrom].trusts[trustPos] = _to;
+        uint trustPos = holders[posFrom].trustsCount++;
         holders[posFrom].trustIndex[_to] = trustPos;
+        holders[posFrom].trusts[trustPos] = _to;
         return true;
     }
 
     function distrust(address _to) checkTrust(msg.sender, _to) returns(bool) {
         uint posFrom = _getPosHolder(msg.sender);
         uint trustPos = holders[posFrom].trustIndex[_to];
-        address[] trusts = holders[posFrom].trusts;
-        if (trustPos < trusts.length-1) {
-            address last = trusts[trusts.length-1];
-            trusts[trustPos] = last;
+        if (trustPos < holders[posFrom].trustsCount-1) {
+            address last = holders[posFrom].trusts[holders[posFrom].trustsCount-1];
+            holders[posFrom].trusts[trustPos] = last;
             holders[posFrom].trustIndex[last] = trustPos; 
         }
-        trusts.length--;
+        delete holders[posFrom].trusts[--holders[posFrom].trustsCount];
         delete holders[posFrom].trustIndex[_to];
         return true;
     }
@@ -273,14 +273,15 @@ contract MultiAsset is Switchable {
         if (posFrom == 0) {
             return false;
         }
-        address[] trusts = holders[posFrom].trusts;
-        if (trusts.length == 1) {
+        if (holders[posFrom].trustsCount == 1) {
             return false;
         }
-        for (uint i = 1; i < trusts.length; i++) {
-            delete holders[posFrom].trustIndex[trusts[i]];
+        for (uint i = 1; i < holders[posFrom].trustsCount; i++) {
+            address j = holders[posFrom].trusts[i];
+            delete holders[posFrom].trustIndex[j];
+            delete holders[posFrom].trusts[i];
         }
-        trusts.length = 1;
+        holders[posFrom].trustsCount = 1;
         return true;
     }
     
