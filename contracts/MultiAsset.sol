@@ -381,7 +381,7 @@ contract MultiAsset is Switchable {
     }
 
     function setCosignerAddress(address _address, bytes32 _symbol) checkEnabledSwitch(sha3(getHolderId(msg.sender), Features.Cosigning)) checkSigned(sha3(msg.data, getHolderId(msg.sender)), _symbol) returns(bool) {
-        return _setCosignerAddress(_address, sha3(getHolderId(msg.sender), _symbol));
+        return _setCosignerAddress(_address, sha3(_createPosHolder(msg.sender), _symbol));
     }
 
     function setCosignerAddressForAsset(address _address, bytes32 _symbol) checkEnabledSwitch(sha3(_symbol, Features.Cosigning)) onlyOwner(_symbol) returns(bool) {
@@ -389,7 +389,7 @@ contract MultiAsset is Switchable {
     }
 
     function setCosignerAddressForUser(address _address) checkEnabledSwitch(sha3(getHolderId(msg.sender), Features.Cosigning)) checkSignedHolder(sha3(msg.data, getHolderId(msg.sender)), msg.sender) returns(bool) {
-        return _setCosignerAddress(_address, sha3(getHolderId(msg.sender)));
+        return _setCosignerAddress(_address, sha3(_createPosHolder(msg.sender)));
     }
 
     function _setCosignerAddress(address _address, bytes32 _identity) internal returns(bool) {
