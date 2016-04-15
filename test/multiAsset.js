@@ -2336,7 +2336,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), sha3(multiAssetAbi.transferFrom.getData(accounts[0], accounts[1], 10, SYMBOL), bytes32(2)));
     }).then(done).catch(done);
   });
-  it('should checkSigned approve and allowance transfer with reference', function(done) {
+  it('should checkSigned on approve', function(done) {
     multiAsset.approve(accounts[1], 100, SYMBOL).then(function() {
     }).then(function() {
       return multiAsset.signChecks.call();
@@ -2347,18 +2347,18 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), sha3(multiAssetAbi.approve.getData(accounts[1], 100, SYMBOL), bytes32(0)));
     }).then(done).catch(done);
   });
-  it('should checkSigned on approve', function(done) {
+  it('should checkSigned approve and allowance transfer with reference', function(done) {
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.approve(accounts[1], 100, SYMBOL);
     }).then(function() {
-      return multiAsset.transferFrom(accounts[0], accounts[1], 10, SYMBOL, {from: accounts[1]});
+      return multiAsset.transferFromWithReference(accounts[0], accounts[1], 10, SYMBOL, "REFF", {from: accounts[1]});
     }).then(function() {
       return multiAsset.signChecks.call();
     }).then(function(result) {
       assert.equal(result.valueOf(), 2);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(multiAssetAbi.transferFrom.getData(accounts[0], accounts[1], 10, SYMBOL), bytes32(2)));
+      assert.equal(result.valueOf(), sha3(multiAssetAbi.transferFromWithReference.getData(accounts[0], accounts[1], 10, SYMBOL, "REFF"), bytes32(2)));
     }).then(done).catch(done);
   });
 
