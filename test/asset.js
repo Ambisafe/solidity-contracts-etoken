@@ -71,6 +71,32 @@ contract('Asset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), VALUE);
     }).then(done).catch(done);
   });
+  it('should not emit transfer event from not base', function(done) {
+    var owner = accounts[0];
+    var nonOwner = accounts[1];
+    var watcher = asset.Transfer();
+    multiAsset.setProxy(asset.address, SYMBOL2).then(function() {
+      eventsHelper.setupEvents(asset);
+      return asset.emitTransfer(owner, nonOwner, 100, {from: nonOwner});
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
+    }).then(done).catch(done);
+  });
+  it('should not emit approve event from not base', function(done) {
+    var owner = accounts[0];
+    var nonOwner = accounts[1];
+    var watcher = asset.Transfer();
+    multiAsset.setProxy(asset.address, SYMBOL2).then(function() {
+      eventsHelper.setupEvents(asset);
+      return asset.approve(owner, nonOwner, 100, {from: nonOwner});
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 0);
+    }).then(done).catch(done);
+  });
   it('should not be possible to transfer if not allowed', function(done) {
     var owner = accounts[0];
     var nonOwner = accounts[1];
@@ -256,6 +282,24 @@ contract('Asset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
+  it('should emit transfer event from base', function(done) {
+    var holder = accounts[0];
+    var holder2 = accounts[1];
+    var amount = 100;
+    var watcher;
+    multiAsset.setProxy(asset.address, SYMBOL).then(function() {
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Transfer();
+      return multiAsset.transfer(holder2, amount, SYMBOL);
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), holder);
+      assert.equal(events[0].args.to.valueOf(), holder2);
+      assert.equal(events[0].args.value.valueOf(), amount);
+    }).then(done).catch(done);
+  });
   it('should work with msg.sender');
 
   it('should not be possible to set allowance if not allowed', function(done) {
@@ -311,6 +355,24 @@ contract('Asset', {reset_state: true}, function(accounts) {
       return asset.allowance.call(holder, spender);
     }).then(function(result) {
       assert.equal(result.valueOf(), value);
+    }).then(done).catch(done);
+  });
+  it('should emit allowance from base', function(done) {
+    var holder = accounts[1];
+    var spender = accounts[2];
+    var value = 100;
+    var watcher;
+    multiAsset.setProxy(asset.address, SYMBOL).then(function() {
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Approve();
+      return multiAsset.approve(spender, value, SYMBOL, {from: holder});
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), holder);
+      assert.equal(events[0].args.spender.valueOf(), spender);
+      assert.equal(events[0].args.value.valueOf(), value);
     }).then(done).catch(done);
   });
   it('should be possible to set allowance from missing holder to existing holder', function(done) {
@@ -775,6 +837,30 @@ contract('Asset', {reset_state: true}, function(accounts) {
       return multiAsset.balanceOf.call(receiver, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), expectedReceiverBalance);
+    }).then(done).catch(done);
+  });
+  it('should emit allowance transfer event from base', function(done) {
+    var holder = accounts[0];
+    var spender = accounts[1];
+    var receiver = accounts[2];
+    var existValue = 100;
+    var value = 300;
+    var watcher;
+    multiAsset.setProxy(asset.address, SYMBOL).then(function() {
+      return asset.transfer(receiver, existValue);
+    }).then(function() {
+      return asset.approve(spender, value);
+    }).then(function() {
+      eventsHelper.setupEvents(asset);
+      watcher = asset.Transfer();
+      return multiAsset.transferFrom(holder, receiver, value, SYMBOL, {from: spender});
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), holder);
+      assert.equal(events[0].args.to.valueOf(), receiver);
+      assert.equal(events[0].args.value.valueOf(), value);
     }).then(done).catch(done);
   });
   it('should be possible to do allowance transfer to missing holder', function(done) {

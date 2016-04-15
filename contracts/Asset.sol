@@ -19,6 +19,12 @@ contract Asset {
         symbol = _symbol;
     }
 
+    modifier onlyMultiAsset() {
+        if (msg.sender == address(multiAsset)) {
+            _
+        }
+    }
+
     function totalSupply() constant returns(uint) {
         return multiAsset.totalSupply(symbol);
     }
@@ -35,7 +41,6 @@ contract Asset {
         if (!multiAsset.proxyTransfer(_to, _value, symbol, msg.sender)) {
             return false;
         }
-        Transfer(msg.sender, _to, _value);
         return true;
     }
     
@@ -43,7 +48,6 @@ contract Asset {
         if (!multiAsset.proxyTransferFrom(_from, _to, _value, symbol, msg.sender)) {
             return false;
         }
-        Transfer(_from, _to, _value);
         return true;
     }
 
@@ -51,7 +55,14 @@ contract Asset {
         if (!multiAsset.proxyApprove(_spender, _value, symbol, msg.sender)) {
             return false;
         }
-        Approve(msg.sender, _spender, _value);
         return true;
+    }
+
+    function emitTransfer(address _from, address _to, uint _value) onlyMultiAsset() {
+        Transfer(_from, _to, _value);
+    }
+
+    function emitApprove(address _from, address _spender, uint _value) onlyMultiAsset() {
+        Approve(_from, _spender, _value);
     }
 }

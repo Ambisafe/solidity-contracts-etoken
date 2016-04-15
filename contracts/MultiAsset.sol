@@ -2,6 +2,11 @@ contract Cosigner {
     function isSigned(bytes32) returns(bool);
 }
 
+contract Proxy {
+    function emitTransfer(address, address, uint);
+    function emitApprove(address, address, uint);
+}
+
 contract Owned {
     address public contractOwner;
 
@@ -59,6 +64,7 @@ contract MultiAsset is Switchable {
         bool isReissuable;
         bool isCreated;
         uint8 baseUnit;
+        Proxy proxy;
         mapping(uint => Wallet) wallets;
         mapping(address => bool) isProxy;
     }
@@ -148,6 +154,7 @@ contract MultiAsset is Switchable {
 
     function setProxy(address _address, bytes32 _symbol) onlyContractOwner() returns(bool) {
         assets[_symbol].isProxy[_address] = true;
+        assets[_symbol].proxy = Proxy(_address);
         return true;
     }
 
@@ -166,6 +173,9 @@ contract MultiAsset is Switchable {
         assets[_symbol].wallets[posFrom].balance -= _value;
         assets[_symbol].wallets[posTo].balance += _value;
         Transfer(_address(posFrom), _address(posTo), _symbol, _value, _reference);
+        if (address(assets[_symbol].proxy) != 0x0) {
+            assets[_symbol].proxy.emitTransfer(_from, _to, _value);
+        }
         return true;
     }
 
@@ -205,7 +215,7 @@ contract MultiAsset is Switchable {
         }
         uint posHolder = _createPosHolder(msg.sender);
 
-        assets[_symbol] = Asset(posHolder, _value, _name, _description, _isReissuable, true, _baseUnit);
+        assets[_symbol] = Asset(posHolder, _value, _name, _description, _isReissuable, true, _baseUnit, Proxy(0x0));
         assets[_symbol].wallets[posHolder].balance = _value;
         Issue(_symbol, _value, _address(posHolder));
         return true;
@@ -326,6 +336,9 @@ contract MultiAsset is Switchable {
         }
         assets[_symbol].wallets[posFrom].allowance[posTo] = _value;
         Approve(_address(posFrom), _address(posTo), _symbol, _value);
+        if (address(assets[_symbol].proxy) != 0x0) {
+            assets[_symbol].proxy.emitApprove(_sender, _spender, _value);
+        }
         return true;
     }
 
