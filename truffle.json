@@ -19,7 +19,10 @@
   "deploy": [
     // Names of contracts that should be deployed to the network.
     "MultiAsset",
-    "Asset"
+    "Asset",
+    "Cosigner1",
+    "Cosigner2",
+    "Cosigner3"
   ],
   "rpc": {
     // Default RPC configuration.
