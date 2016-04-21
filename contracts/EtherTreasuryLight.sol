@@ -1,6 +1,40 @@
 import "MultiAsset.sol";
 
-contract Asset {
+contract EtherTreasuryLight {
+    function _deposit(address _to, uint _value) internal returns(bool) {
+        if (multiAsset.reissueAsset(symbol, _value)) {
+            return _transfer(address(this), _to, _value);
+        }
+        return false;
+    }
+    
+    function() {
+        deposit();
+    }
+    
+    function deposit(address _to) returns(bool) {
+        return _deposit(_to, msg.value);
+    }
+
+    function deposit() returns(bool) {
+        return _deposit(msg.sender, msg.value);
+    }
+
+    function _withdraw(address _to, uint _value) internal returns(bool) {
+        return _to.send(_value);
+    }
+    
+    function withdraw(address _to, uint _value) returns(bool) {
+        if (multiAsset.proxyTransferDirect(msg.sender, address(this), _value, symbol, "Withdraw")) {
+            return _withdraw(_to, _value);
+        }
+        return false;
+    }
+
+    function revokeAll() returns(bool) {
+        return multiAsset.revokeAsset(symbol, balanceOf(address(this)));
+    }
+
     event Transfer(address indexed from, address indexed to, uint value);
     event Approve(address indexed from, address indexed spender, uint value);
 
@@ -34,9 +68,20 @@ contract Asset {
         return multiAsset.allowance(_from, _spender, symbol);
     }
 
-    function transfer(address _to, uint _value) returns(bool) {
-        if (!multiAsset.proxyTransfer(_to, _value, symbol, msg.sender)) {
+    function _transfer(address _from, address _to, uint _value) returns(bool) {
+        if (!multiAsset.proxyTransfer(_to, _value, symbol, _from)) {
             return false;
+        }     
+        Transfer(_from, _to, _value);
+        return true;
+    }
+
+    function transfer(address _to, uint _value) returns(bool) {
+        if (!_transfer(msg.sender, _to, _value)) {
+            return false;
+        }
+        if (_to == address(this)) {
+            return _withdraw(msg.sender, _value);
         }
         return true;
     }
@@ -45,13 +90,28 @@ contract Asset {
         if (!multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference, msg.sender)) {
             return false;
         }
+        if (_to == address(this)) {
+            return _withdraw(msg.sender, _value);
+        }
+        Transfer(msg.sender, _to, _value);
+        return true;
+    }
+
+    function _transferFrom(address _from, address _to, uint _value) internal returns(bool) {
+        if (!multiAsset.proxyTransferFrom(_from, _to, _value, symbol, msg.sender)) {
+            return false;
+        }
         return true;
     }
     
     function transferFrom(address _from, address _to, uint _value) returns(bool) {
-        if (!multiAsset.proxyTransferFrom(_from, _to, _value, symbol, msg.sender)) {
+        if (!_transferFrom(_from, _to, _value)) {
             return false;
         }
+        if (_to == address(this)) {
+            return _withdraw(msg.sender, _value);
+        }
+        Transfer(_from, _to, _value);
         return true;
     }
 
@@ -59,6 +119,10 @@ contract Asset {
         if (!multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference, msg.sender)) {
             return false;
         }
+        if (_to == address(this)) {
+            return _withdraw(msg.sender, _value);
+        }
+        Transfer(_from, _to, _value);
         return true;
     }
 
@@ -66,6 +130,7 @@ contract Asset {
         if (!multiAsset.proxyApprove(_spender, _value, symbol, msg.sender)) {
             return false;
         }
+        Approve(msg.sender, _spender, _value);
         return true;
     }
 

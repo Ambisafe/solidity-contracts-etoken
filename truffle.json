@@ -23,7 +23,9 @@
     "Cosigner1",
     "Cosigner2",
     "Cosigner3",
-    "AssetWithFee"
+    "AssetWithFee",
+    "EtherTreasury",
+    "EtherTreasuryLight"
   ],
   "rpc": {
     // Default RPC configuration.
