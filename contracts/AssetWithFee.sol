@@ -13,6 +13,7 @@ contract AssetWithFee {
     uint public transferFromCallGas = 21000;
     uint public transferFromWithReferenceCallGas = 21000;
     uint public approveCallGas = 21000;
+    uint public confirmCallGas = 21000;
     uint public clientId;
     uint public tokenPriceInWei = 1;
     uint public gasPriceLimit = 0;
@@ -72,12 +73,13 @@ contract AssetWithFee {
         return refundGas;
     }
 
-    function setOperationsCallGas(uint _transfer, uint _transferFrom, uint _transferWithReference, uint _transferFromWithReference, uint _approve) onlyOwner() returns(bool) {
+    function setOperationsCallGas(uint _transfer, uint _transferFrom, uint _transferWithReference, uint _transferFromWithReference, uint _approve, uint _confirm) onlyOwner() returns(bool) {
         transferCallGas = _transfer;
         transferFromCallGas = _transferFrom;
         transferWithReferenceCallGas = _transferWithReference;
         transferFromWithReferenceCallGas = _transferFromWithReference;
         approveCallGas = _approve;
+        confirmCallGas = _confirm;
         return true;
     }
 
@@ -110,6 +112,10 @@ contract AssetWithFee {
 
     function getApproveCallGas(address _spender, uint _value) returns(uint) {
         return _value;
+    }
+
+    function getConfirmCallGas(address _cosigner, bytes32 _opHash, address _account, uint _nonce, uint8 _v, bytes32 _r, bytes32 _s) returns(uint) {
+        return _nonce;
     }
 
     // DEPLOY REMOVE END
@@ -231,6 +237,29 @@ contract AssetWithFee {
     function checkApprove(address _spender, uint _value) constant returns(bool, uint) {
         return _approve(_spender, _value);
     }
+
+    function _confirm(address _cosigner, bytes32 _opHash, address _account, uint _nonce, uint8 _v, bytes32 _r, bytes32 _s) internal returns(bool, uint) {
+        uint startGas = msg.gas + confirmCallGas;
+        if (!Cosigner(_cosigner).confirm(_opHash, _account, _nonce, _v, _r, _s)) {
+            return (false, 0);
+        }
+        return (true, _applyFeeAndRefund(msg.sender, startGas, "Confirm fee"));
+    }
+
+    function confirm(address _cosigner, bytes32 _opHash, address _account, uint _nonce, uint8 _v, bytes32 _r, bytes32 _s) returns(bool) {
+        bool success;
+        (success,) = _confirm(_cosigner, _opHash, _account, _nonce, _v, _r, _s);
+        return success;
+    }
+
+    function checkConfirm(address _cosigner, bytes32 _opHash, address _account, uint _nonce, uint8 _v, bytes32 _r, bytes32 _s) constant returns(bool, uint) {
+        return _confirm(_cosigner, _opHash, _account, _nonce, _v, _r, _s);
+    }
+
+
+
+
+
 
     event Transfer(address indexed from, address indexed to, uint value);
     event Approve(address indexed from, address indexed spender, uint value);

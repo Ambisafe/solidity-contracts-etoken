@@ -1,5 +1,6 @@
 contract Cosigner {
     function isSigned(bytes32) returns(bool);
+    function confirm(bytes32 _opHash, address _account, uint _nonce, uint8 _v, bytes32 _r, bytes32 _s) returns(bool);
 }
 
 contract Proxy {
@@ -183,6 +184,7 @@ contract MultiAsset is Switchable {
         assets[_symbol].wallets[posFrom].balance -= _value;
         assets[_symbol].wallets[posTo].balance += _value;
         Transfer(_address(posFrom), _address(posTo), _symbol, _value, _reference);
+        _proxyTransferEvent(_address(getHolderId(_from)), _address(getHolderId(_to)), _value, _symbol);
         return true;
     }
 
@@ -193,7 +195,6 @@ contract MultiAsset is Switchable {
         if(!_transferDirect(_from, _to, _value, _symbol, _reference)) {
             return false;
         }
-        _proxyTransferEvent(_address(getHolderId(_from)), _address(getHolderId(_to)), _value, _symbol);
         return true;
     }
 

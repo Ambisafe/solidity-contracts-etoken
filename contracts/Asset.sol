@@ -14,11 +14,6 @@ contract Asset {
     }
     // DEPLOY REMOVE END
 
-    function Asset(address _multiAsset, bytes32 _symbol) {
-        multiAsset = MultiAsset(_multiAsset);
-        symbol = _symbol;
-    }
-
     modifier onlyMultiAsset() {
         if (msg.sender == address(multiAsset)) {
             _
