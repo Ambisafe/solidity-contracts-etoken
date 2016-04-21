@@ -22,7 +22,8 @@
     "Asset",
     "Cosigner1",
     "Cosigner2",
-    "Cosigner3"
+    "Cosigner3",
+    "AssetWithFee"
   ],
   "rpc": {
     // Default RPC configuration.
