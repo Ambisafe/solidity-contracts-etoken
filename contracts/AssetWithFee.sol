@@ -1,5 +1,5 @@
 import "MultiAsset.sol";
-import "EtherTreasuryLight.sol";
+import "EtherTreasuryNano.sol";
 
 contract AssetWithFee {
     uint public refundGas = 40000;
@@ -9,15 +9,17 @@ contract AssetWithFee {
     uint public transferFromCallGas = 21000;
     uint public transferFromWithReferenceCallGas = 21000;
     uint public approveCallGas = 21000;
+    uint public forwardCallGas = 21000;
     uint public tokenPriceInWeiSell = 1;
     uint public tokenPriceInWeiBuy = 2;
     uint public buyLimitMin = 0;
     uint public buyLimitMax = 0;
     uint public sellLimitMin = 0;
     uint public sellLimitMax = 0;
-    EtherTreasuryLight treasury;
+    EtherTreasuryNano treasury;
     address public feeAddress;
     address public exchangeAddress;
+    mapping(address => bool) public allowedForwards;
 
     modifier onlyOwner() {
         if (multiAsset.isOwner(msg.sender, symbol)) {
@@ -68,27 +70,33 @@ contract AssetWithFee {
     function updateRefundGas(uint _surplus) onlyOwner() returns(uint) {
         uint startGas = msg.gas;
         uint refund = (startGas - msg.gas + refundGas) * tx.gasprice; // just to simulate calculations, dunno if optimizer will remove this.
-        if (!_refund(1, "Update")) {
+        if (!_refund(1)) {
             return 0;
         }
         refundGas = startGas - msg.gas + _surplus;
         return refundGas;
     }
 
-    function setOperationsCallGas(uint _transfer, uint _transferFrom, uint _transferWithReference, uint _transferFromWithReference, uint _approve) onlyOwner() returns(bool) {
+    function setOperationsCallGas(uint _transfer, uint _transferFrom, uint _transferWithReference, uint _transferFromWithReference, uint _approve, uint _forward) onlyOwner() returns(bool) {
         transferCallGas = _transfer;
         transferFromCallGas = _transferFrom;
         transferWithReferenceCallGas = _transferWithReference;
         transferFromWithReferenceCallGas = _transferFromWithReference;
         approveCallGas = _approve;
+        forwardCallGas = _forward;
         return true;
     }
 
     function setupTreasury(address _treasury) onlyOwner() returns(bool) {
-        treasury = EtherTreasuryLight(_treasury);
-        if (msg.value > 0 && !treasury.deposit.value(msg.value)(address(this))) {
+        treasury = EtherTreasuryNano(_treasury);
+        if (msg.value > 0 && !treasury.depositWithReference.value(msg.value)(address(this), "Setup Treasury")) {
             throw;
         }
+        return true;
+    }
+
+    function setForward(address _forward, bool _allow) onlyOwner() returns(bool) {
+        allowedForwards[_forward] = _allow;
         return true;
     }
 
@@ -140,11 +148,11 @@ contract AssetWithFee {
             return false;
         }
         uint refund = (_startGas - msg.gas + refundGas) * tx.gasprice;
-        return _refund(refund, _reference);
+        return _refund(refund);
     }
 
-    function _refund(uint _value, string _reference) internal returns(bool) {
-        return treasury.withdrawWithReference(tx.origin, _value, _reference);
+    function _refund(uint _value) internal returns(bool) {
+        return treasury.withdraw(tx.origin, _value);
     }
 
     function _transfer(address _to, uint _value) internal returns(bool, bool) {
@@ -237,12 +245,21 @@ contract AssetWithFee {
         return _approve(_spender, _value);
     }
 
-    function forward(address _to, bytes _data) onlyOwner() returns(bool) {
-        return _to.call(_data);
+    function checkForward(address _to, bytes _data) constant returns(bool, bool) {
+        return (true, forward(_to, _data));
+    }
+
+    function forward(address _to, bytes _data) returns(bool) {
+        uint startGas = msg.gas + forwardCallGas + (_data.length * 70); // 70 gas per byte;
+        if (!allowedForwards[_to]) {
+            return false;
+        }
+        _to.call.value(msg.value)(_data);
+        return _applyFeeAndRefund(msg.sender, startGas, "Forward fee");
     }
 
     function sell(address _to, uint _value) returns(bool) {
-        if (exchangeAddress == 0x0 || _value < sellLimitMin  || _value > sellLimitMax) {
+        if (exchangeAddress == 0x0 || _value < sellLimitMin || _value > sellLimitMax) {
             return false;
         }
         if (!multiAsset.proxyTransferFromWithReference(msg.sender, exchangeAddress, _value, symbol, "Sell", address(this))) {
@@ -257,10 +274,10 @@ contract AssetWithFee {
 
     function buy(address _to) returns(bool) {
         uint value = msg.value / tokenPriceInWeiBuy;
-        if (exchangeAddress == 0x0 || value < buyLimitMin  || value > buyLimitMax) {
+        if (exchangeAddress == 0x0 || value < buyLimitMin || value > buyLimitMax) {
             return false;
         }
-        if (!treasury.deposit.value(msg.value)(address(this))) {
+        if (!treasury.depositWithReference.value(msg.value)(address(this), "Buy")) {
             return false;
         }
         if (!multiAsset.proxyTransferWithReference(_to, value, symbol, "Buy", exchangeAddress)) {
