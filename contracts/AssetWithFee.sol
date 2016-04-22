@@ -1,9 +1,5 @@
 import "MultiAsset.sol";
-
-contract Treasury {
-    function isActiveClient(uint _client) constant returns (bool);
-    function withdraw(address _to, uint _client, uint _amount, uint _product) returns(bool);
-}
+import "EtherTreasuryLight.sol";
 
 contract AssetWithFee {
     uint public refundGas = 40000;
@@ -13,12 +9,15 @@ contract AssetWithFee {
     uint public transferFromCallGas = 21000;
     uint public transferFromWithReferenceCallGas = 21000;
     uint public approveCallGas = 21000;
-    uint public confirmCallGas = 21000;
-    uint public clientId;
-    uint public tokenPriceInWei = 1;
-    uint public gasPriceLimit = 0;
-    Treasury treasury;
+    uint public tokenPriceInWeiSell = 1;
+    uint public tokenPriceInWeiBuy = 2;
+    uint public buyLimitMin = 0;
+    uint public buyLimitMax = 0;
+    uint public sellLimitMin = 0;
+    uint public sellLimitMax = 0;
+    EtherTreasuryLight treasury;
     address public feeAddress;
+    address public exchangeAddress;
 
     modifier onlyOwner() {
         if (multiAsset.isOwner(msg.sender, symbol)) {
@@ -31,27 +30,30 @@ contract AssetWithFee {
         return true;
     }
 
-    function setFeeGasPriceLimit(uint _gasPriceLimit) onlyOwner() returns(bool) {
-        gasPriceLimit = _gasPriceLimit;
-        return true;
-    }
-
-    function setTokenPrice(uint _tokenPriceInWei) onlyOwner() returns(bool) {
-        if (_tokenPriceInWei == 0) {
+    function setupExchange(address _exchangeAddress, uint _buyLimitMin, uint _buyLimitMax, uint _sellLimitMin, uint _sellLimitMax) onlyOwner() returns(bool) {
+        if (_buyLimitMin > _buyLimitMax || _sellLimitMin > _sellLimitMax) {
             return false;
         }
-        tokenPriceInWei = _tokenPriceInWei;
+        exchangeAddress = _exchangeAddress;
+        buyLimitMin = _buyLimitMin;
+        buyLimitMax = _buyLimitMax;
+        sellLimitMin = _sellLimitMin;
+        sellLimitMax = _sellLimitMax;
         return true;
     }
 
-    function setWholeTokenPrice(uint _wholeTokenPriceInWei) onlyOwner() returns(bool) {
+    function setTokenPrice(uint _tokenPriceInWeiSell, uint _tokenPriceInWeiBuy) onlyOwner() returns(bool) {
+        if (_tokenPriceInWeiSell == 0 || _tokenPriceInWeiBuy == 0 || _tokenPriceInWeiSell > _tokenPriceInWeiBuy) {
+            return false;
+        }
+        tokenPriceInWeiSell = _tokenPriceInWeiSell;
+        tokenPriceInWeiBuy = _tokenPriceInWeiBuy;
+        return true;
+    }
+
+    function setWholeTokenPrice(uint _wholeTokenPriceInWeiSell, uint _wholeTokenPriceInWeiBuy) onlyOwner() returns(bool) {
         uint wholeToken = (10 ** multiAsset.baseUnit(symbol));
-        uint price = _wholeTokenPriceInWei / wholeToken;
-        if (price == 0) {
-            return false;
-        }
-        tokenPriceInWei = price;
-        return true;
+        return setTokenPrice(_wholeTokenPriceInWeiSell / wholeToken, _wholeTokenPriceInWeiBuy / wholeToken);
     }
 
     function updateFeeGas(uint _surplus) onlyOwner() returns(uint) {
@@ -66,56 +68,54 @@ contract AssetWithFee {
     function updateRefundGas(uint _surplus) onlyOwner() returns(uint) {
         uint startGas = msg.gas;
         uint refund = (startGas - msg.gas + refundGas) * tx.gasprice; // just to simulate calculations, dunno if optimizer will remove this.
-        if (!_refund(1)) {
+        if (!_refund(1, "Update")) {
             return 0;
         }
         refundGas = startGas - msg.gas + _surplus;
         return refundGas;
     }
 
-    function setOperationsCallGas(uint _transfer, uint _transferFrom, uint _transferWithReference, uint _transferFromWithReference, uint _approve, uint _confirm) onlyOwner() returns(bool) {
+    function setOperationsCallGas(uint _transfer, uint _transferFrom, uint _transferWithReference, uint _transferFromWithReference, uint _approve) onlyOwner() returns(bool) {
         transferCallGas = _transfer;
         transferFromCallGas = _transferFrom;
         transferWithReferenceCallGas = _transferWithReference;
         transferFromWithReferenceCallGas = _transferFromWithReference;
         approveCallGas = _approve;
-        confirmCallGas = _confirm;
         return true;
     }
 
-    function setupTreasury(address _treasury, uint _client) onlyOwner() returns(bool) {
-        treasury = Treasury(_treasury);
-        if (!treasury.isActiveClient(_client)) {
-            return false;
+    function setupTreasury(address _treasury) onlyOwner() returns(bool) {
+        treasury = EtherTreasuryLight(_treasury);
+        if (msg.value > 0 && !treasury.deposit.value(msg.value)(address(this))) {
+            throw;
         }
-        clientId = _client;
         return true;
     }
 
     // DEPLOY REMOVE START
 
-    function getTransferCallGas(address _to, uint _value) returns(uint) {
-        return _value;
+    function getTransferCallGas(address _to, uint _value) returns(bool) {
+        return true;
     }
 
-    function getTransferFromCallGas(address _from, address _to, uint _value) returns(uint) {
-        return _value;
+    function getTransferFromCallGas(address _from, address _to, uint _value) returns(bool) {
+        return true;
     }
 
-    function getTransferWithReferenceCallGas(address _to, uint _value, string _reference) returns(uint) {
-        return _value;
+    function getTransferWithReferenceCallGas(address _to, uint _value, string _reference) returns(bool) {
+        return true;
     }
 
-    function getTransferFromWithReferenceCallGas(address _from, address _to, uint _value, string _reference) returns(uint) {
-        return _value;
+    function getTransferFromWithReferenceCallGas(address _from, address _to, uint _value, string _reference) returns(bool) {
+        return true;
     }
 
-    function getApproveCallGas(address _spender, uint _value) returns(uint) {
-        return _value;
+    function getApproveCallGas(address _spender, uint _value) returns(bool) {
+        return true;
     }
 
-    function getConfirmCallGas(address _cosigner, bytes32 _opHash, address _account, uint _nonce, uint8 _v, bytes32 _r, bytes32 _s) returns(uint) {
-        return _nonce;
+    function getForwardCallGas(address _to, bytes _data) returns(bool) {
+        return true;
     }
 
     // DEPLOY REMOVE END
@@ -134,56 +134,55 @@ contract AssetWithFee {
         return true;
     }
 
-    function _applyFeeAndRefund(address _feeFrom, uint _startGas, string _referece) internal returns(uint) {
-        uint fee = ((_startGas - msg.gas + refundGas + feeGas) * tx.gasprice / tokenPriceInWei) + 1; // Round up.
-        if ((gasPriceLimit != 0 && tx.gasprice > gasPriceLimit) || !_transferFee(_feeFrom, fee, _referece)) {
-            return 0;
+    function _applyFeeAndRefund(address _feeFrom, uint _startGas, string _reference) internal returns(bool) {
+        uint fee = ((_startGas - msg.gas + refundGas + feeGas) * tx.gasprice / tokenPriceInWeiSell) + 1; // Round up.
+        if (!_transferFee(_feeFrom, fee, _reference)) {
+            return false;
         }
         uint refund = (_startGas - msg.gas + refundGas) * tx.gasprice;
-        _refund(refund);
-        return fee;
+        return _refund(refund, _reference);
     }
 
-    function _refund(uint _value) internal returns(bool) {
-        return treasury.withdraw(tx.origin, clientId, _value, uint(msg.sig));
+    function _refund(uint _value, string _reference) internal returns(bool) {
+        return treasury.withdrawWithReference(tx.origin, _value, _reference);
     }
 
-    function _transfer(address _to, uint _value) internal returns(bool, uint) {
+    function _transfer(address _to, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferCallGas;
         if (!multiAsset.proxyTransfer(_to, _value, symbol, msg.sender)) {
-            return (false, 0);
+            return (false, false);
         }
         return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
     }
 
-    function _transferFrom(address _from, address _to, uint _value) internal returns(bool, uint) {
+    function _transferFrom(address _from, address _to, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromCallGas;
         if (!multiAsset.proxyTransferFrom(_from, _to, _value, symbol, msg.sender)) {
-            return (false, 0);
+            return (false, false);
         }
         return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
     }
 
-    function _transferWithReference(address _to, uint _value, string _reference) internal returns(bool, uint) {
+    function _transferWithReference(address _to, uint _value, string _reference) internal returns(bool, bool) {
         uint startGas = msg.gas + transferWithReferenceCallGas + _stringGas(_reference);
         if (!multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference, msg.sender)) {
-            return (false, 0);
+            return (false, false);
         }
         return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
     }
 
-    function _transferFromWithReference(address _from, address _to, uint _value, string _reference) internal returns(bool, uint) {
+    function _transferFromWithReference(address _from, address _to, uint _value, string _reference) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromWithReferenceCallGas + _stringGas(_reference);
         if (!multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference, msg.sender)) {
-            return (false, 0);
+            return (false, false);
         }
         return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
     }
 
-    function _approve(address _spender, uint _value) internal returns(bool, uint) {
+    function _approve(address _spender, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + approveCallGas;
         if (!multiAsset.proxyApprove(_spender, _value, symbol, msg.sender)) {
-            return (false, 0);
+            return (false, false);
         }
         return (true, _applyFeeAndRefund(msg.sender, startGas, "Approve fee"));
     }
@@ -218,48 +217,57 @@ contract AssetWithFee {
         return success;
     }
 
-    function checkTransfer(address _to, uint _value) constant returns(bool, uint) {
+    function checkTransfer(address _to, uint _value) constant returns(bool, bool) {
         return _transfer(_to, _value);
     }
 
-    function checkTransferFrom(address _from, address _to, uint _value) constant returns(bool, uint) {
+    function checkTransferFrom(address _from, address _to, uint _value) constant returns(bool, bool) {
         return _transferFrom(_from, _to, _value);
     }
 
-    function checkTransferWithReference(address _to, uint _value, string _reference) constant returns(bool, uint) {
+    function checkTransferWithReference(address _to, uint _value, string _reference) constant returns(bool, bool) {
         return _transferWithReference(_to, _value, _reference);
     }
 
-    function checkTransferFromWithReference(address _from, address _to, uint _value, string _reference) constant returns(bool, uint) {
+    function checkTransferFromWithReference(address _from, address _to, uint _value, string _reference) constant returns(bool, bool) {
         return _transferFromWithReference(_from, _to, _value, _reference);
     }
 
-    function checkApprove(address _spender, uint _value) constant returns(bool, uint) {
+    function checkApprove(address _spender, uint _value) constant returns(bool, bool) {
         return _approve(_spender, _value);
     }
 
-    function _confirm(address _cosigner, bytes32 _opHash, address _account, uint _nonce, uint8 _v, bytes32 _r, bytes32 _s) internal returns(bool, uint) {
-        uint startGas = msg.gas + confirmCallGas;
-        if (!Cosigner(_cosigner).confirm(_opHash, _account, _nonce, _v, _r, _s)) {
-            return (false, 0);
+    function forward(address _to, bytes _data) onlyOwner() returns(bool) {
+        return _to.call(_data);
+    }
+
+    function sell(address _to, uint _value) returns(bool) {
+        if (exchangeAddress == 0x0 || _value < sellLimitMin  || _value > sellLimitMax) {
+            return false;
         }
-        return (true, _applyFeeAndRefund(msg.sender, startGas, "Confirm fee"));
+        if (!multiAsset.proxyTransferFromWithReference(msg.sender, exchangeAddress, _value, symbol, "Sell", address(this))) {
+            return false;
+        }
+        uint result = _value * tokenPriceInWeiSell;
+        if (!treasury.withdrawWithReference(_to, result, "Sell")) {
+            throw;
+        }
+        return true;
     }
 
-    function confirm(address _cosigner, bytes32 _opHash, address _account, uint _nonce, uint8 _v, bytes32 _r, bytes32 _s) returns(bool) {
-        bool success;
-        (success,) = _confirm(_cosigner, _opHash, _account, _nonce, _v, _r, _s);
-        return success;
+    function buy(address _to) returns(bool) {
+        uint value = msg.value / tokenPriceInWeiBuy;
+        if (exchangeAddress == 0x0 || value < buyLimitMin  || value > buyLimitMax) {
+            return false;
+        }
+        if (!treasury.deposit.value(msg.value)(address(this))) {
+            return false;
+        }
+        if (!multiAsset.proxyTransferWithReference(_to, value, symbol, "Buy", exchangeAddress)) {
+            throw;
+        }
+        return true;
     }
-
-    function checkConfirm(address _cosigner, bytes32 _opHash, address _account, uint _nonce, uint8 _v, bytes32 _r, bytes32 _s) constant returns(bool, uint) {
-        return _confirm(_cosigner, _opHash, _account, _nonce, _v, _r, _s);
-    }
-
-
-
-
-
 
     event Transfer(address indexed from, address indexed to, uint value);
     event Approve(address indexed from, address indexed spender, uint value);

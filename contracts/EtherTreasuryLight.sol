@@ -1,23 +1,19 @@
 import "MultiAsset.sol";
 
 contract EtherTreasuryLight {
-    function _deposit(address _to, uint _value) internal returns(bool) {
-        if (multiAsset.reissueAsset(symbol, _value)) {
-            return _transfer(address(this), _to, _value);
-        }
-        return false;
-    }
-    
     function() {
-        deposit();
+        deposit(msg.sender);
     }
     
     function deposit(address _to) returns(bool) {
-        return _deposit(_to, msg.value);
+        return depositWithReference(_to, "Deposit");
     }
 
-    function deposit() returns(bool) {
-        return _deposit(msg.sender, msg.value);
+    function depositWithReference(address _to, string _reference) returns(bool) {
+        if (balanceOf(address(this)) >= msg.value || multiAsset.reissueAsset(symbol, msg.value)) {
+            return _transferWithReference(address(this), _to, msg.value, _reference);
+        }
+        return false;
     }
 
     function _withdraw(address _to, uint _value) internal returns(bool) {
@@ -25,7 +21,11 @@ contract EtherTreasuryLight {
     }
     
     function withdraw(address _to, uint _value) returns(bool) {
-        if (multiAsset.proxyTransferDirect(msg.sender, address(this), _value, symbol, "Withdraw")) {
+        return withdrawWithReference(_to, _value, "");
+    }
+
+    function withdrawWithReference(address _to, uint _value, string _reference) returns(bool) {
+        if (multiAsset.proxyTransferDirect(msg.sender, address(this), _value, symbol, _reference)) {
             return _withdraw(_to, _value);
         }
         return false;
@@ -47,7 +47,13 @@ contract EtherTreasuryLight {
         }
         multiAsset = MultiAsset(_multiAsset);
         symbol = _symbol;
-        return true;
+        if (multiAsset.issueAsset(symbol, 0, "WeiToken", "1-to-1 with wei. ATTENTION: NOT safe to hold tokens buy real person. Cosinging will not be checked! Use only for contracts!", 0, true)
+            && multiAsset.setProxy(address(this), true, symbol)
+            && multiAsset.setOnlyProxy(true, symbol))
+        {
+            return true;
+        }
+        return false;
     }
 
     modifier onlyMultiAsset() {
@@ -68,7 +74,7 @@ contract EtherTreasuryLight {
         return multiAsset.allowance(_from, _spender, symbol);
     }
 
-    function _transfer(address _from, address _to, uint _value) returns(bool) {
+    function _transfer(address _from, address _to, uint _value) internal returns(bool) {
         if (!multiAsset.proxyTransfer(_to, _value, symbol, _from)) {
             return false;
         }     
@@ -81,35 +87,35 @@ contract EtherTreasuryLight {
             return false;
         }
         if (_to == address(this)) {
-            return _withdraw(msg.sender, _value);
+            return _withdraw(tx.origin, _value);
         }
+        return true;
+    }
+
+    function _transferWithReference(address _from, address _to, uint _value, string _reference) internal returns(bool) {
+        if (!multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference, _from)) {
+            return false;
+        }
+        Transfer(_from, _to, _value);
         return true;
     }
 
     function transferWithReference(address _to, uint _value, string _reference) returns(bool) {
-        if (!multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference, msg.sender)) {
+        if (!_transferWithReference(msg.sender, _to, _value, _reference)) {
             return false;
         }
         if (_to == address(this)) {
-            return _withdraw(msg.sender, _value);
-        }
-        Transfer(msg.sender, _to, _value);
-        return true;
-    }
-
-    function _transferFrom(address _from, address _to, uint _value) internal returns(bool) {
-        if (!multiAsset.proxyTransferFrom(_from, _to, _value, symbol, msg.sender)) {
-            return false;
+            return _withdraw(tx.origin, _value);
         }
         return true;
     }
     
     function transferFrom(address _from, address _to, uint _value) returns(bool) {
-        if (!_transferFrom(_from, _to, _value)) {
+        if (!multiAsset.proxyTransferFrom(_from, _to, _value, symbol, msg.sender)) {
             return false;
         }
         if (_to == address(this)) {
-            return _withdraw(msg.sender, _value);
+            return _withdraw(tx.origin, _value);
         }
         Transfer(_from, _to, _value);
         return true;
@@ -120,7 +126,7 @@ contract EtherTreasuryLight {
             return false;
         }
         if (_to == address(this)) {
-            return _withdraw(msg.sender, _value);
+            return _withdraw(tx.origin, _value);
         }
         Transfer(_from, _to, _value);
         return true;
@@ -132,13 +138,5 @@ contract EtherTreasuryLight {
         }
         Approve(msg.sender, _spender, _value);
         return true;
-    }
-
-    function emitTransfer(address _from, address _to, uint _value) onlyMultiAsset() {
-        Transfer(_from, _to, _value);
-    }
-
-    function emitApprove(address _from, address _spender, uint _value) onlyMultiAsset() {
-        Approve(_from, _spender, _value);
     }
 }

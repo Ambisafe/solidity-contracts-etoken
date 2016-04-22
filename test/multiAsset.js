@@ -922,7 +922,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 1);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.transfer.getData(accounts[0], 10, SYMBOL)), bytes32(0)));
+      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.transfer.getData(accounts[0], 10, SYMBOL)), bytes32(1)));
     }).then(done).catch(done);
   });
   it('should checkSigned on transfer with reference', function(done) {
@@ -932,7 +932,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 1);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.transferWithReference.getData(accounts[0], 10, SYMBOL, "ref")), bytes32(0)));
+      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.transferWithReference.getData(accounts[0], 10, SYMBOL, "ref")), bytes32(1)));
     }).then(done).catch(done);
   });
   it('should keep transfers separated between assets', function(done) {
@@ -2368,7 +2368,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 1);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.approve.getData(accounts[1], 100, SYMBOL)), bytes32(0)));
+      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.approve.getData(accounts[1], 100, SYMBOL)), bytes32(2)));
     }).then(done).catch(done);
   });
   it('should checkSigned approve and allowance transfer with reference', function(done) {
@@ -2558,13 +2558,14 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   it('should return 1 allowance after another transfer', function(done) {
     var holder = accounts[0];
     var spender = accounts[1];
+    var receiver = accounts[2];
     var value = 300;
     var transfer = 299;
     var resultValue = 1;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
-      return multiAsset.transferFrom(holder, spender, transfer, SYMBOL, {from: spender});
+      return multiAsset.transferFrom(holder, receiver, transfer, SYMBOL, {from: spender});
     }).then(function() {
       return multiAsset.allowance.call(holder, spender, SYMBOL);
     }).then(function(result) {

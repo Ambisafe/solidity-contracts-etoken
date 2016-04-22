@@ -1234,13 +1234,14 @@ contract('AssetWithFee', {reset_state: true}, function(accounts) {
   it('should return 1 allowance after another transfer', function(done) {
     var holder = accounts[0];
     var spender = accounts[1];
+    var receiver = accounts[2];
     var value = 300;
     var transfer = 299;
     var resultValue = 1;
     multiAsset.setProxy(asset.address, true, SYMBOL).then(function() {
       return asset.approve(spender, value);
     }).then(function() {
-      return asset.transferFrom(holder, spender, transfer, {from: spender});
+      return asset.transferFrom(holder, receiver, transfer, {from: spender});
     }).then(function() {
       return asset.allowance.call(holder, spender);
     }).then(function(result) {
