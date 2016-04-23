@@ -35,35 +35,35 @@ contract Asset {
     }
 
     function transfer(address _to, uint _value) returns(bool) {
-        if (!multiAsset.proxyTransfer(_to, _value, symbol, msg.sender)) {
+        if (!multiAsset.proxyTransfer(_to, _value, symbol)) {
             return false;
         }
         return true;
     }
 
     function transferWithReference(address _to, uint _value, string _reference) returns(bool) {
-        if (!multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference, msg.sender)) {
+        if (!multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference)) {
             return false;
         }
         return true;
     }
     
     function transferFrom(address _from, address _to, uint _value) returns(bool) {
-        if (!multiAsset.proxyTransferFrom(_from, _to, _value, symbol, msg.sender)) {
+        if (!multiAsset.proxyTransferFrom(_from, _to, _value, symbol)) {
             return false;
         }
         return true;
     }
 
     function transferFromWithReference(address _from, address _to, uint _value, string _reference) returns(bool) {
-        if (!multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference, msg.sender)) {
+        if (!multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference)) {
             return false;
         }
         return true;
     }
 
     function approve(address _spender, uint _value) returns(bool) {
-        if (!multiAsset.proxyApprove(_spender, _value, symbol, msg.sender)) {
+        if (!multiAsset.proxyApprove(_spender, _value, symbol)) {
             return false;
         }
         return true;

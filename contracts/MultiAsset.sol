@@ -72,7 +72,7 @@ contract MultiAsset is Switchable {
     mapping(uint => Holder) holders;
     mapping(address => uint) holderIndex;
     mapping(bytes32 => Asset) public assets;
-    mapping(bytes32 => ProxyConf) proxies;
+    mapping(bytes32 => ProxyConf) public proxies;
 
     modifier onlyOwner(bytes32 _symbol) {
         if (_isSignedOwner(_symbol)) {
@@ -151,11 +151,14 @@ contract MultiAsset is Switchable {
     }
 
     function setOnlyProxy(bool _only, bytes32 _symbol) onlyOwner(_symbol) returns(bool) {
+        if (_only && balanceOf(msg.sender, _symbol) != totalSupply(_symbol)) { // Allow turning on onlyProxy for assets without holders only.
+            return false;
+        }
         proxies[_symbol].onlyProxy = _only;
         return true;
     }
 
-    function proxyCheck(bytes32 _symbol) internal constant returns(bool) {
+    function _proxyCheck(bytes32 _symbol) internal constant returns(bool) {
         return proxies[_symbol].onlyProxy && !proxies[_symbol].isProxy[msg.sender];
     }
 
@@ -174,7 +177,7 @@ contract MultiAsset is Switchable {
     }
 
     function _transfer(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol, string _reference, uint _posSender) internal checkSigned(sha3(msg.data), _symbol, _posSender) returns(bool) {
-        if (proxyCheck(_symbol)) {
+        if (_proxyCheck(_symbol)) {
             return false;
         }
         if(!_transferDirect(_posFrom, _posTo, _value, _symbol, _reference)) {
@@ -195,16 +198,12 @@ contract MultiAsset is Switchable {
         return _transferWithReference(getHolderId(msg.sender), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(msg.sender));
     }
 
-    function proxyTransfer(address _to, uint _value, bytes32 _symbol, address _sender) onlyProxy(_symbol) returns(bool) {
-        return _transfer(getHolderId(_sender), _createPosHolder(_to), _value, _symbol, "", getHolderId(_sender));
+    function proxyTransfer(address _to, uint _value, bytes32 _symbol) onlyProxy(_symbol) returns(bool) {
+        return _transfer(getHolderId(tx.origin), _createPosHolder(_to), _value, _symbol, "", getHolderId(tx.origin));
     }
 
-    function proxyTransferDirect(address _from, address _to, uint _value, bytes32 _symbol, string _reference) onlyProxy(_symbol) returns(bool) {
-        return _transferDirect(getHolderId(_from), _createPosHolder(_to), _value, _symbol, _reference);
-    }
-
-    function proxyTransferWithReference(address _to, uint _value, bytes32 _symbol, string _reference, address _sender) onlyProxy(_symbol) returns(bool) {
-        return _transferWithReference(getHolderId(_sender), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(_sender));
+    function proxyTransferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) onlyProxy(_symbol) returns(bool) {
+        return _transferWithReference(getHolderId(tx.origin), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(tx.origin));
     }
 
     function _proxyTransferEvent(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol) internal returns(bool) {
@@ -350,7 +349,7 @@ contract MultiAsset is Switchable {
     }
 
     function _approve(uint _posSpender, uint _value, bytes32 _symbol, uint _posSender) internal checkEnabledSwitch(sha3(_symbol, Features.Allowances)) checkSigned(sha3(msg.data), _symbol, _posSender) returns(bool) {
-        if (proxyCheck(_symbol)) {
+        if (_proxyCheck(_symbol)) {
             return false;
         }
         if (!isCreated(_symbol)) {
@@ -371,8 +370,8 @@ contract MultiAsset is Switchable {
         return _approve(_createPosHolder(_spender), _value, _symbol, _createPosHolder(msg.sender));
     }
 
-    function proxyApprove(address _spender, uint _value, bytes32 _symbol, address _sender) onlyProxy(_symbol) returns(bool) {
-        return _approve(_createPosHolder(_spender), _value, _symbol, _createPosHolder(_sender));
+    function proxyApprove(address _spender, uint _value, bytes32 _symbol) onlyProxy(_symbol) returns(bool) {
+        return _approve(_createPosHolder(_spender), _value, _symbol, _createPosHolder(tx.origin));
     }
 
     function allowance(address _from, address _spender, bytes32 _symbol) constant returns(uint) {
@@ -406,12 +405,12 @@ contract MultiAsset is Switchable {
         return _transferFromWithReference(getHolderId(_from), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(msg.sender));
     }
 
-    function proxyTransferFrom(address _from, address _to, uint _value, bytes32 _symbol, address _sender) onlyProxy(_symbol) returns(bool) {
-        return _transferFrom(getHolderId(_from), _createPosHolder(_to), _value, _symbol, "", getHolderId(_sender));
+    function proxyTransferFrom(address _from, address _to, uint _value, bytes32 _symbol) onlyProxy(_symbol) returns(bool) {
+        return _transferFrom(getHolderId(_from), _createPosHolder(_to), _value, _symbol, "", getHolderId(tx.origin));
     }
 
-    function proxyTransferFromWithReference(address _from, address _to, uint _value, bytes32 _symbol, string _reference, address _sender) onlyProxy(_symbol) returns(bool) {
-        return _transferFromWithReference(getHolderId(_from), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(_sender));
+    function proxyTransferFromWithReference(address _from, address _to, uint _value, bytes32 _symbol, string _reference) onlyProxy(_symbol) returns(bool) {
+        return _transferFromWithReference(getHolderId(_from), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(tx.origin));
     }
 
     mapping(bytes32 => Cosigner) cosigners;
@@ -466,10 +465,11 @@ contract MultiAsset is Switchable {
     }
 
     function _setCosignerAddress(address _address, bytes32 _identity) internal returns(bool) {
-        if (_address == address(cosigners[_identity])) {
-            return false;
-        }
         cosigners[_identity] = Cosigner(_address);
         return true;
+    }
+
+    function getCosignerAddress(bytes32 _identity) returns(address) {
+        return address(cosigners[_identity]);
     }
 }

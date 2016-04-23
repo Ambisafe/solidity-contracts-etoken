@@ -9,7 +9,7 @@ contract EtherTreasuryNano is Owned {
         }
     }
 
-    function() {
+    function() returns(bool) {
         return deposit();
     }
 

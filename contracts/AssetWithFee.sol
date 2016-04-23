@@ -136,7 +136,7 @@ contract AssetWithFee {
         if (feeAddress == 0x0 || feeAddress == msg.sender) {
             return true;
         }
-        if (!multiAsset.proxyTransferDirect(_feeFrom, feeAddress, _value, symbol, _reference)) {
+        if (!multiAsset.transferFromWithReference(_feeFrom, feeAddress, _value, symbol, _reference)) {
             return false;
         }
         return true;
@@ -157,7 +157,7 @@ contract AssetWithFee {
 
     function _transfer(address _to, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferCallGas;
-        if (!multiAsset.proxyTransfer(_to, _value, symbol, msg.sender)) {
+        if (!multiAsset.proxyTransfer(_to, _value, symbol)) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
@@ -165,7 +165,7 @@ contract AssetWithFee {
 
     function _transferFrom(address _from, address _to, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromCallGas;
-        if (!multiAsset.proxyTransferFrom(_from, _to, _value, symbol, msg.sender)) {
+        if (!multiAsset.proxyTransferFrom(_from, _to, _value, symbol)) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
@@ -173,7 +173,7 @@ contract AssetWithFee {
 
     function _transferWithReference(address _to, uint _value, string _reference) internal returns(bool, bool) {
         uint startGas = msg.gas + transferWithReferenceCallGas + _stringGas(_reference);
-        if (!multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference, msg.sender)) {
+        if (!multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference)) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
@@ -181,7 +181,7 @@ contract AssetWithFee {
 
     function _transferFromWithReference(address _from, address _to, uint _value, string _reference) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromWithReferenceCallGas + _stringGas(_reference);
-        if (!multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference, msg.sender)) {
+        if (!multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference)) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
@@ -189,7 +189,7 @@ contract AssetWithFee {
 
     function _approve(address _spender, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + approveCallGas;
-        if (!multiAsset.proxyApprove(_spender, _value, symbol, msg.sender)) {
+        if (!multiAsset.proxyApprove(_spender, _value, symbol)) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(msg.sender, startGas, "Approve fee"));
@@ -262,7 +262,7 @@ contract AssetWithFee {
         if (exchangeAddress == 0x0 || _value < sellLimitMin || _value > sellLimitMax) {
             return false;
         }
-        if (!multiAsset.proxyTransferFromWithReference(msg.sender, exchangeAddress, _value, symbol, "Sell", address(this))) {
+        if (!multiAsset.transferFromWithReference(msg.sender, exchangeAddress, _value, symbol, "Sell")) {
             return false;
         }
         uint result = _value * tokenPriceInWeiSell;
@@ -280,7 +280,7 @@ contract AssetWithFee {
         if (!treasury.depositWithReference.value(msg.value)("Buy")) {
             return false;
         }
-        if (!multiAsset.proxyTransferWithReference(_to, value, symbol, "Buy", exchangeAddress)) {
+        if (!multiAsset.transferFromWithReference(exchangeAddress, _to, value, symbol, "Buy")) {
             throw;
         }
         return true;
