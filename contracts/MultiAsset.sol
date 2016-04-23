@@ -1,3 +1,5 @@
+import "Owned.sol";
+
 contract Cosigner {
     function isSigned(bytes32) returns(bool);
     function confirm(bytes32 _opHash, address _account, uint _nonce, uint8 _v, bytes32 _r, bytes32 _s) returns(bool);
@@ -6,25 +8,6 @@ contract Cosigner {
 contract Proxy {
     function emitTransfer(address, address, uint);
     function emitApprove(address, address, uint);
-}
-
-contract Owned {
-    address public contractOwner;
-
-    function Owned() {
-        contractOwner = msg.sender;
-    }
-
-    modifier onlyContractOwner() {
-        if (contractOwner == msg.sender) {
-            _
-        }
-    }
-
-    function changeContractOwnership(address _to) onlyContractOwner() returns(bool) {
-        contractOwner = _to;
-        return true;
-    }
 }
 
 contract Switchable is Owned {

@@ -89,7 +89,7 @@ contract AssetWithFee {
 
     function setupTreasury(address _treasury) onlyOwner() returns(bool) {
         treasury = EtherTreasuryNano(_treasury);
-        if (msg.value > 0 && !treasury.depositWithReference.value(msg.value)(address(this), "Setup Treasury")) {
+        if (msg.value > 0 && !treasury.depositWithReference.value(msg.value)("Setup Treasury")) {
             throw;
         }
         return true;
@@ -277,7 +277,7 @@ contract AssetWithFee {
         if (exchangeAddress == 0x0 || value < buyLimitMin || value > buyLimitMax) {
             return false;
         }
-        if (!treasury.depositWithReference.value(msg.value)(address(this), "Buy")) {
+        if (!treasury.depositWithReference.value(msg.value)("Buy")) {
             return false;
         }
         if (!multiAsset.proxyTransferWithReference(_to, value, symbol, "Buy", exchangeAddress)) {

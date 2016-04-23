@@ -1,31 +1,33 @@
-contract EtherTreasuryNano {
-    uint public walletsCount = 1; 
-    mapping(address => uint) public wallets;
-    mapping(uint => uint) public balances;
+import "Owned.sol";
+
+contract EtherTreasuryNano is Owned {
+    mapping(address => bool) public hasAccess;
+
+    modifier checkAccess() {
+        if (hasAccess[msg.sender]) {
+            _
+        }
+    }
 
     function() {
-        deposit(msg.sender);
+        return deposit();
     }
-    
-    function deposit(address _to) returns(bool) {
-        if (wallets[_to] == 0) {
-            wallets[_to] = walletsCount++;
+
+    function deposit() returns(bool) {
+        if (msg.value > 0) {
+            return true;
         }
-        balances[wallets[_to]] += msg.value;
+        return false;
+    }
+
+    function depositWithReference(string _reference) returns(bool) {
+        if (msg.value > 0) {
+            Deposit(msg.sender, msg.value, _reference);
+        }
         return true;
     }
 
-    function depositWithReference(address _to, string _reference) returns(bool) {
-        deposit(_to);
-        Deposit(msg.sender, _to, msg.value, _reference);
-        return true;
-    }
-
-    function withdraw(address _to, uint _value) returns(bool) {
-        if (balances[wallets[msg.sender]] < _value) {
-            return false;
-        }
-        balances[wallets[msg.sender]] -= _value;
+    function withdraw(address _to, uint _value) checkAccess() returns(bool) {
         return _to.send(_value);
     }
 
@@ -37,23 +39,16 @@ contract EtherTreasuryNano {
         return true;
     }
 
-    function balanceOf(address _holder) constant returns(uint) {
-        return balances[wallets[_holder]];
-    }
-
-    function addAddress(address _address) returns(bool) {
-        wallets[_address] = wallets[msg.sender];
+    function addAddress(address _address) onlyContractOwner() returns(bool) {
+        hasAccess[_address] = true;
         return true;
     }
 
-    function removeAddress(address _address) returns(bool) {
-        if (wallets[_address] != wallets[msg.sender]) {
-            return false;
-        }
-        delete wallets[_address];
+    function removeAddress(address _address) onlyContractOwner() returns(bool) {
+        hasAccess[_address] = false;
         return true;
     }
 
-    event Deposit(address indexed from, address indexed to, uint value, string reference);
+    event Deposit(address indexed from, uint value, string reference);
     event Withdrawal(address indexed from, address indexed to, uint value, string reference);
 }
