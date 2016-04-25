@@ -71,6 +71,8 @@ ambi.setRelation(symbol, "setup", "dev", {from: acc()});
 console.log(ambi.isRelation.call(symbol, "setup", "dev"));
 ambi.setRelation(symbol, "cron", "dev", {from: acc()});
 console.log(ambi.isRelation.call(symbol, "cron", "dev"));
+ambi.setRelation(symbol, "fee", "dev", {from: acc()});
+console.log(ambi.isRelation.call(symbol, "fee", "dev"));
 //ambi.addNode("proxyfee", proxyfee.address, {from: acc()});
 //ambi.getNodeAddress.call("proxyfee").valueOf() == proxyfee.address;
 //ambi.setRelation("treasury", "refunder", "proxyfee", {from: acc()}); // Will change!
@@ -92,7 +94,7 @@ var feeAddress = acc(3);
 var exchangeAddress = acc(7);
 var cosignerAddress = cosigner.address;
 
-console.log(proxyfee.setForward.call(cosigner.confirm.getData(), cosignerAddress, {from: acc()}));
+console.log(proxyfee.setForward.call(cosigner.confirm.getData().substr(0,10), cosignerAddress, {from: acc()}));
 proxyfee.setForward(cosigner.confirm.getData(), cosignerAddress, {from: acc()});
 
 console.log("1 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferCallGas(acc(1), 1000, {from: acc()})).gasUsed);
@@ -572,3 +574,44 @@ console.log(proxyfee.balanceOf.call(exchangeAddress).eq(exchangeBalance.sub(amou
 console.log(proxyfee.balanceOf.call(acc()).eq(tokenBalance.add(amount)));
 console.log(web3.eth.getBalance(acc()).eq(balance.sub(price).sub(gasPrice.mul(buy1.gasUsed))));
 console.log(web3.eth.getBalance(treasury.address).eq(treasuryBalance.add(price)));
+
+
+
+console.log(proxyfee.approve.call(proxyfee.address, 1000, {from: acc(1)}));
+proxyfee.approve(proxyfee.address, 1000, {from: acc(1)});
+console.log(etok.setCosignerAddress.call(cosigner.address, symbol, {from: acc(1)}));
+etok.setCosignerAddress(cosigner.address, symbol, {from: acc(1)});
+console.log(etok.getHolderId(acc(1)).toNumber() == 4);
+
+var operationData = proxyfee.transfer.getData(acc(), 100, {from: acc(1), gasPrice: gasPrice});
+var operationHash = sha3(operationData, bytes32(etok.getHolderId(acc(1)).toNumber()));
+var confirmData = cosigner.confirm.getData(operationData, acc(1), 1457348561432, 0x1f, "0xa05108dadc92acf18f83f016e57635f8e648a554cbc3bba6b3ef1d8b4eb289fa", "0x2f4967d53c8f6dc6aafd4b06debf4eae6db3d83a9a06197642c23fae1f95cbc7");
+console.log(!cosigner.isConfirmed(operationHash));
+var balance = web3.eth.getBalance(acc(1));
+var tokenBalance = proxyfee.balanceOf(acc(1));
+var feeBalance = proxyfee.balanceOf(feeAddress);
+var tokenBalanceFrom = proxyfee.balanceOf(acc());
+var correctEstimateFee = web3.toBigNumber(web3.eth.estimateGas({to: proxyfee.address, data: confirmData, from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+var forward1 = web3.eth.sendTransaction({to: proxyfee.address, data: confirmData, from: acc(1)});
+console.log(cosigner.isConfirmed(operationHash));
+var forwardShortage1 = balance.sub(web3.eth.getBalance(acc(1))).div(gasPrice).toNumber();
+console.log("Gas used for forward 1: " + forward1.gasUsed + " Shortage: " + forwardShortage1);
+var exactFee = web3.toBigNumber(forward1.gasUsed - forwardShortage1).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call());
+var actualFee = web3.toBigNumber(forward1.logs[2].data);
+console.log(correctEstimateFee.gte(actualFee));
+console.log(actualFee.gte(exactFee));
+console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
+console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
+console.log(proxyfee.balanceOf.call(acc(1)).add(actualFee).eq(tokenBalanceFrom));
+
+if (forwardShortage1 > 0) {
+  proxyfee.setOperationsCallGas(
+    proxyfee.transferCallGas.call(),
+    proxyfee.transferFromCallGas.call(),
+    proxyfee.transferWithReferenceCallGas.call(),
+    proxyfee.transferFromWithReferenceCallGas.call(),
+    proxyfee.approveCallGas.call(),
+    proxyfee.forwardCallGas.call().add(forwardShortage1),
+    {from: acc()}
+  );
+}

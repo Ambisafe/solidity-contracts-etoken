@@ -416,21 +416,26 @@ contract MultiAsset is Switchable {
     mapping(bytes32 => Cosigner) cosigners;
     uint public signChecks; // DEPLOY REMOVE
     bytes32 public lastOperation; // DEPLOY REMOVE
+    uint public gas;
 
     modifier checkSigned(bytes32 _symbol, uint _posSender) {
+        gas = msg.gas;
         signChecks++; // DEPLOY REMOVE
         lastOperation = sha3(msg.data, _posSender); // DEPLOY REMOVE
         bytes32 perUserPerAsset = sha3(_posSender, _symbol);
         bytes32 perUser = sha3(_posSender);
         if (address(cosigners[perUserPerAsset]) != 0x0) {
+            signChecks++;
             if (cosigners[perUserPerAsset].isSigned(sha3(msg.data, _posSender))) {
                 _
             }
         } else if (address(cosigners[perUser]) != 0x0) {
+            signChecks++;
             if (cosigners[perUser].isSigned(sha3(msg.data, _posSender))) {
                 _
             }
         } else {
+            gas -= msg.gas;
             _
         }
     }
@@ -461,7 +466,7 @@ contract MultiAsset is Switchable {
         return true;
     }
 
-    function getCosignerAddress(bytes32 _identity) returns(address) {
+    function getCosignerAddress(bytes32 _identity) constant returns(address) {
         return address(cosigners[_identity]);
     }
 }
