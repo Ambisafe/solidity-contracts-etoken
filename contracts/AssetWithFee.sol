@@ -244,7 +244,7 @@ contract AssetWithFee is AmbiEnabled {
     }
 
     function _forward(address _to, bytes _data) internal returns(bool) {
-        uint startGas = msg.gas + forwardCallGas + (_data.length * 70); // 70 gas per byte;
+        uint startGas = msg.gas + forwardCallGas + (_data.length * 50); // 50 gas per byte;
         if (_to == 0x0) {
             return false;
         }

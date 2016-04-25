@@ -1,8 +1,11 @@
 var TestHelper = new (function() {
   // Convert number to 32 bytes hex representation.
-  this.bytes32 = function(number) {
+  this.bytes32 = function(stringOrNumber) {
     var zeros = '000000000000000000000000000000000000000000000000000000000000000';
-    var hexNumber = number.toString(16);
+    if (typeof stringOrNumber === "string") {
+      return (web3.toHex(stringOrNumber) + zeros).substr(0, 66);
+    }
+    var hexNumber = stringOrNumber.toString(16);
     return '0x' + (zeros + hexNumber).substring(hexNumber.length - 1);
   };
 
@@ -23,21 +26,30 @@ var gasPrice = web3.toBigNumber(web3.toWei(20, 'gwei'));
 
 var acc = function(num) { return web3.eth.accounts[num || 0]; };
 
-var _proxyfeeSetup = web3.eth.contract().at("");
-var proxyfee = web3.eth.contract().at("");
+var _proxyfeeSetup = web3.eth.contract(assetwithfeeContract.abi).at("");
+var proxyfee = web3.eth.contract(assetwithfeeContract.abi).at("");
 
-var ambi = web3.eth.contract([{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"owners","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"_node","type":"bytes32"}],"name":"removeNode","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"relationIndex","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"nodes","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"bytes32"}],"name":"setRelation","outputs":[{"name":"","type":"int8"}],"type":"function"},{"constant":true,"inputs":[{"name":"_name","type":"bytes32"}],"name":"getNodeAddress","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"_name","type":"bytes32"},{"name":"_addr","type":"address"}],"name":"changeNodeAddress","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_name","type":"bytes32"},{"name":"_addr","type":"address"}],"name":"addNode","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_operation","type":"bytes32"},{"name":"_signer","type":"bytes32"}],"name":"isSigned","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"bytes32"}],"name":"isRelation","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"}],"name":"getChildCount","outputs":[{"name":"","type":"uint8"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"address"}],"name":"hasRelation","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_pos","type":"uint8"}],"name":"getChildAddress","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"nodeIndex","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"addresses","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"relations","outputs":[{"name":"relation","type":"bytes32"},{"name":"parent","type":"bytes32"},{"name":"numChildren","type":"uint8"}],"type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"bytes32"}],"name":"removeChild","outputs":[{"name":"","type":"bool"}],"type":"function"},{"inputs":[],"type":"constructor"}]).at("");
+var ambi = web3.eth.contract(ambiContract.abi).at("");
 
-var treasury = web3.eth.contract().at("");
+var treasury = web3.eth.contract(ethertreasurynanoContract.abi).at("");
 
-var etok = web3.eth.contract().at("");
+var etok = web3.eth.contract(multiassetContract.abi).at("");
 
-var cosigner = web3.eth.contract().at("");
+var cosigner = web3.eth.contract(cosignerContract.abi).at("");
 
+
+
+ambi.addNode("dev", acc(), {from: acc()});
+console.log(ambi.getNodeAddress.call("dev").valueOf() == acc());
 
 //var symbol = "WEI";
 //console.log(treasury.init.call(etok.address, symbol, {from: acc()}));
 //treasury.init(etok.address, symbol, {from: acc()});
+treasury.setAmbiAddress(ambi.address, "wei", {from: acc()});
+console.log(ambi.getNodeAddress.call("wei").valueOf() == treasury.address);
+ambi.setRelation("wei", "admin", "dev", {from: acc()});
+console.log(ambi.isRelation.call("wei", "admin", "dev"));
+
 console.log(treasury.deposit.call(acc(), {value: web3.toWei(1, 'ether'), from: acc()}));
 treasury.deposit(acc(), {value: web3.toWei(1, 'ether'), from: acc()});
 //console.log(treasury.balanceOf(acc()).valueOf());
@@ -63,8 +75,6 @@ console.log(proxyfee.balanceOf.call(acc()).toNumber() == 10000000);
 
 proxyfee.setAmbiAddress(ambi.address, symbol, {from: acc()});
 console.log(ambi.getNodeAddress.call(symbol).valueOf() == proxyfee.address);
-ambi.addNode("dev", acc(), {from: acc()});
-console.log(ambi.getNodeAddress.call("dev").valueOf() == acc());
 ambi.setRelation(symbol, "admin", "dev", {from: acc()});
 console.log(ambi.isRelation.call(symbol, "admin", "dev"));
 ambi.setRelation(symbol, "setup", "dev", {from: acc()});
@@ -95,7 +105,7 @@ var exchangeAddress = acc(7);
 var cosignerAddress = cosigner.address;
 
 console.log(proxyfee.setForward.call(cosigner.confirm.getData().substr(0,10), cosignerAddress, {from: acc()}));
-proxyfee.setForward(cosigner.confirm.getData(), cosignerAddress, {from: acc()});
+proxyfee.setForward(cosigner.confirm.getData().substr(0,10), cosignerAddress, {from: acc()});
 
 console.log("1 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferCallGas(acc(1), 1000, {from: acc()})).gasUsed);
 console.log("2 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferFromCallGas(acc(1), acc(2), 1000, {from: acc()})).gasUsed);
@@ -532,10 +542,9 @@ console.log(proxyfee.balanceOf.call(acc(1)).eq(tokenBalance.add(100)));
 console.log(proxyfee.balanceOf.call(acc()).add(100).add(actualFee).eq(tokenBalanceFrom));
 
 
-
 var amount = 1000;
 console.log(etok.approve.call(proxyfee.address, amount, symbol, {from: acc(), gasPrice: gasPrice}));
-etok.approve(proxyfee.address, amount, symbol, {from: acc(), gasPrice: gasPrice});
+etok.approve(proxyfee.address, approve, symbol, {from: acc(), gasPrice: gasPrice});
 var balance = web3.eth.getBalance(acc());
 var tokenBalance = proxyfee.balanceOf(acc());
 var exchangeBalance = proxyfee.balanceOf(exchangeAddress);
@@ -576,23 +585,25 @@ console.log(web3.eth.getBalance(acc()).eq(balance.sub(price).sub(gasPrice.mul(bu
 console.log(web3.eth.getBalance(treasury.address).eq(treasuryBalance.add(price)));
 
 
-
+console.log(cosigner.addOracle.call("0x28fCebB90035e25136D1887B6F0851D41281da20", {from: acc()}));
+cosigner.addOracle("0x28fCebB90035e25136D1887B6F0851D41281da20", {from: acc()});
 console.log(proxyfee.approve.call(proxyfee.address, 1000, {from: acc(1)}));
 proxyfee.approve(proxyfee.address, 1000, {from: acc(1)});
 console.log(etok.setCosignerAddress.call(cosigner.address, symbol, {from: acc(1)}));
 etok.setCosignerAddress(cosigner.address, symbol, {from: acc(1)});
 console.log(etok.getHolderId(acc(1)).toNumber() == 4);
+console.log(etok.getCosignerAddress.call(sha3(bytes32(etok.getHolderId.call(acc(1)).toNumber()), bytes32(symbol))) == cosigner.address);
 
-var operationData = proxyfee.transfer.getData(acc(), 100, {from: acc(1), gasPrice: gasPrice});
+var operationData = etok.proxyTransfer.getData(acc(), 100, symbol, {from: acc(1), gasPrice: gasPrice});
 var operationHash = sha3(operationData, bytes32(etok.getHolderId(acc(1)).toNumber()));
-var confirmData = cosigner.confirm.getData(operationData, acc(1), 1457348561432, 0x1f, "0xa05108dadc92acf18f83f016e57635f8e648a554cbc3bba6b3ef1d8b4eb289fa", "0x2f4967d53c8f6dc6aafd4b06debf4eae6db3d83a9a06197642c23fae1f95cbc7");
+var confirmData = cosigner.confirm.getData(operationHash, acc(1), 1457348561432, 0x1f, "0xa05108dadc92acf18f83f016e57635f8e648a554cbc3bba6b3ef1d8b4eb289fa", "0x2f4967d53c8f6dc6aafd4b06debf4eae6db3d83a9a06197642c23fae1f95cbc7");
 console.log(!cosigner.isConfirmed(operationHash));
 var balance = web3.eth.getBalance(acc(1));
 var tokenBalance = proxyfee.balanceOf(acc(1));
 var feeBalance = proxyfee.balanceOf(feeAddress);
 var tokenBalanceFrom = proxyfee.balanceOf(acc());
 var correctEstimateFee = web3.toBigNumber(web3.eth.estimateGas({to: proxyfee.address, data: confirmData, from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
-var forward1 = web3.eth.sendTransaction({to: proxyfee.address, data: confirmData, from: acc(1)});
+var forward1 = web3.eth.getTransactionReceipt(web3.eth.sendTransaction({to: proxyfee.address, data: confirmData, from: acc(1), gasPrice: gasPrice}));
 console.log(cosigner.isConfirmed(operationHash));
 var forwardShortage1 = balance.sub(web3.eth.getBalance(acc(1))).div(gasPrice).toNumber();
 console.log("Gas used for forward 1: " + forward1.gasUsed + " Shortage: " + forwardShortage1);
@@ -602,7 +613,7 @@ console.log(correctEstimateFee.gte(actualFee));
 console.log(actualFee.gte(exactFee));
 console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
 console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
-console.log(proxyfee.balanceOf.call(acc(1)).add(actualFee).eq(tokenBalanceFrom));
+console.log(proxyfee.balanceOf.call(acc(1)).add(actualFee).eq(tokenBalance));
 
 if (forwardShortage1 > 0) {
   proxyfee.setOperationsCallGas(
@@ -615,3 +626,20 @@ if (forwardShortage1 > 0) {
     {from: acc()}
   );
 }
+
+var balance = web3.eth.getBalance(acc(1));
+var tokenBalance = proxyfee.balanceOf(acc(1));
+var feeBalance = proxyfee.balanceOf(feeAddress);
+var correctEstimateFee = web3.toBigNumber(proxyfee.transfer.estimateGas(acc(), 100, {from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+console.log(correctEstimateFee.toNumber() > 0);
+console.log(proxyfee.transfer.call(acc(), 100, {from: acc(1), gasPrice: gasPrice}));
+var transferWithCosigning1 = web3.eth.getTransactionReceipt(proxyfee.transfer(acc(), 100, {from: acc(1), gasPrice: gasPrice}));
+var transferWithCosigningShortage1 = balance.sub(web3.eth.getBalance(acc(1))).div(gasPrice).toNumber();
+console.log("Gas used for transferWithCosigning 1: " + transferWithCosigning1.gasUsed + " Shortage: " + transferWithCosigningShortage1); // On testrpc shortage is huge here. Probably bug.
+var exactFee = web3.toBigNumber(transferWithCosigning1.gasUsed - transferWithCosigningShortage1).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call());
+var actualFee = web3.toBigNumber(transferWithCosigning1.logs[3].data);
+console.log(correctEstimateFee.gte(actualFee));
+console.log(actualFee.gte(exactFee));
+console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
+console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
+console.log(proxyfee.balanceOf.call(acc(1)).add(100).add(actualFee).eq(tokenBalance));
