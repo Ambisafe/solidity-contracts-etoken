@@ -26,7 +26,7 @@ var acc = function(num) { return web3.eth.accounts[num || 0]; };
 var _proxyfeeSetup = web3.eth.contract().at("");
 var proxyfee = web3.eth.contract().at("");
 
-//var ambi = web3.eth.contract([{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"owners","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"_node","type":"bytes32"}],"name":"removeNode","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"relationIndex","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"nodes","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"bytes32"}],"name":"setRelation","outputs":[{"name":"","type":"int8"}],"type":"function"},{"constant":true,"inputs":[{"name":"_name","type":"bytes32"}],"name":"getNodeAddress","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"_name","type":"bytes32"},{"name":"_addr","type":"address"}],"name":"changeNodeAddress","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_name","type":"bytes32"},{"name":"_addr","type":"address"}],"name":"addNode","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_operation","type":"bytes32"},{"name":"_signer","type":"bytes32"}],"name":"isSigned","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"bytes32"}],"name":"isRelation","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"}],"name":"getChildCount","outputs":[{"name":"","type":"uint8"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"address"}],"name":"hasRelation","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_pos","type":"uint8"}],"name":"getChildAddress","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"nodeIndex","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"addresses","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"relations","outputs":[{"name":"relation","type":"bytes32"},{"name":"parent","type":"bytes32"},{"name":"numChildren","type":"uint8"}],"type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"bytes32"}],"name":"removeChild","outputs":[{"name":"","type":"bool"}],"type":"function"},{"inputs":[],"type":"constructor"}]).at("");
+var ambi = web3.eth.contract([{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"owners","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"_node","type":"bytes32"}],"name":"removeNode","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"relationIndex","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"nodes","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"bytes32"}],"name":"setRelation","outputs":[{"name":"","type":"int8"}],"type":"function"},{"constant":true,"inputs":[{"name":"_name","type":"bytes32"}],"name":"getNodeAddress","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"_name","type":"bytes32"},{"name":"_addr","type":"address"}],"name":"changeNodeAddress","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_name","type":"bytes32"},{"name":"_addr","type":"address"}],"name":"addNode","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_operation","type":"bytes32"},{"name":"_signer","type":"bytes32"}],"name":"isSigned","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"bytes32"}],"name":"isRelation","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"}],"name":"getChildCount","outputs":[{"name":"","type":"uint8"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"address"}],"name":"hasRelation","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_pos","type":"uint8"}],"name":"getChildAddress","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"nodeIndex","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"addresses","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"relations","outputs":[{"name":"relation","type":"bytes32"},{"name":"parent","type":"bytes32"},{"name":"numChildren","type":"uint8"}],"type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"bytes32"}],"name":"removeChild","outputs":[{"name":"","type":"bool"}],"type":"function"},{"inputs":[],"type":"constructor"}]).at("");
 
 var treasury = web3.eth.contract().at("");
 
@@ -39,7 +39,7 @@ var cosigner = web3.eth.contract().at("");
 //console.log(treasury.init.call(etok.address, symbol, {from: acc()}));
 //treasury.init(etok.address, symbol, {from: acc()});
 console.log(treasury.deposit.call(acc(), {value: web3.toWei(1, 'ether'), from: acc()}));
-treasury.deposit({value: web3.toWei(1, 'ether'), from: acc()});
+treasury.deposit(acc(), {value: web3.toWei(1, 'ether'), from: acc()});
 //console.log(treasury.balanceOf(acc()).valueOf());
 console.log(web3.eth.getBalance(treasury.address).valueOf());
 console.log(treasury.addAddress.call(acc(), {from: acc()}));
@@ -53,7 +53,7 @@ console.log(treasury.withdraw.call(acc(5), gasPrice * 90000, {from: proxyfee.add
 
 var symbol = "EVA";
 etok.issueAsset(symbol, 10000000, "test", "descr", 2, false, {from: acc()});
-console.log(etok.balanceOf.call(symbol).toNumber() == 10000000);
+console.log(etok.balanceOf.call(acc(), symbol).toNumber() == 10000000);
 etok.setProxy(proxyfee.address, true, symbol, {from: acc()});
 console.log(etok.setEventsProxy.call(proxyfee.address, symbol, {from: acc()}));
 etok.setEventsProxy(proxyfee.address, symbol, {from: acc()});
@@ -61,12 +61,16 @@ etok.setEventsProxy(proxyfee.address, symbol, {from: acc()});
 proxyfee.init(etok.address, symbol, {from: acc()});
 console.log(proxyfee.balanceOf.call(acc()).toNumber() == 10000000);
 
-//treasury.setAmbiAddress(ambi.address, "treasury", {from: acc()});
-//ambi.getNodeAddress.call("treasury").valueOf() == treasury.address;
-//ambi.addNode("dev", acc(), {from: acc()});
-//ambi.getNodeAddress.call("dev").valueOf() == acc();
-//ambi.setRelation("treasury", "admin", "dev", {from: acc()});
-//ambi.isRelation.call("treasury", "admin", "dev");
+proxyfee.setAmbiAddress(ambi.address, symbol, {from: acc()});
+console.log(ambi.getNodeAddress.call(symbol).valueOf() == proxyfee.address);
+ambi.addNode("dev", acc(), {from: acc()});
+console.log(ambi.getNodeAddress.call("dev").valueOf() == acc());
+ambi.setRelation(symbol, "admin", "dev", {from: acc()});
+console.log(ambi.isRelation.call(symbol, "admin", "dev"));
+ambi.setRelation(symbol, "setup", "dev", {from: acc()});
+console.log(ambi.isRelation.call(symbol, "setup", "dev"));
+ambi.setRelation(symbol, "cron", "dev", {from: acc()});
+console.log(ambi.isRelation.call(symbol, "cron", "dev"));
 //ambi.addNode("proxyfee", proxyfee.address, {from: acc()});
 //ambi.getNodeAddress.call("proxyfee").valueOf() == proxyfee.address;
 //ambi.setRelation("treasury", "refunder", "proxyfee", {from: acc()}); // Will change!
@@ -88,8 +92,8 @@ var feeAddress = acc(3);
 var exchangeAddress = acc(7);
 var cosignerAddress = cosigner.address;
 
-console.log(proxyfee.setForward.call(cosignerAddress, true, {from: acc()}));
-proxyfee.setForward(cosignerAddress, true, {from: acc()});
+console.log(proxyfee.setForward.call(cosigner.confirm.getData(), cosignerAddress, {from: acc()}));
+proxyfee.setForward(cosigner.confirm.getData(), cosignerAddress, {from: acc()});
 
 console.log("1 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferCallGas(acc(1), 1000, {from: acc()})).gasUsed);
 console.log("2 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferFromCallGas(acc(1), acc(2), 1000, {from: acc()})).gasUsed);
@@ -128,22 +132,22 @@ console.log(proxyfee.setupTreasury.call(treasury.address, {from: acc()}));
 proxyfee.setupTreasury(treasury.address, {from: acc()});
 console.log(proxyfee.setupFee.call(feeAddress, {from: acc()}));
 
-//proxyfee.approve(proxyfee.address, 1000000, {from: acc()});
-//console.log(proxyfee.allowance(acc(), proxyfee.address).valueOf());
+proxyfee.approve(proxyfee.address, 1000000, {from: acc()});
+console.log(proxyfee.allowance(acc(), proxyfee.address).valueOf());
 
 proxyfee.setupFee(feeAddress, {from: acc()});
-console.log(proxyfee.updateFeeGas.call(0, {from: acc()}).valueOf());
-console.log(proxyfee.updateFeeGas.call(0, {from: acc()}).toNumber() > 0);
-proxyfee.updateFeeGas(0, {from: acc()});
-console.log(proxyfee.updateFeeGas.call(0, {from: acc()}).valueOf());
-console.log(proxyfee.updateFeeGas.call(0, {from: acc()}).toNumber() > 0);
-proxyfee.updateFeeGas(0, {from: acc()});
+console.log(proxyfee.updateFeeGas.call({from: acc()}).valueOf());
+console.log(proxyfee.updateFeeGas.call({from: acc()}).toNumber() > 0);
+proxyfee.updateFeeGas({from: acc()});
+console.log(proxyfee.updateFeeGas.call({from: acc()}).valueOf());
+console.log(proxyfee.updateFeeGas.call({from: acc()}).toNumber() > 0);
+proxyfee.updateFeeGas({from: acc()});
 console.log(proxyfee.feeGas.call({from: acc()}).valueOf());
-console.log(proxyfee.feeGas.call({from: acc()}).toNumber() < 21000);
-console.log(proxyfee.updateRefundGas.call(0, {from: acc()}).toNumber() > 0);
-proxyfee.updateRefundGas(0, {from: acc()});
+console.log(proxyfee.feeGas.call({from: acc()}).toNumber() < 39000);
+console.log(proxyfee.updateRefundGas.call({from: acc()}).toNumber() > 0);
+proxyfee.updateRefundGas({from: acc()});
 console.log(proxyfee.refundGas.call({from: acc()}).valueOf());
-console.log(proxyfee.refundGas.call({from: acc()}).toNumber() < 13200);
+console.log(proxyfee.refundGas.call({from: acc()}).toNumber() < 8000);
 
 console.log(proxyfee.setupExchange.call(exchangeAddress, 1, 2000, 500, 3000, {from: acc()}));
 proxyfee.setupExchange(exchangeAddress, 1, 2000, 500, 3000, {from: acc()});
@@ -528,12 +532,12 @@ console.log(proxyfee.balanceOf.call(acc()).add(100).add(actualFee).eq(tokenBalan
 
 
 var amount = 1000;
-console.log(proxyfee.approve.call(proxyfee.address, amount, {from: acc(), gasPrice: gasPrice}));
-proxyfee.approve(proxyfee.address, amount, {from: acc(), gasPrice: gasPrice});
+console.log(etok.approve.call(proxyfee.address, amount, symbol, {from: acc(), gasPrice: gasPrice}));
+etok.approve(proxyfee.address, amount, symbol, {from: acc(), gasPrice: gasPrice});
 var balance = web3.eth.getBalance(acc());
 var tokenBalance = proxyfee.balanceOf(acc());
 var exchangeBalance = proxyfee.balanceOf(exchangeAddress);
-var treasuryBalance = treasury.balanceOf(proxyfee.address);
+var treasuryBalance = web3.eth.getBalance(treasury.address);
 var correctEstimateResult = proxyfee.tokenPriceInWeiSell.call().mul(amount).ceil();
 console.log(proxyfee.sell.call(acc(), amount, {from: acc(), gasPrice: gasPrice}));
 var sell1 = web3.eth.getTransactionReceipt(proxyfee.sell(acc(), amount, {from: acc(), gasPrice: gasPrice}));
@@ -544,16 +548,20 @@ console.log("Estimate: " + correctEstimateResult.valueOf() + " actual: " + actua
 console.log(proxyfee.balanceOf.call(exchangeAddress).eq(exchangeBalance.add(amount)));
 console.log(proxyfee.balanceOf.call(acc()).eq(tokenBalance.sub(amount)));
 console.log(web3.eth.getBalance(acc()).eq(balance.add(actualResult).sub(gasPrice.mul(sell1.gasUsed))));
-console.log(treasury.balanceOf(proxyfee.address).eq(treasuryBalance.sub(actualResult)));
+console.log(web3.eth.getBalance(treasury.address).eq(treasuryBalance.sub(actualResult)));
 console.log(proxyfee.allowance.call(acc(), proxyfee.address).eq(0));
 
+
+
+console.log(etok.approve.call(proxyfee.address, 1000000, symbol, {from: exchangeAddress, gasPrice: gasPrice}));
+etok.approve(proxyfee.address, 1000000, symbol, {from: exchangeAddress, gasPrice: gasPrice});
 
 var amount = 1000;
 var price = proxyfee.tokenPriceInWeiBuy.call().mul(amount);
 var balance = web3.eth.getBalance(acc());
 var tokenBalance = proxyfee.balanceOf(acc());
 var exchangeBalance = proxyfee.balanceOf(exchangeAddress);
-var treasuryBalance = treasury.balanceOf(proxyfee.address);
+var treasuryBalance = web3.eth.getBalance(treasury.address);
 console.log(proxyfee.buy.call(acc(), {from: acc(), gasPrice: gasPrice, value: price}));
 var buy1 = web3.eth.getTransactionReceipt(proxyfee.buy(acc(), {from: acc(), gasPrice: gasPrice, value: price}));
 console.log("Gas used for buy 1: " + buy1.gasUsed);
@@ -563,4 +571,4 @@ console.log("Estimate: " + amount + " actual: " + actualResult.toNumber());
 console.log(proxyfee.balanceOf.call(exchangeAddress).eq(exchangeBalance.sub(amount)));
 console.log(proxyfee.balanceOf.call(acc()).eq(tokenBalance.add(amount)));
 console.log(web3.eth.getBalance(acc()).eq(balance.sub(price).sub(gasPrice.mul(buy1.gasUsed))));
-console.log(treasury.balanceOf(proxyfee.address).eq(treasuryBalance.add(price)));
+console.log(web3.eth.getBalance(treasury.address).eq(treasuryBalance.add(price)));

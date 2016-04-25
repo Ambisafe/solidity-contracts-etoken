@@ -1,7 +1,7 @@
 import "MultiAsset.sol";
 import "EtherTreasuryNano.sol";
 
-contract AssetWithFee {
+contract AssetWithFee is AmbiEnabled {
     uint public refundGas = 40000;
     uint public feeGas = 40000;
     uint public transferCallGas = 21000;
@@ -19,20 +19,14 @@ contract AssetWithFee {
     EtherTreasuryNano treasury;
     address public feeAddress;
     address public exchangeAddress;
-    mapping(address => bool) public allowedForwards;
+    mapping(uint32 => address) public allowedForwards;
 
-    modifier onlyOwner() {
-        if (multiAsset.isOwner(msg.sender, symbol)) {
-            _
-        }
-    }
-
-    function setupFee(address _feeAddress) onlyOwner() returns(bool) {
+    function setupFee(address _feeAddress) checkAccess("admin") returns(bool) {
         feeAddress = _feeAddress;
         return true;
     }
 
-    function setupExchange(address _exchangeAddress, uint _buyLimitMin, uint _buyLimitMax, uint _sellLimitMin, uint _sellLimitMax) onlyOwner() returns(bool) {
+    function setupExchange(address _exchangeAddress, uint _buyLimitMin, uint _buyLimitMax, uint _sellLimitMin, uint _sellLimitMax) checkAccess("admin") returns(bool) {
         if (_buyLimitMin > _buyLimitMax || _sellLimitMin > _sellLimitMax) {
             return false;
         }
@@ -44,7 +38,7 @@ contract AssetWithFee {
         return true;
     }
 
-    function setTokenPrice(uint _tokenPriceInWeiSell, uint _tokenPriceInWeiBuy) onlyOwner() returns(bool) {
+    function setTokenPrice(uint _tokenPriceInWeiSell, uint _tokenPriceInWeiBuy) checkAccess("cron") returns(bool) {
         if (_tokenPriceInWeiSell == 0 || _tokenPriceInWeiBuy == 0 || _tokenPriceInWeiSell > _tokenPriceInWeiBuy) {
             return false;
         }
@@ -53,31 +47,31 @@ contract AssetWithFee {
         return true;
     }
 
-    function setWholeTokenPrice(uint _wholeTokenPriceInWeiSell, uint _wholeTokenPriceInWeiBuy) onlyOwner() returns(bool) {
+    function setWholeTokenPrice(uint _wholeTokenPriceInWeiSell, uint _wholeTokenPriceInWeiBuy) returns(bool) {
         uint wholeToken = (10 ** multiAsset.baseUnit(symbol));
         return setTokenPrice(_wholeTokenPriceInWeiSell / wholeToken, _wholeTokenPriceInWeiBuy / wholeToken);
     }
 
-    function updateFeeGas(uint _surplus) onlyOwner() returns(uint) {
+    function updateFeeGas() checkAccess("setup") returns(uint) {
         uint startGas = msg.gas;
         if (!_transferFee(msg.sender, 1, "Update fee conf")) {
             return 0;
         }
-        feeGas = startGas - msg.gas + _surplus;
+        feeGas = startGas - msg.gas;
         return feeGas;
     }
 
-    function updateRefundGas(uint _surplus) onlyOwner() returns(uint) {
+    function updateRefundGas() checkAccess("setup") returns(uint) {
         uint startGas = msg.gas;
         uint refund = (startGas - msg.gas + refundGas) * tx.gasprice; // just to simulate calculations, dunno if optimizer will remove this.
         if (!_refund(1)) {
             return 0;
         }
-        refundGas = startGas - msg.gas + _surplus;
+        refundGas = startGas - msg.gas;
         return refundGas;
     }
 
-    function setOperationsCallGas(uint _transfer, uint _transferFrom, uint _transferWithReference, uint _transferFromWithReference, uint _approve, uint _forward) onlyOwner() returns(bool) {
+    function setOperationsCallGas(uint _transfer, uint _transferFrom, uint _transferWithReference, uint _transferFromWithReference, uint _approve, uint _forward) checkAccess("setup") returns(bool) {
         transferCallGas = _transfer;
         transferFromCallGas = _transferFrom;
         transferWithReferenceCallGas = _transferWithReference;
@@ -87,7 +81,7 @@ contract AssetWithFee {
         return true;
     }
 
-    function setupTreasury(address _treasury) onlyOwner() returns(bool) {
+    function setupTreasury(address _treasury) checkAccess("admin") returns(bool) {
         treasury = EtherTreasuryNano(_treasury);
         if (msg.value > 0 && !treasury.depositWithReference.value(msg.value)("Setup Treasury")) {
             throw;
@@ -95,8 +89,8 @@ contract AssetWithFee {
         return true;
     }
 
-    function setForward(address _forward, bool _allow) onlyOwner() returns(bool) {
-        allowedForwards[_forward] = _allow;
+    function setForward(bytes4 _msgSig, address _forward) checkAccess("admin") returns(bool) {
+        allowedForwards[uint32(_msgSig)] = _forward;
         return true;
     }
 
@@ -133,7 +127,7 @@ contract AssetWithFee {
     }
 
     function _transferFee(address _feeFrom, uint _value, string _reference) internal returns(bool) {
-        if (feeAddress == 0x0 || feeAddress == msg.sender) {
+        if (feeAddress == 0x0 || feeAddress == _feeFrom) {
             return true;
         }
         if (!multiAsset.transferFromWithReference(_feeFrom, feeAddress, _value, symbol, _reference)) {
@@ -153,6 +147,10 @@ contract AssetWithFee {
 
     function _refund(uint _value) internal returns(bool) {
         return treasury.withdraw(tx.origin, _value);
+    }
+
+    function takeFee(address _feeFrom, uint _value, string _reference) checkAccess("fee") returns(bool) {
+        return _transferFee(_feeFrom, _value, _reference);
     }
 
     function _transfer(address _to, uint _value) internal returns(bool, bool) {
@@ -245,17 +243,17 @@ contract AssetWithFee {
         return _approve(_spender, _value);
     }
 
-    function checkForward(address _to, bytes _data) constant returns(bool, bool) {
-        return (true, forward(_to, _data));
-    }
-
-    function forward(address _to, bytes _data) returns(bool) {
+    function _forward(address _to, bytes _data) internal returns(bool) {
         uint startGas = msg.gas + forwardCallGas + (_data.length * 70); // 70 gas per byte;
-        if (!allowedForwards[_to]) {
+        if (_to == 0x0) {
             return false;
         }
         _to.call.value(msg.value)(_data);
         return _applyFeeAndRefund(msg.sender, startGas, "Forward fee");
+    }
+
+    function () returns(bool) {
+        return _forward(allowedForwards[uint32(msg.sig)], msg.data);
     }
 
     function sell(address _to, uint _value) returns(bool) {

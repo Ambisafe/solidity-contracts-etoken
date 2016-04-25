@@ -1,9 +1,13 @@
-import "Owned.sol";
+contract AmbiEnabled {
+    modifier checkAccess(bytes32) {
+        _
+    }
+}
 
-contract EtherTreasuryNano is Owned {
+contract EtherTreasuryNano is AmbiEnabled {
     mapping(address => bool) public hasAccess;
 
-    modifier checkAccess() {
+    modifier onlyAccess() {
         if (hasAccess[msg.sender]) {
             _
         }
@@ -27,7 +31,7 @@ contract EtherTreasuryNano is Owned {
         return true;
     }
 
-    function withdraw(address _to, uint _value) checkAccess() returns(bool) {
+    function withdraw(address _to, uint _value) onlyAccess() returns(bool) {
         return _to.send(_value);
     }
 
@@ -39,12 +43,12 @@ contract EtherTreasuryNano is Owned {
         return true;
     }
 
-    function addAddress(address _address) onlyContractOwner() returns(bool) {
+    function addAddress(address _address) checkAccess("admin") returns(bool) {
         hasAccess[_address] = true;
         return true;
     }
 
-    function removeAddress(address _address) onlyContractOwner() returns(bool) {
+    function removeAddress(address _address) checkAccess("admin") returns(bool) {
         hasAccess[_address] = false;
         return true;
     }

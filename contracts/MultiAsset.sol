@@ -421,19 +421,17 @@ contract MultiAsset is Switchable {
         signChecks++; // DEPLOY REMOVE
         lastOperation = sha3(msg.data, _posSender); // DEPLOY REMOVE
         bytes32 perUserPerAsset = sha3(_posSender, _symbol);
+        bytes32 perUser = sha3(_posSender);
         if (address(cosigners[perUserPerAsset]) != 0x0) {
             if (cosigners[perUserPerAsset].isSigned(sha3(msg.data, _posSender))) {
                 _
             }
-        } else {
-            bytes32 perUser = sha3(_posSender);
-            if (address(cosigners[perUser]) != 0x0) {
-                if (cosigners[perUser].isSigned(sha3(msg.data, _posSender))) {
-                    _
-                }
-            } else {
+        } else if (address(cosigners[perUser]) != 0x0) {
+            if (cosigners[perUser].isSigned(sha3(msg.data, _posSender))) {
                 _
             }
+        } else {
+            _
         }
     }
 
