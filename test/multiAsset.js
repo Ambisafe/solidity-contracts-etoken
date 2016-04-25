@@ -922,7 +922,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 1);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.transfer.getData(accounts[0], 10, SYMBOL)), bytes32(1)));
+      assert.equal(result.valueOf(), sha3(multiAssetAbi.transfer.getData(accounts[0], 10, SYMBOL), bytes32(1)));
     }).then(done).catch(done);
   });
   it('should checkSigned on transfer with reference', function(done) {
@@ -932,7 +932,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 1);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.transferWithReference.getData(accounts[0], 10, SYMBOL, "ref")), bytes32(1)));
+      assert.equal(result.valueOf(), sha3(multiAssetAbi.transferWithReference.getData(accounts[0], 10, SYMBOL, "ref"), bytes32(1)));
     }).then(done).catch(done);
   });
   it('should keep transfers separated between assets', function(done) {
@@ -2357,7 +2357,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 2);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.transferFrom.getData(accounts[0], accounts[1], 10, SYMBOL)), bytes32(2)));
+      assert.equal(result.valueOf(), sha3(multiAssetAbi.transferFrom.getData(accounts[0], accounts[1], 10, SYMBOL), bytes32(2)));
     }).then(done).catch(done);
   });
   it('should checkSigned on approve', function(done) {
@@ -2368,7 +2368,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 1);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.approve.getData(accounts[1], 100, SYMBOL)), bytes32(2)));
+      assert.equal(result.valueOf(), sha3(multiAssetAbi.approve.getData(accounts[1], 100, SYMBOL), bytes32(2)));
     }).then(done).catch(done);
   });
   it('should checkSigned approve and allowance transfer with reference', function(done) {
@@ -2382,7 +2382,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 2);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.transferFromWithReference.getData(accounts[0], accounts[1], 10, SYMBOL, "REFF")), bytes32(2)));
+      assert.equal(result.valueOf(), sha3(multiAssetAbi.transferFromWithReference.getData(accounts[0], accounts[1], 10, SYMBOL, "REFF"), bytes32(2)));
     }).then(done).catch(done);
   });
 
@@ -3190,7 +3190,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 1);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.recover.getData(accounts[1], accounts[2])), bytes32(0)));
+      assert.equal(result.valueOf(), sha3(multiAssetAbi.recover.getData(accounts[1], accounts[2]), bytes32(0)));
     }).then(done).catch(done);
   });
 
@@ -3268,7 +3268,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.isFalse(result.valueOf());
     }).then(done).catch(done);
   });
-  it('should be possible to switch off cosigning configuration per asset', function(done) {
+  it.skip('should be possible to switch off cosigning configuration per asset', function(done) {
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.setSwitch(sha3(SYMBOL, Features.Cosigning), true);
     }).then(function() {
@@ -3286,19 +3286,19 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.isFalse(result.valueOf());
     }).then(done).catch(done);
   });
-  it('should not be possible to set cosigning address per asset by non-asset-owner', function(done) {
+  it.skip('should not be possible to set cosigning address per asset by non-asset-owner', function(done) {
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.setCosignerAddressForAsset.call(accounts[1], SYMBOL, {from: accounts[1]});
     }).then(function(result) {
       assert.isFalse(result.valueOf());
     }).then(done).catch(done);
   });
-  it('should not be possible to set cosigning address per asset for non-existing asset', function(done) {
+  it.skip('should not be possible to set cosigning address per asset for non-existing asset', function(done) {
     multiAsset.setCosignerAddressForAsset.call(accounts[1], SYMBOL).then(function(result) {
       assert.isFalse(result.valueOf());
     }).then(done).catch(done);
   });
-  it('should checkSigned when setting cosigning address per asset', function(done) {
+  it.skip('should checkSigned when setting cosigning address per asset', function(done) {
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.setCosignerAddressForAsset(accounts[1], SYMBOL);
     }).then(function() {
@@ -3307,7 +3307,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 1);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.setCosignerAddressForAsset.getData(accounts[1], SYMBOL)), bytes32(1)));
+      assert.equal(result.valueOf(), sha3(multiAssetAbi.setCosignerAddressForAsset.getData(accounts[1], SYMBOL), bytes32(1)));
     }).then(done).catch(done);
   });
   it('should checkSigned when setting cosigning address per user', function(done) {
@@ -3319,7 +3319,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 1);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.setCosignerAddressForUser.getData(accounts[1])), bytes32(1)));
+      assert.equal(result.valueOf(), sha3(multiAssetAbi.setCosignerAddressForUser.getData(accounts[1]), bytes32(1)));
     }).then(done).catch(done);
   });
   it('should checkSigned when setting cosigning address per user per asset', function(done) {
@@ -3331,11 +3331,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), 1);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.setCosignerAddress.getData(accounts[1], SYMBOL)), bytes32(1)));
+      assert.equal(result.valueOf(), sha3(multiAssetAbi.setCosignerAddress.getData(accounts[1], SYMBOL), bytes32(1)));
     }).then(done).catch(done);
   });
 
-  it('should checkSigned on asset above others', function(done) {
+  it.skip('should checkSigned on asset above others', function(done) {
     var cosignerAsset = Cosigner1.deployed();
     var cosignerUserAsset = Cosigner2.deployed();
     var cosignerUser = Cosigner3.deployed();
@@ -3414,22 +3414,22 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should checkSignedHolder on user above others', function(done) {
-    var cosignerAsset = Cosigner1.deployed();
+    //var cosignerAsset = Cosigner1.deployed();
     var cosignerUserAsset = Cosigner2.deployed();
     var cosignerUser = Cosigner3.deployed();
-    var cosignerAssetChecks = 0;
+    //var cosignerAssetChecks = 0;
     var cosignerUserAssetChecks = 0;
     var cosignerUserChecks = 0;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.setCosignerAddressForAsset(cosignerAsset.address, SYMBOL);
-    }).then(function() {
+    //  return multiAsset.setCosignerAddressForAsset(cosignerAsset.address, SYMBOL);
+    //}).then(function() {
       return multiAsset.setCosignerAddress(cosignerUserAsset.address, SYMBOL);
     }).then(function() {
       return multiAsset.setCosignerAddressForUser(cosignerUser.address);
     }).then(function() {
-      return cosignerAsset.signChecks.call();
-    }).then(function(result) {
-      cosignerAssetChecks = result.toNumber();
+    //  return cosignerAsset.signChecks.call();
+    //}).then(function(result) {
+    //  cosignerAssetChecks = result.toNumber();
       return cosignerUserAsset.signChecks.call();
     }).then(function(result) {
       cosignerUserAssetChecks = result.toNumber();
@@ -3438,9 +3438,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       cosignerUserChecks = result.toNumber();
       return multiAsset.recover(accounts[0], accounts[1], {from: accounts[2]});
     }).then(function() {
-      return cosignerAsset.signChecks.call();
-    }).then(function(result) {
-      assert.equal(result.valueOf(), cosignerAssetChecks);
+    //  return cosignerAsset.signChecks.call();
+    //}).then(function(result) {
+    //  assert.equal(result.valueOf(), cosignerAssetChecks);
       return cosignerUserAsset.signChecks.call();
     }).then(function(result) {
       assert.equal(result.valueOf(), cosignerUserAssetChecks);

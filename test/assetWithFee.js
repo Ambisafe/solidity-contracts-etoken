@@ -263,7 +263,7 @@ contract('AssetWithFee', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), checks + 1);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.proxyTransfer.getData(accounts[1], 10, SYMBOL, accounts[0])), bytes32(1)));
+      assert.equal(result.valueOf(), sha3(multiAssetAbi.proxyTransfer.getData(accounts[1], 10, SYMBOL), bytes32(1)));
     }).then(done).catch(done);
   });
   it('should keep transfers separated between assets', function(done) {
@@ -1064,12 +1064,12 @@ contract('AssetWithFee', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), checks + 2);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.proxyTransferFrom.getData(accounts[0], accounts[1], 10, SYMBOL, accounts[1])), bytes32(2)));
+      assert.equal(result.valueOf(), sha3(multiAssetAbi.proxyTransferFrom.getData(accounts[0], accounts[1], 10, SYMBOL), bytes32(2)));
     }).then(done).catch(done);
   });
   it('should checkSigned on approve', function(done) {
     var checks = 0;   
-    multiAsset.setProxy(asset.address, true, SYMBOL).then(function() {
+    multiAsset.setProxy(asset.address, true, SYMBOL).then(function() {  
       return multiAsset.signChecks.call();
     }).then(function(result) {
       checks = result.toNumber();
@@ -1080,7 +1080,7 @@ contract('AssetWithFee', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), checks + 1);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(sha3(multiAssetAbi.proxyApprove.getData(accounts[1], 100, SYMBOL, accounts[0])), bytes32(1)));
+      assert.equal(result.valueOf(), sha3(multiAssetAbi.proxyApprove.getData(accounts[1], 100, SYMBOL), bytes32(1)));
     }).then(done).catch(done);
   });
 

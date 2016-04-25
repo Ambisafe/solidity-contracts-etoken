@@ -86,7 +86,7 @@ contract MultiAsset is Switchable {
         }
     }
 
-    function _isSignedOwner(bytes32 _symbol) internal checkSigned(sha3(msg.data), _symbol, getHolderId(msg.sender)) returns(bool) {
+    function _isSignedOwner(bytes32 _symbol) internal checkSigned(_symbol, getHolderId(msg.sender)) returns(bool) {
         return isOwner(msg.sender, _symbol);
     }
 
@@ -176,7 +176,7 @@ contract MultiAsset is Switchable {
         return true;
     }
 
-    function _transfer(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol, string _reference, uint _posSender) internal checkSigned(sha3(msg.data), _symbol, _posSender) returns(bool) {
+    function _transfer(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol, string _reference, uint _posSender) internal checkSigned(_symbol, _posSender) returns(bool) {
         if (_proxyCheck(_symbol)) {
             return false;
         }
@@ -337,7 +337,7 @@ contract MultiAsset is Switchable {
         return true;
     }
     
-    function recover(address _from, address _to) checkEnabledSwitch(sha3(getHolderId(_from), Features.Recovery)) checkSignedHolder(sha3(msg.data), getHolderId(_from)) checkTrust(_from, msg.sender) returns(bool) {
+    function recover(address _from, address _to) checkEnabledSwitch(sha3(getHolderId(_from), Features.Recovery)) checkSignedHolder(getHolderId(_from)) checkTrust(_from, msg.sender) returns(bool) {
         if (getHolderId(_to) != 0) {
             return false;
         }
@@ -348,7 +348,7 @@ contract MultiAsset is Switchable {
         return true;
     }
 
-    function _approve(uint _posSpender, uint _value, bytes32 _symbol, uint _posSender) internal checkEnabledSwitch(sha3(_symbol, Features.Allowances)) checkSigned(sha3(msg.data), _symbol, _posSender) returns(bool) {
+    function _approve(uint _posSpender, uint _value, bytes32 _symbol, uint _posSender) internal checkEnabledSwitch(sha3(_symbol, Features.Allowances)) checkSigned(_symbol, _posSender) returns(bool) {
         if (_proxyCheck(_symbol)) {
             return false;
         }
@@ -417,34 +417,32 @@ contract MultiAsset is Switchable {
     uint public signChecks; // DEPLOY REMOVE
     bytes32 public lastOperation; // DEPLOY REMOVE
 
-    modifier checkSigned(bytes32 _opHash, bytes32 _symbol, uint _posSender) {
+    modifier checkSigned(bytes32 _symbol, uint _posSender) {
         signChecks++; // DEPLOY REMOVE
-        lastOperation = sha3(_opHash, _posSender); // DEPLOY REMOVE
-        bytes32 perUser = sha3(_posSender);
+        lastOperation = sha3(msg.data, _posSender); // DEPLOY REMOVE
         bytes32 perUserPerAsset = sha3(_posSender, _symbol);
-        if (address(cosigners[_symbol]) != 0x0) {
-            if (cosigners[_symbol].isSigned(sha3(_opHash, _posSender))) {
-                _
-            }
-        } else if (address(cosigners[perUserPerAsset]) != 0x0) {
-            if (cosigners[perUserPerAsset].isSigned(sha3(_opHash, _posSender))) {
-                _
-            }
-        } else if (address(cosigners[perUser]) != 0x0) {
-            if (cosigners[perUser].isSigned(sha3(_opHash, _posSender))) {
+        if (address(cosigners[perUserPerAsset]) != 0x0) {
+            if (cosigners[perUserPerAsset].isSigned(sha3(msg.data, _posSender))) {
                 _
             }
         } else {
-            _
+            bytes32 perUser = sha3(_posSender);
+            if (address(cosigners[perUser]) != 0x0) {
+                if (cosigners[perUser].isSigned(sha3(msg.data, _posSender))) {
+                    _
+                }
+            } else {
+                _
+            }
         }
     }
 
-    modifier checkSignedHolder(bytes32 _opHash, uint _posSender) {
+    modifier checkSignedHolder(uint _posSender) {
         signChecks++; // DEPLOY REMOVE
-        lastOperation = sha3(_opHash, _posSender); // DEPLOY REMOVE
+        lastOperation = sha3(msg.data, _posSender); // DEPLOY REMOVE
         bytes32 perUser = sha3(_posSender);
         if (address(cosigners[perUser]) != 0x0) {
-            if (cosigners[perUser].isSigned(sha3(_opHash, _posSender))) {
+            if (cosigners[perUser].isSigned(sha3(msg.data, _posSender))) {
                 _
             }
         } else {
@@ -452,15 +450,11 @@ contract MultiAsset is Switchable {
         }
     }
 
-    function setCosignerAddress(address _address, bytes32 _symbol) checkEnabledSwitch(sha3(getHolderId(msg.sender), Features.Cosigning)) checkSigned(sha3(msg.data), _symbol, getHolderId(msg.sender)) returns(bool) {
+    function setCosignerAddress(address _address, bytes32 _symbol) checkEnabledSwitch(sha3(getHolderId(msg.sender), Features.Cosigning)) checkSigned(_symbol, getHolderId(msg.sender)) returns(bool) {
         return _setCosignerAddress(_address, sha3(_createPosHolder(msg.sender), _symbol));
     }
 
-    function setCosignerAddressForAsset(address _address, bytes32 _symbol) checkEnabledSwitch(sha3(_symbol, Features.Cosigning)) onlyOwner(_symbol) returns(bool) {
-        return _setCosignerAddress(_address, _symbol);
-    }
-
-    function setCosignerAddressForUser(address _address) checkEnabledSwitch(sha3(getHolderId(msg.sender), Features.Cosigning)) checkSignedHolder(sha3(msg.data), getHolderId(msg.sender)) returns(bool) {
+    function setCosignerAddressForUser(address _address) checkEnabledSwitch(sha3(getHolderId(msg.sender), Features.Cosigning)) checkSignedHolder(getHolderId(msg.sender)) returns(bool) {
         return _setCosignerAddress(_address, sha3(_createPosHolder(msg.sender)));
     }
 
