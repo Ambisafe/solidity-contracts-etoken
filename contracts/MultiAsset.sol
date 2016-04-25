@@ -416,10 +416,8 @@ contract MultiAsset is Switchable {
     mapping(bytes32 => Cosigner) cosigners;
     uint public signChecks; // DEPLOY REMOVE
     bytes32 public lastOperation; // DEPLOY REMOVE
-    uint public gas;
 
     modifier checkSigned(bytes32 _symbol, uint _posSender) {
-        gas = msg.gas;
         signChecks++; // DEPLOY REMOVE
         lastOperation = sha3(msg.data, _posSender); // DEPLOY REMOVE
         bytes32 perUserPerAsset = sha3(_posSender, _symbol);
@@ -435,7 +433,6 @@ contract MultiAsset is Switchable {
                 _
             }
         } else {
-            gas -= msg.gas;
             _
         }
     }
