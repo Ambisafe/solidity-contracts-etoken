@@ -76,4 +76,10 @@ contract Asset {
     function emitApprove(address _from, address _spender, uint _value) onlyMultiAsset() {
         Approve(_from, _spender, _value);
     }
+
+    function sendToOwner() returns(bool) {
+        return multiAsset.transfer(multiAsset.owner(symbol), balanceOf(address(this)), symbol);
+    }
 }
+
+// RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(init|emitTransfer|emitApprove)"[^\]]+[^}]+},\s+

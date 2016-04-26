@@ -325,3 +325,5 @@ contract AssetWithFee is AmbiEnabled {
         Approve(_from, _spender, _value);
     }
 }
+
+// RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(setupFee|setupExchange|setTokenPrice|setWholeTokenPrice|updateFeeGas|updateRefundGas|setOperationsCallGas|setupTreasury|setForward|takeFee|init|emitTransfer|emitApprove|ambiC|name|getAddress|setAmbiAddress|remove)"[^\]]+[^}]+},\s+
