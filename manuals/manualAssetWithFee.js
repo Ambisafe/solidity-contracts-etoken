@@ -53,10 +53,10 @@ console.log(ambi.getNodeAddress.call("dev").valueOf() == acc());
 //var symbol = "WEI";
 //console.log(treasury.init.call(etok.address, symbol, {from: acc()}));
 //treasury.init(etok.address, symbol, {from: acc()});
-treasury.setAmbiAddress(ambi.address, "wei", {from: acc()});
-console.log(ambi.getNodeAddress.call("wei").valueOf() == treasury.address);
-ambi.setRelation("wei", "admin", "dev", {from: acc()});
-console.log(ambi.isRelation.call("wei", "admin", "dev"));
+treasury.setAmbiAddress(ambi.address, "billable", {from: acc()});
+console.log(ambi.getNodeAddress.call("billable").valueOf() == treasury.address);
+ambi.setRelation("billable", "admin", "dev", {from: acc()});
+console.log(ambi.isRelation.call("billable", "admin", "dev"));
 
 console.log(treasury.deposit.call(acc(), {value: web3.toWei(1, 'ether'), from: acc()}));
 treasury.deposit(acc(), {value: web3.toWei(1, 'ether'), from: acc()});
@@ -69,6 +69,13 @@ console.log(web3.eth.getTransactionReceipt(treasury.withdraw(acc(5), gasPrice * 
 //console.log(web3.eth.getTransactionReceipt(treasury.withdraw(acc(5), gasPrice * 90000, {from: acc()})).gasUsed);
 console.log(treasury.addAddress.call(proxyfee.address, {from: acc()}));
 treasury.addAddress(proxyfee.address, {from: acc()});
+console.log(treasury.withdraw.call(acc(5), gasPrice * 90000, {from: proxyfee.address}));
+
+
+// BILLABLE
+console.log(treasury.subscribe.call(proxyfee.address, "sub_8MINIMh8z3OlAD", {from: acc()}));
+treasury.subscribe(proxyfee.address, "sub_8MINIMh8z3OlAD", {from: acc()});
+treasury.unFreeze("sub_8MINIMh8z3OlAD", {from: acc()});
 console.log(treasury.withdraw.call(acc(5), gasPrice * 90000, {from: proxyfee.address}));
 
 var symbol = "EVA";
@@ -167,7 +174,7 @@ console.log(proxyfee.feeGas.call({from: acc()}).toNumber() < 39000);
 console.log(proxyfee.updateRefundGas.call({from: acc()}).toNumber() > 0);
 proxyfee.updateRefundGas({from: acc()});
 console.log(proxyfee.refundGas.call({from: acc()}).valueOf());
-console.log(proxyfee.refundGas.call({from: acc()}).toNumber() < 8000);
+console.log(proxyfee.refundGas.call({from: acc()}).toNumber() < 12000); // 8000 for pure nano
 
 console.log(proxyfee.setupExchange.call(exchangeAddress, 1, 2000, 500, 3000, {from: acc()}));
 proxyfee.setupExchange(exchangeAddress, 1, 2000, 500, 3000, {from: acc()});
@@ -552,7 +559,7 @@ console.log(proxyfee.balanceOf.call(acc()).add(100).add(actualFee).eq(tokenBalan
 
 var amount = 1000;
 console.log(etok.approve.call(proxyfee.address, amount, symbol, {from: acc(), gasPrice: gasPrice}));
-etok.approve(proxyfee.address, approve, symbol, {from: acc(), gasPrice: gasPrice});
+etok.approve(proxyfee.address, amount, symbol, {from: acc(), gasPrice: gasPrice});
 var balance = web3.eth.getBalance(acc());
 var tokenBalance = proxyfee.balanceOf(acc());
 var exchangeBalance = proxyfee.balanceOf(exchangeAddress);

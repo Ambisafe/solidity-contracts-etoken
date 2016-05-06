@@ -1,5 +1,18 @@
 import "MultiAsset.sol";
-import "EtherTreasuryNano.sol";
+
+// DEPLOY REMOVE START
+contract AmbiEnabled {
+    modifier checkAccess(bytes32) {
+        _
+    }
+}
+// DEPLOY REMOVE END
+
+contract EtherTreasuryInterface {
+    function depositWithReference(string) returns(bool);
+    function withdraw(address, uint) returns(bool);
+    function withdrawWithReference(address, uint, string) returns(bool);
+}
 
 contract AssetWithFee is AmbiEnabled {
     uint public refundGas = 40000;
@@ -16,7 +29,7 @@ contract AssetWithFee is AmbiEnabled {
     uint public buyLimitMax = 0;
     uint public sellLimitMin = 0;
     uint public sellLimitMax = 0;
-    EtherTreasuryNano treasury;
+    EtherTreasuryInterface treasury;
     address public feeAddress;
     address public exchangeAddress;
     mapping(uint32 => address) public allowedForwards;
@@ -82,7 +95,7 @@ contract AssetWithFee is AmbiEnabled {
     }
 
     function setupTreasury(address _treasury) checkAccess("admin") returns(bool) {
-        treasury = EtherTreasuryNano(_treasury);
+        treasury = EtherTreasuryInterface(_treasury);
         if (msg.value > 0 && !treasury.depositWithReference.value(msg.value)("Setup Treasury")) {
             throw;
         }
@@ -275,7 +288,7 @@ contract AssetWithFee is AmbiEnabled {
         if (exchangeAddress == 0x0 || value < buyLimitMin || value > buyLimitMax) {
             return false;
         }
-        if (!treasury.depositWithReference.value(msg.value)("Buy")) {
+        if (!exchangeAddress.send(msg.value)) {
             return false;
         }
         if (!multiAsset.transferFromWithReference(exchangeAddress, _to, value, symbol, "Buy")) {
