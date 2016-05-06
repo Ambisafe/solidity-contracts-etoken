@@ -14,6 +14,7 @@ contract Switchable is Owned {
     mapping(bytes32 => bool) public switches;
 
     function isEnabled(bytes32 _switch) constant returns(bool) {
+        // DEPLOY REMOVE `!`
         return !switches[_switch];// ! - means everything is enabled by default
     }
 
@@ -38,7 +39,7 @@ contract MultiAsset is Switchable {
     event Approve(address indexed from, address indexed spender, bytes32 indexed symbol, uint value);
     event Recovery(address indexed from, address indexed to, address by);
 
-    enum Features { Issue, TransferWithReference, Revoke, ChangeOwnership, Recovery, Allowances, Cosigning }
+    enum Features { Issue, TransferWithReference, Revoke, ChangeOwnership, Allowances }
 
     struct Asset {
         uint owner;
@@ -337,7 +338,7 @@ contract MultiAsset is Switchable {
         return true;
     }
     
-    function recover(address _from, address _to) checkEnabledSwitch(sha3(getHolderId(_from), Features.Recovery)) checkSignedHolder(getHolderId(_from)) checkTrust(_from, msg.sender) returns(bool) {
+    function recover(address _from, address _to) checkSignedHolder(getHolderId(_from)) checkTrust(_from, msg.sender) returns(bool) {
         if (getHolderId(_to) != 0) {
             return false;
         }
@@ -448,12 +449,16 @@ contract MultiAsset is Switchable {
         }
     }
 
-    function setCosignerAddress(address _address, bytes32 _symbol) checkEnabledSwitch(sha3(getHolderId(msg.sender), Features.Cosigning)) checkSigned(_symbol, getHolderId(msg.sender)) returns(bool) {
+    function setCosignerAddress(address _address, bytes32 _symbol) checkSigned(_symbol, getHolderId(msg.sender)) returns(bool) {
         return _setCosignerAddress(_address, sha3(_createPosHolder(msg.sender), _symbol));
     }
 
-    function setCosignerAddressForUser(address _address) checkEnabledSwitch(sha3(getHolderId(msg.sender), Features.Cosigning)) checkSignedHolder(getHolderId(msg.sender)) returns(bool) {
+    function setCosignerAddressForUser(address _address) checkSignedHolder(getHolderId(msg.sender)) returns(bool) {
         return _setCosignerAddress(_address, sha3(_createPosHolder(msg.sender)));
+    }
+
+    function proxySetCosignerAddress(address _address, bytes32 _symbol) checkSigned(_symbol, getHolderId(tx.origin)) returns(bool) {
+        return _setCosignerAddress(_address, sha3(_createPosHolder(tx.origin), _symbol));
     }
 
     function _setCosignerAddress(address _address, bytes32 _identity) internal returns(bool) {

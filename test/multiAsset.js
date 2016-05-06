@@ -22,7 +22,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   var BASE_UNIT = 2;
   var IS_REISSUABLE = false;
 
-  var Features = { Issue: 0, TransferWithReference: 1, Revoke: 2, ChangeOwnership: 3, Recovery: 4, Allowances: 5, Cosigning: 6 };
+  var Features = { Issue: 0, TransferWithReference: 1, Revoke: 2, ChangeOwnership: 3, Allowances: 4 };
 
   var multiAsset;
   var multiAssetAbi;
@@ -3239,7 +3239,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.isFalse(result.valueOf());
     }).then(done).catch(done);
   });
-  it('should be possible to switch off recovery', function(done) {
+  it.skip('should be possible to switch off recovery', function(done) {
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.setSwitch(sha3(bytes32(1), Features.Recovery), true);
     }).then(function() {
@@ -3259,7 +3259,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.isFalse(result.valueOf());
     }).then(done).catch(done);
   });
-  it('should be possible to switch off cosigning configuration per user per asset', function(done) {
+  it.skip('should be possible to switch off cosigning configuration per user per asset', function(done) {
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.setSwitch(sha3(bytes32(1), Features.Cosigning), true);
     }).then(function() {
@@ -3277,7 +3277,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.isFalse(result.valueOf());
     }).then(done).catch(done);
   });
-  it('should be possible to switch off cosigning configuration per user', function(done) {
+  it.skip('should be possible to switch off cosigning configuration per user', function(done) {
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.setSwitch(sha3(bytes32(1), Features.Cosigning), true);
     }).then(function() {

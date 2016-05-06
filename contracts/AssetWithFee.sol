@@ -291,10 +291,11 @@ contract AssetWithFee is AmbiEnabled {
     bytes32 symbol;
 
     function init(address _multiAsset, bytes32 _symbol) returns(bool) {
-        if (address(multiAsset) != 0x0) {
+        MultiAsset ma = MultiAsset(_multiAsset);
+        if (address(multiAsset) != 0x0 || !ma.isCreated(_symbol)) {
             return false;
         }
-        multiAsset = MultiAsset(_multiAsset);
+        multiAsset = ma;
         symbol = _symbol;
         return true;
     }
@@ -326,4 +327,5 @@ contract AssetWithFee is AmbiEnabled {
     }
 }
 
-// RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(setupFee|setupExchange|setTokenPrice|setWholeTokenPrice|updateFeeGas|updateRefundGas|setOperationsCallGas|setupTreasury|setForward|takeFee|init|emitTransfer|emitApprove|ambiC|name|getAddress|setAmbiAddress|remove)"[^\]]+[^}]+},\s+
+// RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(refundGas|feeGas|transferCallGas|transferWithReferenceCallGas|transferFromCallGas|transferFromWithReferenceCallGas|approveCallGas|forwardCallGas|setupFee|setupExchange|setTokenPrice|setWholeTokenPrice|updateFeeGas|updateRefundGas|setOperationsCallGas|setupTreasury|setForward|takeFee|init|emitTransfer|emitApprove|ambiC|name|getAddress|setAmbiAddress|remove)"[^\]]+[^}]+},\s+
+// RegEx to remove all admin and exchange functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(tokenPriceInWeiBuy|buyLimitMin|buyLimitMax|sellLimitMin|sellLimitMax|exchangeAddress|buy|sell|refundGas|feeGas|transferCallGas|transferWithReferenceCallGas|transferFromCallGas|transferFromWithReferenceCallGas|approveCallGas|forwardCallGas|setupFee|setupExchange|setTokenPrice|setWholeTokenPrice|updateFeeGas|updateRefundGas|setOperationsCallGas|setupTreasury|setForward|takeFee|init|emitTransfer|emitApprove|ambiC|name|getAddress|setAmbiAddress|remove)"[^\]]+[^}]+},\s+

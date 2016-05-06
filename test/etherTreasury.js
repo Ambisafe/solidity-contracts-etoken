@@ -24,7 +24,7 @@ contract('EtherTreasury', {reset_state: true}, function(accounts) {
   var BASE_UNIT = 2;
   var IS_REISSUABLE = false;
 
-  var Features = { Issue: 0, TransferWithReference: 1, Revoke: 2, ChangeOwnership: 3, Recovery: 4, Allowances: 5, Cosigning: 6 };
+  var Features = { Issue: 0, TransferWithReference: 1, Revoke: 2, ChangeOwnership: 3, Allowances: 4 };
 
   var multiAsset;
   var multiAssetAbi;

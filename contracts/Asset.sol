@@ -8,10 +8,11 @@ contract Asset {
     bytes32 symbol;
 
     function init(address _multiAsset, bytes32 _symbol) returns(bool) {
-        if (address(multiAsset) != 0x0) {
+        MultiAsset ma = MultiAsset(_multiAsset);
+        if (address(multiAsset) != 0x0 || !ma.isCreated(_symbol)) {
             return false;
         }
-        multiAsset = MultiAsset(_multiAsset);
+        multiAsset = ma;
         symbol = _symbol;
         return true;
     }

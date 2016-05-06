@@ -1,8 +1,10 @@
+// DEPLOY REMOVE START
 contract AmbiEnabled {
     modifier checkAccess(bytes32) {
         _
     }
 }
+// DEPLOY REMOVE END
 
 contract EtherTreasuryNano is AmbiEnabled {
     mapping(address => bool) public hasAccess;
