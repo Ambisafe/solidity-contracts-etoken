@@ -457,7 +457,7 @@ contract MultiAsset is Switchable {
         return _setCosignerAddress(_address, sha3(_createPosHolder(msg.sender)));
     }
 
-    function proxySetCosignerAddress(address _address, bytes32 _symbol) checkSigned(_symbol, getHolderId(tx.origin)) returns(bool) {
+    function proxySetCosignerAddress(address _address, bytes32 _symbol) checkSigned(_symbol, getHolderId(tx.origin)) onlyProxy(_symbol) returns(bool) {
         return _setCosignerAddress(_address, sha3(_createPosHolder(tx.origin), _symbol));
     }
 

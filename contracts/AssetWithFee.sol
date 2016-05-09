@@ -18,6 +18,7 @@ contract AssetWithFee is AmbiEnabled {
     uint public transferFromWithReferenceCallGas = 21000;
     uint public approveCallGas = 21000;
     uint public forwardCallGas = 21000;
+    uint public setCosignerCallGas = 21000;
     uint public tokenPriceInWeiSell = 1;
     uint public tokenPriceInWeiBuy = 2;
     uint public buyLimitMin = 0;
@@ -79,19 +80,20 @@ contract AssetWithFee is AmbiEnabled {
         return refundGas;
     }
 
-    function setOperationsCallGas(uint _transfer, uint _transferFrom, uint _transferWithReference, uint _transferFromWithReference, uint _approve, uint _forward) checkAccess("setup") returns(bool) {
+    function setOperationsCallGas(uint _transfer, uint _transferFrom, uint _transferWithReference, uint _transferFromWithReference, uint _approve, uint _forward, uint _setCosigner) checkAccess("setup") returns(bool) {
         transferCallGas = _transfer;
         transferFromCallGas = _transferFrom;
         transferWithReferenceCallGas = _transferWithReference;
         transferFromWithReferenceCallGas = _transferFromWithReference;
         approveCallGas = _approve;
         forwardCallGas = _forward;
+        setCosignerCallGas = _setCosigner;
         return true;
     }
 
     function setupTreasury(address _treasury) checkAccess("admin") returns(bool) {
         treasury = EtherTreasuryInterface(_treasury);
-        if (msg.value > 0 && !treasury.send(msg.value)) {
+        if (msg.value > 0 && !address(treasury).send(msg.value)) {
             throw;
         }
         return true;
@@ -101,34 +103,6 @@ contract AssetWithFee is AmbiEnabled {
         allowedForwards[uint32(_msgSig)] = _forward;
         return true;
     }
-
-    // DEPLOY REMOVE START
-
-    function getTransferCallGas(address _to, uint _value) returns(bool) {
-        return true;
-    }
-
-    function getTransferFromCallGas(address _from, address _to, uint _value) returns(bool) {
-        return true;
-    }
-
-    function getTransferWithReferenceCallGas(address _to, uint _value, string _reference) returns(bool) {
-        return true;
-    }
-
-    function getTransferFromWithReferenceCallGas(address _from, address _to, uint _value, string _reference) returns(bool) {
-        return true;
-    }
-
-    function getApproveCallGas(address _spender, uint _value) returns(bool) {
-        return true;
-    }
-
-    function getForwardCallGas(address _to, bytes _data) returns(bool) {
-        return true;
-    }
-
-    // DEPLOY REMOVE END
 
     function _stringGas(string _string) constant internal returns(uint) {
         return bytes(_string).length * 75; // ~75 gas per byte, empirical shown 68-72.
@@ -201,6 +175,14 @@ contract AssetWithFee is AmbiEnabled {
         return (true, _applyFeeAndRefund(msg.sender, startGas, "Approve fee"));
     }
 
+    function _setCosignerAddress(address _cosigner) internal returns(bool, bool) {
+        uint startGas = msg.gas + setCosignerCallGas;
+        if (!multiAsset.proxySetCosignerAddress(_cosigner, symbol)) {
+            return (false, false);
+        }
+        return (true, _applyFeeAndRefund(msg.sender, startGas, "Cosigner fee"));
+    }
+
     function transfer(address _to, uint _value) returns(bool) {
         bool success;
         (success,) = _transfer(_to, _value);
@@ -231,6 +213,12 @@ contract AssetWithFee is AmbiEnabled {
         return success;
     }
 
+    function setCosignerAddress(address _cosigner) returns(bool) {
+        bool success;
+        (success,) = _setCosignerAddress(_cosigner);
+        return success;
+    }
+
     function checkTransfer(address _to, uint _value) constant returns(bool, bool) {
         return _transfer(_to, _value);
     }
@@ -249,6 +237,10 @@ contract AssetWithFee is AmbiEnabled {
 
     function checkApprove(address _spender, uint _value) constant returns(bool, bool) {
         return _approve(_spender, _value);
+    }
+
+    function checkSetCosignerAddress(address _cosigner) constant returns(bool, bool) {
+        return _setCosignerAddress(_cosigner);
     }
 
     function _forward(address _to, bytes _data) internal returns(bool) {

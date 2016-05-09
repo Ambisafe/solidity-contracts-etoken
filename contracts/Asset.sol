@@ -70,6 +70,13 @@ contract Asset {
         return true;
     }
 
+    function setCosignerAddress(address _cosigner) returns(bool) {
+        if (!multiAsset.proxySetCosignerAddress(_cosigner, symbol)) {
+            return false;
+        }
+        return true;
+    }
+
     function emitTransfer(address _from, address _to, uint _value) onlyMultiAsset() {
         Transfer(_from, _to, _value);
     }
@@ -83,4 +90,4 @@ contract Asset {
     }
 }
 
-// RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(init|emitTransfer|emitApprove)"[^\]]+[^}]+},\s+
+// RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(init|emitTransfer|emitApprove|sendToOwner)"[^\]]+[^}]+},\s+

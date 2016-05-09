@@ -34,7 +34,7 @@ var gasPrice = web3.toBigNumber(web3.toWei(20, 'gwei'));
 
 var acc = function(num) { return web3.eth.accounts[num || 0]; };
 
-var _proxyfeeSetup = web3.eth.contract(assetwithfeeContract.abi).at("");
+//var _proxyfeeSetup = web3.eth.contract(assetwithfeeContract.abi).at("");
 var proxyfee = web3.eth.contract(assetwithfeeContract.abi).at("");
 
 var ambi = web3.eth.contract(ambiContract.abi).at("");
@@ -122,22 +122,22 @@ var cosignerAddress = cosigner.address;
 console.log(proxyfee.setForward.call(cosigner.confirm.getData().substr(0,10), cosignerAddress, {from: acc()}));
 proxyfee.setForward(cosigner.confirm.getData().substr(0,10), cosignerAddress, {from: acc()});
 
-console.log("1 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferCallGas(acc(1), 1000, {from: acc()})).gasUsed);
-console.log("2 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferFromCallGas(acc(1), acc(2), 1000, {from: acc()})).gasUsed);
-console.log("3 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferWithReferenceCallGas(acc(1), 1000, "a", {from: acc()})).gasUsed);
-console.log("4 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferFromWithReferenceCallGas(acc(1), acc(2), 1000, "a", {from: acc()})).gasUsed);
-console.log("5 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getApproveCallGas(acc(1), 1000, {from: acc()})).gasUsed);
-console.log("6 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getForwardCallGas(cosignerAddress, "o", {from: acc()})).gasUsed);
+//console.log("1 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferCallGas(acc(1), 1000, {from: acc()})).gasUsed);
+//console.log("2 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferFromCallGas(acc(1), acc(2), 1000, {from: acc()})).gasUsed);
+//console.log("3 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferWithReferenceCallGas(acc(1), 1000, "a", {from: acc()})).gasUsed);
+//console.log("4 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferFromWithReferenceCallGas(acc(1), acc(2), 1000, "a", {from: acc()})).gasUsed);
+//console.log("5 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getApproveCallGas(acc(1), 1000, {from: acc()})).gasUsed);
+//console.log("6 " + web3.eth.getTransactionReceipt(_proxyfeeSetup.getForwardCallGas(cosignerAddress, "o", {from: acc()})).gasUsed);
 
-proxyfee.setOperationsCallGas(
-  web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferCallGas(acc(1), 1000, {from: acc()})).gasUsed,
-  web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferFromCallGas(acc(1), acc(2), 1000, {from: acc()})).gasUsed,
-  web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferWithReferenceCallGas(acc(1), 1000, "a", {from: acc()})).gasUsed,
-  web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferFromWithReferenceCallGas(acc(1), acc(2), 1000, "a", {from: acc()})).gasUsed,
-  web3.eth.getTransactionReceipt(_proxyfeeSetup.getApproveCallGas(acc(1), 1000, {from: acc()})).gasUsed,
-  web3.eth.getTransactionReceipt(_proxyfeeSetup.getForwardCallGas(cosignerAddress, "o", {from: acc()})).gasUsed,
-  {from: acc()}
-);
+//proxyfee.setOperationsCallGas(
+//  web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferCallGas(acc(1), 1000, {from: acc()})).gasUsed,
+//  web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferFromCallGas(acc(1), acc(2), 1000, {from: acc()})).gasUsed,
+//  web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferWithReferenceCallGas(acc(1), 1000, "a", {from: acc()})).gasUsed,
+//  web3.eth.getTransactionReceipt(_proxyfeeSetup.getTransferFromWithReferenceCallGas(acc(1), acc(2), 1000, "a", {from: acc()})).gasUsed,
+//  web3.eth.getTransactionReceipt(_proxyfeeSetup.getApproveCallGas(acc(1), 1000, {from: acc()})).gasUsed,
+//  web3.eth.getTransactionReceipt(_proxyfeeSetup.getForwardCallGas(cosignerAddress, "o", {from: acc()})).gasUsed,
+//  {from: acc()}
+//);
 
 console.log(proxyfee.transferCallGas.call().toNumber() > 23000);
 console.log(proxyfee.transferCallGas.call().toNumber() < 24000);
@@ -183,13 +183,15 @@ console.log(proxyfee.buyLimitMax.call().toNumber() == 2000);
 console.log(proxyfee.sellLimitMin.call().toNumber() == 500);
 console.log(proxyfee.sellLimitMax.call().toNumber() == 3000);
 
+var transferAmount = 65793; // 3 non zero bytes
+
 var balance = web3.eth.getBalance(acc());
 var tokenBalance = proxyfee.balanceOf(acc());
 var feeBalance = proxyfee.balanceOf(feeAddress);
-var correctEstimateFee = web3.toBigNumber(proxyfee.transfer.estimateGas(acc(1), 100, {from: acc(), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+var correctEstimateFee = web3.toBigNumber(proxyfee.transfer.estimateGas(acc(1), transferAmount, {from: acc(), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
 console.log(correctEstimateFee.toNumber() > 0);
-console.log(proxyfee.transfer.call(acc(1), 100, {from: acc(), gasPrice: gasPrice}));
-var transfer1 = web3.eth.getTransactionReceipt(proxyfee.transfer(acc(1), 100, {from: acc(), gasPrice: gasPrice}));
+console.log(proxyfee.transfer.call(acc(1), transferAmount, {from: acc(), gasPrice: gasPrice}));
+var transfer1 = web3.eth.getTransactionReceipt(proxyfee.transfer(acc(1), transferAmount, {from: acc(), gasPrice: gasPrice}));
 var transferShortage1 = balance.sub(web3.eth.getBalance(acc())).div(gasPrice).toNumber();
 console.log("Gas used for transfer 1: " + transfer1.gasUsed + " Shortage: " + transferShortage1);
 var exactFee = web3.toBigNumber(transfer1.gasUsed - transferShortage1).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call());
@@ -198,13 +200,13 @@ console.log(correctEstimateFee.gte(actualFee));
 console.log(actualFee.gte(exactFee));
 console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
 console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
-console.log(proxyfee.balanceOf.call(acc()).add(100).add(actualFee).eq(tokenBalance));
+console.log(proxyfee.balanceOf.call(acc()).add(transferAmount).add(actualFee).eq(tokenBalance));
 
 var balance = web3.eth.getBalance(acc());
 var tokenBalance = proxyfee.balanceOf(acc()).toNumber();
 var feeBalance = proxyfee.balanceOf(feeAddress);
-var correctEstimateFee = web3.toBigNumber(proxyfee.transfer.estimateGas(acc(1), 100, {from: acc(), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
-var transfer2 = web3.eth.getTransactionReceipt(proxyfee.transfer(acc(1), 100, {from: acc(), gasPrice: gasPrice}));
+var correctEstimateFee = web3.toBigNumber(proxyfee.transfer.estimateGas(acc(1), transferAmount, {from: acc(), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+var transfer2 = web3.eth.getTransactionReceipt(proxyfee.transfer(acc(1), transferAmount, {from: acc(), gasPrice: gasPrice}));
 var transferShortage2 = balance.sub(web3.eth.getBalance(acc())).div(gasPrice).toNumber();
 console.log(transferShortage1 == transferShortage2);
 console.log("Gas used for transfer 2: " + transfer2.gasUsed + " Shortage: " + transferShortage2);
@@ -214,7 +216,7 @@ console.log(correctEstimateFee.gte(actualFee));
 console.log(actualFee.gte(exactFee));
 console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
 console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
-console.log(proxyfee.balanceOf.call(acc()).add(100).add(actualFee).eq(tokenBalance));
+console.log(proxyfee.balanceOf.call(acc()).add(transferAmount).add(actualFee).eq(tokenBalance));
 
 proxyfee.setOperationsCallGas(
   proxyfee.transferCallGas.call().add(transferShortage1),
@@ -223,14 +225,15 @@ proxyfee.setOperationsCallGas(
   proxyfee.transferFromWithReferenceCallGas.call(),
   proxyfee.approveCallGas.call(),
   proxyfee.forwardCallGas.call(),
+  proxyfee.setCosignerCallGas.call(),
   {from: acc()}
 );
 
 var balance = web3.eth.getBalance(acc());
 var tokenBalance = proxyfee.balanceOf(acc()).toNumber();
 var feeBalance = proxyfee.balanceOf(feeAddress);
-var correctEstimateFee = web3.toBigNumber(proxyfee.transfer.estimateGas(acc(1), 100, {from: acc(), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
-var transfer3 = web3.eth.getTransactionReceipt(proxyfee.transfer(acc(1), 100, {from: acc(), gasPrice: gasPrice}));
+var correctEstimateFee = web3.toBigNumber(proxyfee.transfer.estimateGas(acc(1), transferAmount, {from: acc(), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+var transfer3 = web3.eth.getTransactionReceipt(proxyfee.transfer(acc(1), transferAmount, {from: acc(), gasPrice: gasPrice}));
 var transferShortage3 = balance.sub(web3.eth.getBalance(acc())).div(gasPrice).toNumber();
 console.log(transferShortage3 == 0);
 console.log("Gas used for transfer 3: " + transfer3.gasUsed + " Shortage: " + transferShortage3);
@@ -240,7 +243,7 @@ console.log(correctEstimateFee.gte(actualFee));
 console.log(actualFee.gte(exactFee));
 console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
 console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
-console.log(proxyfee.balanceOf.call(acc()).add(100).add(actualFee).eq(tokenBalance));
+console.log(proxyfee.balanceOf.call(acc()).add(transferAmount).add(actualFee).eq(tokenBalance));
 
 
 
@@ -287,6 +290,7 @@ proxyfee.setOperationsCallGas(
   proxyfee.transferFromWithReferenceCallGas.call(),
   proxyfee.approveCallGas.call().add(approveShortage1),
   proxyfee.forwardCallGas.call(),
+  proxyfee.setCosignerCallGas.call(),
   {from: acc()}
 );
 
@@ -314,10 +318,10 @@ var balance = web3.eth.getBalance(acc(1));
 var tokenBalance = proxyfee.balanceOf(acc(1));
 var feeBalance = proxyfee.balanceOf(feeAddress);
 var tokenBalanceFrom = proxyfee.balanceOf(acc());
-var correctEstimateFee = web3.toBigNumber(proxyfee.transferFrom.estimateGas(acc(), acc(1), 100, {from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+var correctEstimateFee = web3.toBigNumber(proxyfee.transferFrom.estimateGas(acc(), acc(1), transferAmount, {from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
 console.log(correctEstimateFee.toNumber() > 0);
-console.log(proxyfee.transferFrom.call(acc(), acc(1), 100, {from: acc(1), gasPrice: gasPrice}));
-var transferFrom1 = web3.eth.getTransactionReceipt(proxyfee.transferFrom(acc(), acc(1), 100, {from: acc(1), gasPrice: gasPrice}));
+console.log(proxyfee.transferFrom.call(acc(), acc(1), transferAmount, {from: acc(1), gasPrice: gasPrice}));
+var transferFrom1 = web3.eth.getTransactionReceipt(proxyfee.transferFrom(acc(), acc(1), transferAmount, {from: acc(1), gasPrice: gasPrice}));
 var transferFromShortage1 = balance.sub(web3.eth.getBalance(acc(1))).div(gasPrice).toNumber();
 console.log("Gas used for transferFrom 1: " + transferFrom1.gasUsed + " Shortage: " + transferFromShortage1);
 var exactFee = web3.toBigNumber(transferFrom1.gasUsed - transferFromShortage1).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call());
@@ -326,17 +330,17 @@ console.log(correctEstimateFee.gte(actualFee));
 console.log(actualFee.gte(exactFee));
 console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
 console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
-console.log(proxyfee.balanceOf.call(acc(1)).eq(tokenBalance.add(100)));
-console.log(proxyfee.balanceOf.call(acc()).add(100).add(actualFee).eq(tokenBalanceFrom));
+console.log(proxyfee.balanceOf.call(acc(1)).eq(tokenBalance.add(transferAmount)));
+console.log(proxyfee.balanceOf.call(acc()).add(transferAmount).add(actualFee).eq(tokenBalanceFrom));
 
 var balance = web3.eth.getBalance(acc(1));
 var tokenBalance = proxyfee.balanceOf(acc(1));
 var feeBalance = proxyfee.balanceOf(feeAddress);
 var tokenBalanceFrom = proxyfee.balanceOf(acc());
-var correctEstimateFee = web3.toBigNumber(proxyfee.transferFrom.estimateGas(acc(), acc(1), 100, {from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+var correctEstimateFee = web3.toBigNumber(proxyfee.transferFrom.estimateGas(acc(), acc(1), transferAmount, {from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
 console.log(correctEstimateFee.toNumber() > 0);
-console.log(proxyfee.transferFrom.call(acc(), acc(1), 100, {from: acc(1), gasPrice: gasPrice}));
-var transferFrom2 = web3.eth.getTransactionReceipt(proxyfee.transferFrom(acc(), acc(1), 100, {from: acc(1), gasPrice: gasPrice}));
+console.log(proxyfee.transferFrom.call(acc(), acc(1), transferAmount, {from: acc(1), gasPrice: gasPrice}));
+var transferFrom2 = web3.eth.getTransactionReceipt(proxyfee.transferFrom(acc(), acc(1), transferAmount, {from: acc(1), gasPrice: gasPrice}));
 var transferFromShortage2 = balance.sub(web3.eth.getBalance(acc(1))).div(gasPrice).toNumber();
 console.log(transferFromShortage1 == transferFromShortage2);
 console.log("Gas used for transferFrom 2: " + transferFrom2.gasUsed + " Shortage: " + transferFromShortage2);
@@ -346,8 +350,8 @@ console.log(correctEstimateFee.gte(actualFee));
 console.log(actualFee.gte(exactFee));
 console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
 console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
-console.log(proxyfee.balanceOf.call(acc(1)).eq(tokenBalance.add(100)));
-console.log(proxyfee.balanceOf.call(acc()).add(100).add(actualFee).eq(tokenBalanceFrom));
+console.log(proxyfee.balanceOf.call(acc(1)).eq(tokenBalance.add(transferAmount)));
+console.log(proxyfee.balanceOf.call(acc()).add(transferAmount).add(actualFee).eq(tokenBalanceFrom));
 
 proxyfee.setOperationsCallGas(
   proxyfee.transferCallGas.call(),
@@ -356,6 +360,7 @@ proxyfee.setOperationsCallGas(
   proxyfee.transferFromWithReferenceCallGas.call(),
   proxyfee.approveCallGas.call(),
   proxyfee.forwardCallGas.call(),
+  proxyfee.setCosignerCallGas.call(),
   {from: acc()}
 );
 
@@ -363,10 +368,10 @@ var balance = web3.eth.getBalance(acc(1));
 var tokenBalance = proxyfee.balanceOf(acc(1));
 var feeBalance = proxyfee.balanceOf(feeAddress);
 var tokenBalanceFrom = proxyfee.balanceOf(acc());
-var correctEstimateFee = web3.toBigNumber(proxyfee.transferFrom.estimateGas(acc(), acc(1), 100, {from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+var correctEstimateFee = web3.toBigNumber(proxyfee.transferFrom.estimateGas(acc(), acc(1), transferAmount, {from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
 console.log(correctEstimateFee.toNumber() > 0);
-console.log(proxyfee.transferFrom.call(acc(), acc(1), 100, {from: acc(1), gasPrice: gasPrice}));
-var transferFrom3 = web3.eth.getTransactionReceipt(proxyfee.transferFrom(acc(), acc(1), 100, {from: acc(1), gasPrice: gasPrice}));
+console.log(proxyfee.transferFrom.call(acc(), acc(1), transferAmount, {from: acc(1), gasPrice: gasPrice}));
+var transferFrom3 = web3.eth.getTransactionReceipt(proxyfee.transferFrom(acc(), acc(1), transferAmount, {from: acc(1), gasPrice: gasPrice}));
 var transferFromShortage3 = balance.sub(web3.eth.getBalance(acc(1))).div(gasPrice).toNumber();
 console.log(transferFromShortage3 == 0);
 console.log("Gas used for transferFrom 3: " + transferFrom3.gasUsed + " Shortage: " + transferFromShortage3);
@@ -376,8 +381,8 @@ console.log(correctEstimateFee.gte(actualFee));
 console.log(actualFee.gte(exactFee));
 console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
 console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
-console.log(proxyfee.balanceOf.call(acc(1)).eq(tokenBalance.add(100)));
-console.log(proxyfee.balanceOf.call(acc()).add(100).add(actualFee).eq(tokenBalanceFrom));
+console.log(proxyfee.balanceOf.call(acc(1)).eq(tokenBalance.add(transferAmount)));
+console.log(proxyfee.balanceOf.call(acc()).add(transferAmount).add(actualFee).eq(tokenBalanceFrom));
 
 
 
@@ -385,10 +390,10 @@ console.log(proxyfee.balanceOf.call(acc()).add(100).add(actualFee).eq(tokenBalan
 var balance = web3.eth.getBalance(acc());
 var tokenBalance = proxyfee.balanceOf(acc());
 var feeBalance = proxyfee.balanceOf(feeAddress);
-var correctEstimateFee = web3.toBigNumber(proxyfee.transferWithReference.estimateGas(acc(1), 100, "a", {from: acc(), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+var correctEstimateFee = web3.toBigNumber(proxyfee.transferWithReference.estimateGas(acc(1), transferAmount, "a", {from: acc(), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
 console.log(correctEstimateFee.toNumber() > 0);
-console.log(proxyfee.transferWithReference.call(acc(1), 100, "a", {from: acc(), gasPrice: gasPrice}));
-var transferWithReference1 = web3.eth.getTransactionReceipt(proxyfee.transferWithReference(acc(1), 100, "a", {from: acc(), gasPrice: gasPrice}));
+console.log(proxyfee.transferWithReference.call(acc(1), transferAmount, "a", {from: acc(), gasPrice: gasPrice}));
+var transferWithReference1 = web3.eth.getTransactionReceipt(proxyfee.transferWithReference(acc(1), transferAmount, "a", {from: acc(), gasPrice: gasPrice}));
 var transferWithReferenceShortage1 = balance.sub(web3.eth.getBalance(acc())).div(gasPrice).toNumber();
 console.log("Gas used for transferWithReference 1: " + transferWithReference1.gasUsed + " Shortage: " + transferWithReferenceShortage1);
 var exactFee = web3.toBigNumber(transferWithReference1.gasUsed - transferWithReferenceShortage1).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call());
@@ -397,15 +402,15 @@ console.log(correctEstimateFee.gte(actualFee));
 console.log(actualFee.gte(exactFee));
 console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
 console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
-console.log(proxyfee.balanceOf.call(acc()).eq(tokenBalance.sub(actualFee).sub(100)));
+console.log(proxyfee.balanceOf.call(acc()).eq(tokenBalance.sub(actualFee).sub(transferAmount)));
 
 var balance = web3.eth.getBalance(acc());
 var tokenBalance = proxyfee.balanceOf(acc());
 var feeBalance = proxyfee.balanceOf(feeAddress);
-var correctEstimateFee = web3.toBigNumber(proxyfee.transferWithReference.estimateGas(acc(1), 100, "a", {from: acc(), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+var correctEstimateFee = web3.toBigNumber(proxyfee.transferWithReference.estimateGas(acc(1), transferAmount, "a", {from: acc(), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
 console.log(correctEstimateFee.toNumber() > 0);
-console.log(proxyfee.transferWithReference.call(acc(1), 100, "a", {from: acc(), gasPrice: gasPrice}));
-var transferWithReference2 = web3.eth.getTransactionReceipt(proxyfee.transferWithReference(acc(1), 100, "a", {from: acc(), gasPrice: gasPrice}));
+console.log(proxyfee.transferWithReference.call(acc(1), transferAmount, "a", {from: acc(), gasPrice: gasPrice}));
+var transferWithReference2 = web3.eth.getTransactionReceipt(proxyfee.transferWithReference(acc(1), transferAmount, "a", {from: acc(), gasPrice: gasPrice}));
 var transferWithReferenceShortage2 = balance.sub(web3.eth.getBalance(acc())).div(gasPrice).toNumber();
 console.log(transferWithReferenceShortage1 == transferWithReferenceShortage2);
 console.log("Gas used for transferWithReference 2: " + transferWithReference2.gasUsed + " Shortage: " + transferWithReferenceShortage2);
@@ -415,7 +420,7 @@ console.log(correctEstimateFee.gte(actualFee));
 console.log(actualFee.gte(exactFee));
 console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
 console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
-console.log(proxyfee.balanceOf.call(acc()).eq(tokenBalance.sub(actualFee).sub(100)));
+console.log(proxyfee.balanceOf.call(acc()).eq(tokenBalance.sub(actualFee).sub(transferAmount)));
 
 proxyfee.setOperationsCallGas(
   proxyfee.transferCallGas.call(),
@@ -424,16 +429,17 @@ proxyfee.setOperationsCallGas(
   proxyfee.transferFromWithReferenceCallGas.call(),
   proxyfee.approveCallGas.call(),
   proxyfee.forwardCallGas.call(),
+  proxyfee.setCosignerCallGas.call(),
   {from: acc()}
 );
 
 var balance = web3.eth.getBalance(acc());
 var tokenBalance = proxyfee.balanceOf(acc());
 var feeBalance = proxyfee.balanceOf(feeAddress);
-var correctEstimateFee = web3.toBigNumber(proxyfee.transferWithReference.estimateGas(acc(1), 100, "a", {from: acc(), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+var correctEstimateFee = web3.toBigNumber(proxyfee.transferWithReference.estimateGas(acc(1), transferAmount, "a", {from: acc(), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
 console.log(correctEstimateFee.toNumber() > 0);
-console.log(proxyfee.transferWithReference.call(acc(1), 100, "a", {from: acc(), gasPrice: gasPrice}));
-var transferWithReference3 = web3.eth.getTransactionReceipt(proxyfee.transferWithReference(acc(1), 100, "a", {from: acc(), gasPrice: gasPrice}));
+console.log(proxyfee.transferWithReference.call(acc(1), transferAmount, "a", {from: acc(), gasPrice: gasPrice}));
+var transferWithReference3 = web3.eth.getTransactionReceipt(proxyfee.transferWithReference(acc(1), transferAmount, "a", {from: acc(), gasPrice: gasPrice}));
 var transferWithReferenceShortage3 = balance.sub(web3.eth.getBalance(acc())).div(gasPrice).toNumber();
 console.log(transferWithReferenceShortage3 == 0);
 console.log("Gas used for transferWithReference 3: " + transferWithReference3.gasUsed + " Shortage: " + transferWithReferenceShortage3);
@@ -443,15 +449,15 @@ console.log(correctEstimateFee.gte(actualFee));
 console.log(actualFee.gte(exactFee));
 console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
 console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
-console.log(proxyfee.balanceOf.call(acc()).eq(tokenBalance.sub(actualFee).sub(100)));
+console.log(proxyfee.balanceOf.call(acc()).eq(tokenBalance.sub(actualFee).sub(transferAmount)));
 
 var balance = web3.eth.getBalance(acc());
 var tokenBalance = proxyfee.balanceOf(acc());
 var feeBalance = proxyfee.balanceOf(feeAddress);
-var correctEstimateFee = web3.toBigNumber(proxyfee.transferWithReference.estimateGas(acc(1), 100, "The invoice #123332", {from: acc(), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+var correctEstimateFee = web3.toBigNumber(proxyfee.transferWithReference.estimateGas(acc(1), transferAmount, "The invoice #123332", {from: acc(), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
 console.log(correctEstimateFee.toNumber() > 0);
-console.log(proxyfee.transferWithReference.call(acc(1), 100, "The invoice #123332", {from: acc(), gasPrice: gasPrice}));
-var transferWithReference4 = web3.eth.getTransactionReceipt(proxyfee.transferWithReference(acc(1), 100, "The invoice #123332", {from: acc(), gasPrice: gasPrice}));
+console.log(proxyfee.transferWithReference.call(acc(1), transferAmount, "The invoice #123332", {from: acc(), gasPrice: gasPrice}));
+var transferWithReference4 = web3.eth.getTransactionReceipt(proxyfee.transferWithReference(acc(1), transferAmount, "The invoice #123332", {from: acc(), gasPrice: gasPrice}));
 var transferWithReferenceShortage4 = balance.sub(web3.eth.getBalance(acc())).div(gasPrice).toNumber();
 console.log(transferWithReferenceShortage4 <= 0);
 console.log("Gas used for transferWithReference 3: " + transferWithReference4.gasUsed + " Shortage: " + transferWithReferenceShortage4);
@@ -461,7 +467,7 @@ console.log(correctEstimateFee.gte(actualFee));
 console.log(actualFee.gte(exactFee));
 console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
 console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
-console.log(proxyfee.balanceOf.call(acc()).eq(tokenBalance.sub(actualFee).sub(100)));
+console.log(proxyfee.balanceOf.call(acc()).eq(tokenBalance.sub(actualFee).sub(transferAmount)));
 
 
 
@@ -471,10 +477,10 @@ var balance = web3.eth.getBalance(acc(1));
 var tokenBalance = proxyfee.balanceOf(acc(1));
 var feeBalance = proxyfee.balanceOf(feeAddress);
 var tokenBalanceFrom = proxyfee.balanceOf(acc());
-var correctEstimateFee = web3.toBigNumber(proxyfee.transferFromWithReference.estimateGas(acc(), acc(1), 100, "a", {from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+var correctEstimateFee = web3.toBigNumber(proxyfee.transferFromWithReference.estimateGas(acc(), acc(1), transferAmount, "a", {from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
 console.log(correctEstimateFee.toNumber() > 0);
-console.log(proxyfee.transferFromWithReference.call(acc(), acc(1), 100, "a", {from: acc(1), gasPrice: gasPrice}));
-var transferFromWithReference1 = web3.eth.getTransactionReceipt(proxyfee.transferFromWithReference(acc(), acc(1), 100, "a", {from: acc(1), gasPrice: gasPrice}));
+console.log(proxyfee.transferFromWithReference.call(acc(), acc(1), transferAmount, "a", {from: acc(1), gasPrice: gasPrice}));
+var transferFromWithReference1 = web3.eth.getTransactionReceipt(proxyfee.transferFromWithReference(acc(), acc(1), transferAmount, "a", {from: acc(1), gasPrice: gasPrice}));
 var transferFromWithReferenceShortage1 = balance.sub(web3.eth.getBalance(acc(1))).div(gasPrice).toNumber();
 console.log("Gas used for transferFromWithReference 1: " + transferFromWithReference1.gasUsed + " Shortage: " + transferFromWithReferenceShortage1);
 var exactFee = web3.toBigNumber(transferFromWithReference1.gasUsed - transferFromWithReferenceShortage1).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call());
@@ -483,17 +489,17 @@ console.log(correctEstimateFee.gte(actualFee));
 console.log(actualFee.gte(exactFee));
 console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
 console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
-console.log(proxyfee.balanceOf.call(acc(1)).eq(tokenBalance.add(100)));
-console.log(proxyfee.balanceOf.call(acc()).add(100).add(actualFee).eq(tokenBalanceFrom));
+console.log(proxyfee.balanceOf.call(acc(1)).eq(tokenBalance.add(transferAmount)));
+console.log(proxyfee.balanceOf.call(acc()).add(transferAmount).add(actualFee).eq(tokenBalanceFrom));
 
 var balance = web3.eth.getBalance(acc(1));
 var tokenBalance = proxyfee.balanceOf(acc(1));
 var feeBalance = proxyfee.balanceOf(feeAddress);
 var tokenBalanceFrom = proxyfee.balanceOf(acc());
-var correctEstimateFee = web3.toBigNumber(proxyfee.transferFromWithReference.estimateGas(acc(), acc(1), 100, "a", {from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+var correctEstimateFee = web3.toBigNumber(proxyfee.transferFromWithReference.estimateGas(acc(), acc(1), transferAmount, "a", {from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
 console.log(correctEstimateFee.toNumber() > 0);
-console.log(proxyfee.transferFromWithReference.call(acc(), acc(1), 100, "a", {from: acc(1), gasPrice: gasPrice}));
-var transferFromWithReference2 = web3.eth.getTransactionReceipt(proxyfee.transferFromWithReference(acc(), acc(1), 100, "a", {from: acc(1), gasPrice: gasPrice}));
+console.log(proxyfee.transferFromWithReference.call(acc(), acc(1), transferAmount, "a", {from: acc(1), gasPrice: gasPrice}));
+var transferFromWithReference2 = web3.eth.getTransactionReceipt(proxyfee.transferFromWithReference(acc(), acc(1), transferAmount, "a", {from: acc(1), gasPrice: gasPrice}));
 var transferFromWithReferenceShortage2 = balance.sub(web3.eth.getBalance(acc(1))).div(gasPrice).toNumber();
 console.log(transferFromWithReferenceShortage1 == transferFromWithReferenceShortage2);
 console.log("Gas used for transferFromWithReference 2: " + transferFromWithReference2.gasUsed + " Shortage: " + transferFromWithReferenceShortage2);
@@ -503,8 +509,8 @@ console.log(correctEstimateFee.gte(actualFee));
 console.log(actualFee.gte(exactFee));
 console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
 console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
-console.log(proxyfee.balanceOf.call(acc(1)).eq(tokenBalance.add(100)));
-console.log(proxyfee.balanceOf.call(acc()).add(100).add(actualFee).eq(tokenBalanceFrom));
+console.log(proxyfee.balanceOf.call(acc(1)).eq(tokenBalance.add(transferAmount)));
+console.log(proxyfee.balanceOf.call(acc()).add(transferAmount).add(actualFee).eq(tokenBalanceFrom));
 
 proxyfee.setOperationsCallGas(
   proxyfee.transferCallGas.call(),
@@ -513,6 +519,7 @@ proxyfee.setOperationsCallGas(
   proxyfee.transferFromWithReferenceCallGas.call().add(transferFromWithReferenceShortage1),
   proxyfee.approveCallGas.call(),
   proxyfee.forwardCallGas.call(),
+  proxyfee.setCosignerCallGas.call(),
   {from: acc()}
 );
 
@@ -520,10 +527,10 @@ var balance = web3.eth.getBalance(acc(1));
 var tokenBalance = proxyfee.balanceOf(acc(1));
 var feeBalance = proxyfee.balanceOf(feeAddress);
 var tokenBalanceFrom = proxyfee.balanceOf(acc());
-var correctEstimateFee = web3.toBigNumber(proxyfee.transferFromWithReference.estimateGas(acc(), acc(1), 100, "a", {from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+var correctEstimateFee = web3.toBigNumber(proxyfee.transferFromWithReference.estimateGas(acc(), acc(1), transferAmount, "a", {from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
 console.log(correctEstimateFee.toNumber() > 0);
-console.log(proxyfee.transferFromWithReference.call(acc(), acc(1), 100, "a", {from: acc(1), gasPrice: gasPrice}));
-var transferFromWithReference3 = web3.eth.getTransactionReceipt(proxyfee.transferFromWithReference(acc(), acc(1), 100, "a", {from: acc(1), gasPrice: gasPrice}));
+console.log(proxyfee.transferFromWithReference.call(acc(), acc(1), transferAmount, "a", {from: acc(1), gasPrice: gasPrice}));
+var transferFromWithReference3 = web3.eth.getTransactionReceipt(proxyfee.transferFromWithReference(acc(), acc(1), transferAmount, "a", {from: acc(1), gasPrice: gasPrice}));
 var transferFromWithReferenceShortage3 = balance.sub(web3.eth.getBalance(acc(1))).div(gasPrice).toNumber();
 console.log(transferFromWithReferenceShortage3 == 0);
 console.log("Gas used for transferFromWithReference 3: " + transferFromWithReference3.gasUsed + " Shortage: " + transferFromWithReferenceShortage3);
@@ -533,17 +540,17 @@ console.log(correctEstimateFee.gte(actualFee));
 console.log(actualFee.gte(exactFee));
 console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
 console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
-console.log(proxyfee.balanceOf.call(acc(1)).eq(tokenBalance.add(100)));
-console.log(proxyfee.balanceOf.call(acc()).add(100).add(actualFee).eq(tokenBalanceFrom));
+console.log(proxyfee.balanceOf.call(acc(1)).eq(tokenBalance.add(transferAmount)));
+console.log(proxyfee.balanceOf.call(acc()).add(transferAmount).add(actualFee).eq(tokenBalanceFrom));
 
 var balance = web3.eth.getBalance(acc(1));
 var tokenBalance = proxyfee.balanceOf(acc(1));
 var feeBalance = proxyfee.balanceOf(feeAddress);
 var tokenBalanceFrom = proxyfee.balanceOf(acc());
-var correctEstimateFee = web3.toBigNumber(proxyfee.transferFromWithReference.estimateGas(acc(), acc(1), 100, "The invoice #123332", {from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
+var correctEstimateFee = web3.toBigNumber(proxyfee.transferFromWithReference.estimateGas(acc(), acc(1), transferAmount, "The invoice #123332", {from: acc(1), gasPrice: gasPrice})).mul(gasPrice).div(proxyfee.tokenPriceInWeiSell.call()).ceil();
 console.log(correctEstimateFee.toNumber() > 0);
-console.log(proxyfee.transferFromWithReference.call(acc(), acc(1), 100, "The invoice #123332", {from: acc(1), gasPrice: gasPrice}));
-var transferFromWithReference4 = web3.eth.getTransactionReceipt(proxyfee.transferFromWithReference(acc(), acc(1), 100, "The invoice #123332", {from: acc(1), gasPrice: gasPrice}));
+console.log(proxyfee.transferFromWithReference.call(acc(), acc(1), transferAmount, "The invoice #123332", {from: acc(1), gasPrice: gasPrice}));
+var transferFromWithReference4 = web3.eth.getTransactionReceipt(proxyfee.transferFromWithReference(acc(), acc(1), transferAmount, "The invoice #123332", {from: acc(1), gasPrice: gasPrice}));
 var transferFromWithReferenceShortage4 = balance.sub(web3.eth.getBalance(acc(1))).div(gasPrice).toNumber();
 console.log(transferFromWithReferenceShortage4 <= 0);
 console.log("Gas used for transferFromWithReference 3: " + transferFromWithReference4.gasUsed + " Shortage: " + transferFromWithReferenceShortage4);
@@ -553,8 +560,8 @@ console.log(correctEstimateFee.gte(actualFee));
 console.log(actualFee.gte(exactFee));
 console.log("Estimate: " + correctEstimateFee.toNumber() + " exact: " + exactFee.toNumber() + " actual: " + actualFee.toNumber());
 console.log(proxyfee.balanceOf.call(feeAddress).eq(feeBalance.add(actualFee)));
-console.log(proxyfee.balanceOf.call(acc(1)).eq(tokenBalance.add(100)));
-console.log(proxyfee.balanceOf.call(acc()).add(100).add(actualFee).eq(tokenBalanceFrom));
+console.log(proxyfee.balanceOf.call(acc(1)).eq(tokenBalance.add(transferAmount)));
+console.log(proxyfee.balanceOf.call(acc()).add(transferAmount).add(actualFee).eq(tokenBalanceFrom));
 
 
 var amount = 1000;
@@ -586,7 +593,8 @@ var amount = 1000;
 var price = proxyfee.tokenPriceInWeiBuy.call().mul(amount);
 var balance = web3.eth.getBalance(acc());
 var tokenBalance = proxyfee.balanceOf(acc());
-var exchangeBalance = proxyfee.balanceOf(exchangeAddress);
+var exchangeTokenBalance = proxyfee.balanceOf(exchangeAddress);
+var exchangeBalance = web3.eth.getBalance(exchangeAddress);
 var treasuryBalance = web3.eth.getBalance(treasury.address);
 console.log(proxyfee.buy.call(acc(), {from: acc(), gasPrice: gasPrice, value: price}));
 var buy1 = web3.eth.getTransactionReceipt(proxyfee.buy(acc(), {from: acc(), gasPrice: gasPrice, value: price}));
@@ -594,16 +602,19 @@ console.log("Gas used for buy 1: " + buy1.gasUsed);
 var actualResult = web3.toBigNumber(buy1.logs[buy1.logs.length-1].data.substr(0, 66));
 console.log(actualResult.eq(amount));
 console.log("Estimate: " + amount + " actual: " + actualResult.toNumber());
-console.log(proxyfee.balanceOf.call(exchangeAddress).eq(exchangeBalance.sub(amount)));
+console.log(proxyfee.balanceOf.call(exchangeAddress).eq(exchangeTokenBalance.sub(amount)));
 console.log(proxyfee.balanceOf.call(acc()).eq(tokenBalance.add(amount)));
 console.log(web3.eth.getBalance(acc()).eq(balance.sub(price).sub(gasPrice.mul(buy1.gasUsed))));
-console.log(web3.eth.getBalance(treasury.address).eq(treasuryBalance.add(price)));
+console.log(web3.eth.getBalance(treasury.address).eq(treasuryBalance));
+console.log(web3.eth.getBalance(exchangeAddress).eq(exchangeAddress.add(price)));
 
 
 console.log(cosigner.addOracle.call("0x28fCebB90035e25136D1887B6F0851D41281da20", {from: acc()}));
 cosigner.addOracle("0x28fCebB90035e25136D1887B6F0851D41281da20", {from: acc()});
 console.log(proxyfee.approve.call(proxyfee.address, 1000, {from: acc(1)}));
 proxyfee.approve(proxyfee.address, 1000, {from: acc(1)});
+
+
 console.log(etok.setCosignerAddress.call(cosigner.address, symbol, {from: acc(1)}));
 etok.setCosignerAddress(cosigner.address, symbol, {from: acc(1)});
 console.log(etok.getHolderId(acc(1)).toNumber() == 4);
@@ -638,6 +649,7 @@ if (forwardShortage1 > 0) {
     proxyfee.transferFromWithReferenceCallGas.call(),
     proxyfee.approveCallGas.call(),
     proxyfee.forwardCallGas.call().add(forwardShortage1),
+    proxyfee.setCosignerCallGas.call(),
     {from: acc()}
   );
 }
@@ -687,6 +699,21 @@ evaEUR.init("0x0ec62107c77fcb3084e6bc8f95d4ba0d6418734f", "EvaEUR", {from: da, g
 etokEVA.setProxy("0x348809661459afbb7f4371e252bb87199e9f1ac8", true, "EvaRUR", {from: da, gas: 300000}, cb);
 etokEVA.setEventsProxy("0x348809661459afbb7f4371e252bb87199e9f1ac8", "EvaRUR", {from: da, gas: 300000}, cb);
 evaRUR.init("0x0ec62107c77fcb3084e6bc8f95d4ba0d6418734f", "EvaRUR", {from: da, gas: 300000}, cb);
+
+var nano1 = web3.eth.contract([{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":false,"inputs":[{"name":"_name","type":"bytes32"}],"name":"getAddress","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"_address","type":"address"}],"name":"addAddress","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_address","type":"address"}],"name":"removeAddress","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_ambi","type":"address"},{"name":"_name","type":"bytes32"}],"name":"setAmbiAddress","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"hasAccess","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[],"name":"remove","outputs":[],"type":"function"},{"constant":false,"inputs":[],"name":"deposit","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"},{"name":"_reference","type":"string"}],"name":"withdrawWithReference","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"withdraw","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_reference","type":"string"}],"name":"depositWithReference","outputs":[{"name":"","type":"bool"}],"type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":false,"name":"value","type":"uint256"},{"indexed":false,"name":"reference","type":"string"}],"name":"Deposit","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"},{"indexed":false,"name":"reference","type":"string"}],"name":"Withdrawal","type":"event"}]);
+nano1.new(
+  {
+    from: da, 
+    data: '0x60606040526106c4806100126000396000f36060604052361561008d5760e060020a600035046306fdde03811461009a57806321f8a721146100a357806338eada1c1461011b5780634ba79dfe146101dc5780637948f5231461029957806395a078e8146102be578063a7f43779146102d9578063d0e30db014610300578063f359671c14610317578063f3fef3a31461036f578063f89005e7146103c1575b6104bc60006104ce610304565b6104bc60015481565b6104d460043560408051600080547f2ade6c360000000000000000000000000000000000000000000000000000000083526004830185905292519092600160a060020a031691632ade6c36916024808301926020929190829003018187876161da5a03f1156100025750506040515191506104b79050565b6104bc6004356000805460d960020a6430b236b4b70290600160a060020a031682148015906101aa575060408051835460015460e460020a630a1add5102835260048301526024820184905233600160a060020a039081166044840152925192169163a1add51091606480820192602092909190829003018188876161da5a03f1156100025750506040515190505b156104fa575050600160a060020a0381166000908152600260205260409020805460ff191660019081179091556104b7565b6104bc6004356000805460d960020a6430b236b4b70290600160a060020a0316821480159061026b575060408051835460015460e460020a630a1add5102835260048301526024820184905233600160a060020a039081166044840152925192169163a1add51091606480820192602092909190829003018188876161da5a03f1156100025750506040515190505b156104fa575050600160a060020a0381166000908152600260205260409020805460ff1916905560016104b7565b6104bc6004356024356000805481908190600160a060020a0316811461052f57610527565b6104bc60043560026020526000908152604090205460ff1681565b6104f0600054600160a060020a039081163390911614156105fe5733600160a060020a0316ff5b6104bc5b600060003411156104f2575060016104d1565b604080516020604435600481810135601f81018490048402850184019095528484526104bc94813594602480359593946064949293910191819084018382808284375094965050505050505060006106b68484610379565b6104bc6004356024355b33600160a060020a031660009081526002602052604081205460ff16156103bb57604051600160a060020a038416908290849082818181858883f19450505050505b92915050565b6040805160206004803580820135601f81018490048402850184019095528484526104bc949193602493909291840191908190840183828082843750949650505050505050600060003411156104b35733600160a060020a03167f643e927b32d5bfd08eccd2fcbd97057ad413850f857a2359639114e8e8dd3d7b348460405180838152602001806020018281038252838181518152602001915080519060200190808383829060006004602084601f0104600f02600301f150905090810190601f1680156104a45780820380516001836020036101000a031916815260200191505b50935050505060405180910390a25b5060015b919050565b60408051918252519081900360200190f35b90505b90565b60408051600160a060020a039092168252519081900360200190f35b005b5060006104d1565b50919050565b60018481556000805473ffffffffffffffffffffffffffffffffffffffff19168417905592505b505092915050565b84915030600160a060020a031682600160a060020a0316632ade6c36866040518260e060020a028152600401808281526020019150506020604051808303816000876161da5a03f11561000257505060405151600160a060020a031690911490506105005781600160a060020a0316637684937685306040518360e060020a0281526004018083815260200182600160a060020a03168152602001925050506020604051808303816000876161da5a03f115610002575050604051519150508015156105005760009250610527565b565b83600160a060020a031633600160a060020a03167f2b0d35cc55a37536a00cf056f44b5f4b453659ddd18bc131a978463523ad3a1f858560405180838152602001806020018281038252838181518152602001915080519060200190808383829060006004602084601f0104600f02600301f150905090810190601f16801561069d5780820380516001836020036101000a031916815260200191505b50935050505060405180910390a35060015b9392505050565b1515610600575060006106af56', 
+    gas: 3000000
+  }, function(e, contract){
+    console.log(e, contract);
+    if (typeof contract.address != 'undefined') {
+      console.log('Contract mined! address: ' + contract.address + ' transactionHash: ' + contract.transactionHash);
+      nano1 = nano1.at(contract.address);
+    }
+})
+
 
 nano1.setAmbiAddress(ambiAddress, "treasuryEva", {from: da, gas: 300000}, cb);
 ambiInt.setRelation("treasuryEva", "admin", "common", {from: da, gas: 300000}, cb);
@@ -903,3 +930,62 @@ safeTransactions(
   safeTransactionFunction(ambi.setRelation, ["access1", "signer", "antonT"], address),
   safeTransactionFunction(ambi.setRelation, ["access1", "signer", "antonS"], address, {waitReceipt: true})
 );
+
+
+
+// Deploy and configure refunder for elcoin.
+// Preconditions: deployed elcoin contract.
+// Make sure you have > 1.1 ether on your address.
+var elcoinInt = eth.contract([{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"recovered","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[],"name":"txGasPriceLimit","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"_name","type":"bytes32"}],"name":"getAddress","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"success","type":"bool"}],"type":"function"},{"constant":false,"inputs":[],"name":"updateRefundGas","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[],"name":"feeAddr","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"_treasury","type":"address"},{"name":"_txGasPriceLimit","type":"uint256"}],"name":"setupTreasury","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[],"name":"absMaxFee","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[],"name":"refundGas","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_absMinFee","type":"uint256"},{"name":"_feePercent","type":"uint256"},{"name":"_absMaxFee","type":"uint256"}],"name":"setFee","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"},{"name":"_totalSupply","type":"uint256"}],"name":"issueCoin","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"_account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_ambi","type":"address"},{"name":"_name","type":"bytes32"}],"name":"setAmbiAddress","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[],"name":"feePercent","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address[]"},{"name":"_value","type":"uint256[]"}],"name":"batchTransfer","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_transfer","type":"uint256"}],"name":"setOperationsCallGas","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"_amount","type":"uint256"}],"name":"calculateFee","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[],"name":"remove","outputs":[],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferPool","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[],"name":"absMinFee","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"recoveredIndex","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_feeAddr","type":"address"}],"name":"setFeeAddr","outputs":[],"type":"function"},{"constant":true,"inputs":[],"name":"transferCallGas","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_old","type":"address"},{"name":"_new","type":"address"}],"name":"recoverAccount","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"remaining","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_amount","type":"uint256"}],"name":"rewardTo","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"}],"name":"unapprove","outputs":[{"name":"success","type":"bool"}],"type":"function"},{"inputs":[],"type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"name":"code","type":"uint8"},{"indexed":true,"name":"origin","type":"address"},{"indexed":true,"name":"sender","type":"address"}],"name":"Error","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_from","type":"address"},{"indexed":true,"name":"_to","type":"address"},{"indexed":false,"name":"_value","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_owner","type":"address"},{"indexed":true,"name":"_spender","type":"address"},{"indexed":false,"name":"_value","type":"uint256"}],"name":"Approved","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_owner","type":"address"},{"indexed":true,"name":"_spender","type":"address"}],"name":"Unapproved","type":"event"}]
+).at('');
+var calibratingTransferTo = '';
+var calibratingTransferAmount = 0x010101; // 3 non zero bytes
+var myNodeName = 'common';
+var testObj = {};
+var gasPrice = web3.toBigNumber(web3.toWei(20, 'gwei'));
+var ambiInt = eth.contract([{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"owners","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"_node","type":"bytes32"}],"name":"removeNode","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"relationIndex","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"nodes","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"bytes32"}],"name":"setRelation","outputs":[{"name":"","type":"int8"}],"type":"function"},{"constant":true,"inputs":[{"name":"_name","type":"bytes32"}],"name":"getNodeAddress","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"_name","type":"bytes32"},{"name":"_addr","type":"address"}],"name":"changeNodeAddress","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_name","type":"bytes32"},{"name":"_addr","type":"address"}],"name":"addNode","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_operation","type":"bytes32"},{"name":"_signer","type":"bytes32"}],"name":"isSigned","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"bytes32"}],"name":"isRelation","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"}],"name":"getChildCount","outputs":[{"name":"","type":"uint8"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"address"}],"name":"hasRelation","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_pos","type":"uint8"}],"name":"getChildAddress","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"nodeIndex","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"addresses","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"relations","outputs":[{"name":"relation","type":"bytes32"},{"name":"parent","type":"bytes32"},{"name":"numChildren","type":"uint8"}],"type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"bytes32"},{"name":"_role","type":"bytes32"},{"name":"_to","type":"bytes32"}],"name":"removeChild","outputs":[{"name":"","type":"bool"}],"type":"function"},{"inputs":[],"type":"constructor"}]
+).at('0xa0c446bd3d10dc375523bc56be956a6b54b2964a');
+var nano = eth.contract([{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"_name","type":"bytes32"}],"name":"getAddress","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"_address","type":"address"}],"name":"addAddress","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_address","type":"address"}],"name":"removeAddress","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_ambi","type":"address"},{"name":"_name","type":"bytes32"}],"name":"setAmbiAddress","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"hasAccess","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[],"name":"remove","outputs":[],"type":"function"},{"constant":false,"inputs":[],"name":"deposit","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"},{"name":"_reference","type":"string"}],"name":"withdrawWithReference","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"withdraw","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_reference","type":"string"}],"name":"depositWithReference","outputs":[{"name":"","type":"bool"}],"type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":false,"name":"value","type":"uint256"},{"indexed":false,"name":"reference","type":"string"}],"name":"Deposit","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"},{"indexed":false,"name":"reference","type":"string"}],"name":"Withdrawal","type":"event"}]);
+nano.new(
+  {
+    from: address,
+    data: '0x6060604052610753806100126000396000f36060604052361561008d5760e060020a600035046306fdde03811461009a57806321f8a721146100a357806338eada1c1461011b5780634ba79dfe146101dc5780637948f5231461029957806395a078e8146102be578063a7f43779146102d9578063d0e30db01461038e578063f359671c146103a5578063f3fef3a3146103fd578063f89005e71461044f575b61054a600061055c610392565b61054a60015481565b61056260043560408051600080547f2ade6c360000000000000000000000000000000000000000000000000000000083526004830185905292519092600160a060020a031691632ade6c36916024808301926020929190829003018187876161da5a03f1156100025750506040515191506105459050565b61054a6004356000805460d960020a6430b236b4b70290600160a060020a031682148015906101aa575060408051835460015460e460020a630a1add5102835260048301526024820184905233600160a060020a039081166044840152925192169163a1add51091606480820192602092909190829003018188876161da5a03f1156100025750506040515190505b15610588575050600160a060020a0381166000908152600260205260409020805460ff19166001908117909155610545565b61054a6004356000805460d960020a6430b236b4b70290600160a060020a0316821480159061026b575060408051835460015460e460020a630a1add5102835260048301526024820184905233600160a060020a039081166044840152925192169163a1add51091606480820192602092909190829003018188876161da5a03f1156100025750506040515190505b15610588575050600160a060020a0381166000908152600260205260409020805460ff191690556001610545565b61054a6004356024356000805481908190600160a060020a031681146105bd576105b5565b61054a60043560026020526000908152604090205460ff1681565b6000805461057e917f6f776e657200000000000000000000000000000000000000000000000000000091600160a060020a03161480159061037d5750604080516000805460015460e460020a630a1add5102845260048401526024830185905233600160a060020a039081166044850152935193169263a1add5109260648082019360209392839003909101908290876161da5a03f1156100025750506040515190505b1561068c5733600160a060020a0316ff5b61054a5b600060003411156105805750600161055f565b604080516020604435600481810135601f810184900484028501840190955284845261054a94813594602480359593946064949293910191819084018382808284375094965050505050505060006107458484610407565b61054a6004356024355b33600160a060020a031660009081526002602052604081205460ff161561044957604051600160a060020a038416908290849082818181858883f19450505050505b92915050565b6040805160206004803580820135601f810184900484028501840190955284845261054a949193602493909291840191908190840183828082843750949650505050505050600060003411156105415733600160a060020a03167f643e927b32d5bfd08eccd2fcbd97057ad413850f857a2359639114e8e8dd3d7b348460405180838152602001806020018281038252838181518152602001915080519060200190808383829060006004602084601f0104600f02600301f150905090810190601f1680156105325780820380516001836020036101000a031916815260200191505b50935050505060405180910390a25b5060015b919050565b60408051918252519081900360200190f35b90505b90565b60408051600160a060020a039092168252519081900360200190f35b005b50600061055f565b50919050565b60018481556000805473ffffffffffffffffffffffffffffffffffffffff19168417905592505b505092915050565b84915030600160a060020a031682600160a060020a0316632ade6c36866040518260e060020a028152600401808281526020019150506020604051808303816000876161da5a03f11561000257505060405151600160a060020a0316909114905061058e5781600160a060020a0316637684937685306040518360e060020a0281526004018083815260200182600160a060020a03168152602001925050506020604051808303816000876161da5a03f1156100025750506040515191505080151561058e57600092506105b5565b50565b83600160a060020a031633600160a060020a03167f2b0d35cc55a37536a00cf056f44b5f4b453659ddd18bc131a978463523ad3a1f858560405180838152602001806020018281038252838181518152602001915080519060200190808383829060006004602084601f0104600f02600301f150905090810190601f16801561072c5780820380516001836020036101000a031916815260200191505b50935050505060405180910390a35060015b9392505050565b151561068f5750600061073e56',
+    gas: 3000000
+  }, function(e, contract){
+    console.log(e, contract);
+    if (typeof contract.address != 'undefined') {
+      console.log('Contract mined! address: ' + contract.address + ' transactionHash: ' + contract.transactionHash);
+      nano = nano.at(contract.address);
+      safeTransactions(
+        safeTransactionFunction(nano.setAmbiAddress, [ambiInt.address, 'treasuryElcoin'], address, {waitReceipt: true}),
+        safeTransactionFunction(ambiInt.setRelation, ['treasuryElcoin', 'admin', myNodeName], address, {waitReceipt: true}),
+        safeTransactionFunction(nano.addAddress, [address], address),
+        safeTransactionFunction(nano.addAddress, [elcoinInt.address], address),
+        safeTransactionFunction(nano.depositWithReference, ['First'], address, {value: web3.toWei(1, 'ether'), waitReceipt: true}),
+        safeTransactionFunction(elcoinInt.setupTreasury, [nano.address, web3.toWei(21, 'gwei')], address, {waitReceipt: true}),
+        safeTransactionFunction(elcoinInt.updateRefundGas, [], address, {waitReceipt: true}),
+        function() {
+          return new Promise(function(resolve, reject) {
+            eth.getBalance(address, function(_, balance) {
+              testObj.balanceBefore = balance;
+              resolve();
+            });
+          });
+        },
+        safeTransactionFunction(elcoinInt.transfer, [calibratingTransferTo, calibratingTransferAmount], address, {waitReceipt: true, gasPrice: gasPrice}),
+        function() {
+          return new Promise(function(resolve, reject) {
+            eth.getBalance(address, function(_, balance) {
+              testObj.shortage = testObj.balanceBefore.sub(balance).div(gasPrice);
+              log("Shortage was: " + testObj.shortage + " gas.");
+              if (testObj.shortage.gt(5000)) {
+                reject("Shortage is too big. Something went wrong.");
+              }
+              resolve();
+            });
+          });
+        },
+        safeTransactionFunction(elcoinInt.setOperationsCallGas, [testObj.shortage.add(21000 + 128)], address, {waitReceipt: true})
+      );
+    }
+});
