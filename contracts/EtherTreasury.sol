@@ -1,6 +1,7 @@
 import "MultiAsset.sol";
+import "EtherTreasuryInterface.sol";
 
-contract EtherTreasury {
+contract EtherTreasury is EtherTreasuryInterface {
     function() {
         deposit(msg.sender);
     }

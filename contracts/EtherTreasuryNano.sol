@@ -1,3 +1,5 @@
+import "EtherTreasuryInterface.sol";
+
 // DEPLOY REMOVE START
 contract AmbiEnabled {
     modifier checkAccess(bytes32) {
@@ -6,7 +8,7 @@ contract AmbiEnabled {
 }
 // DEPLOY REMOVE END
 
-contract EtherTreasuryNano is AmbiEnabled {
+contract EtherTreasuryNano is AmbiEnabled, EtherTreasuryInterface {
     mapping(address => bool) public hasAccess;
 
     modifier onlyAccess() {

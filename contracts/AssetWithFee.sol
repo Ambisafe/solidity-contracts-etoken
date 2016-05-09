@@ -1,4 +1,5 @@
 import "MultiAsset.sol";
+import "EtherTreasuryInterface.sol";
 
 // DEPLOY REMOVE START
 contract AmbiEnabled {
@@ -7,12 +8,6 @@ contract AmbiEnabled {
     }
 }
 // DEPLOY REMOVE END
-
-contract EtherTreasuryInterface {
-    function depositWithReference(string) returns(bool);
-    function withdraw(address, uint) returns(bool);
-    function withdrawWithReference(address, uint, string) returns(bool);
-}
 
 contract AssetWithFee is AmbiEnabled {
     uint public refundGas = 40000;
@@ -96,7 +91,7 @@ contract AssetWithFee is AmbiEnabled {
 
     function setupTreasury(address _treasury) checkAccess("admin") returns(bool) {
         treasury = EtherTreasuryInterface(_treasury);
-        if (msg.value > 0 && !treasury.depositWithReference.value(msg.value)("Setup Treasury")) {
+        if (msg.value > 0 && !treasury.send(msg.value)) {
             throw;
         }
         return true;
