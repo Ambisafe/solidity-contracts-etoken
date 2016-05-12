@@ -28,7 +28,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   var multiAssetAbi;
 
   before('setup', function() {
-    multiAsset   = MultiAsset.deployed();
+    multiAsset = MultiAsset.deployed();
     multiAssetAbi = web3.eth.contract(multiAsset.abi).at(0x0);
   });
 

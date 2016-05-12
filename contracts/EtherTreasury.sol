@@ -48,7 +48,7 @@ contract EtherTreasury is EtherTreasuryInterface {
         }
         multiAsset = MultiAsset(_multiAsset);
         symbol = _symbol;
-        if (multiAsset.issueAsset(symbol, 0, "WeiToken", "1-to-1 with wei. ATTENTION: NOT safe to hold tokens buy real person. Cosinging will not be checked! Use only for contracts!", 0, true)
+        if (multiAsset.issueAsset(symbol, 0, "WeiToken", "1-to-1 with wei.", 0, true)
             && multiAsset.setProxy(address(this), true, symbol)
             && multiAsset.setEventsProxy(address(this), symbol)
             && multiAsset.setOnlyProxy(true, symbol))

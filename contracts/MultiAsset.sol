@@ -10,6 +10,10 @@ contract Proxy {
     function emitApprove(address, address, uint);
 }
 
+contract RegistryICAP {
+    function parse(string) returns(address, bytes32, bool);
+}
+
 contract Switchable is Owned {
     mapping(bytes32 => bool) public switches;
 
@@ -18,7 +22,7 @@ contract Switchable is Owned {
         return !switches[_switch];// ! - means everything is enabled by default
     }
 
-    function setSwitch(bytes32 _switch, bool _state) onlyContractOwner() returns (bool) {
+    function setSwitch(bytes32 _switch, bool _state) onlyContractOwner() returns(bool) {
         switches[_switch] = _state;
         return _state;
     }
@@ -38,8 +42,9 @@ contract MultiAsset is Switchable {
     event OwnershipChange(address indexed from, address indexed to, bytes32 indexed symbol);
     event Approve(address indexed from, address indexed spender, bytes32 indexed symbol, uint value);
     event Recovery(address indexed from, address indexed to, address by);
+    event TransferToICAP(address indexed from, address indexed to, bytes32 indexed icapHash, string icap, uint value, string reference);
 
-    enum Features { Issue, TransferWithReference, Revoke, ChangeOwnership, Allowances }
+    enum Features { Issue, TransferWithReference, Revoke, ChangeOwnership, Allowances, ICAP }
 
     struct Asset {
         uint owner;
@@ -74,6 +79,13 @@ contract MultiAsset is Switchable {
     mapping(address => uint) holderIndex;
     mapping(bytes32 => Asset) public assets;
     mapping(bytes32 => ProxyConf) public proxies;
+
+    RegistryICAP public registryICAP;
+
+    function setup(address _registryICAP) onlyContractOwner() returns(bool) {
+        registryICAP = RegistryICAP(_registryICAP);
+        return true;
+    }
 
     modifier onlyOwner(bytes32 _symbol) {
         if (_isSignedOwner(_symbol)) {
@@ -191,8 +203,27 @@ contract MultiAsset is Switchable {
         return _transfer(_posFrom, _posTo, _value, _symbol, _reference, _posSender);
     }
 
+    function _prepareTransfer(address _to, uint _value, bytes32 _symbol, string _reference) internal returns(bool) {
+        return _transfer(getHolderId(msg.sender), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(msg.sender));
+    }
+
     function transfer(address _to, uint _value, bytes32 _symbol) returns(bool) {
-        return _transfer(getHolderId(msg.sender), _createPosHolder(_to), _value, _symbol, "", getHolderId(msg.sender));
+        return _prepareTransfer(_to, _value, _symbol, "");
+    }
+
+    function transferToICAP(string _icap, uint _value, string _reference) returns(bool) {
+        var (to, symbol, success) = registryICAP.parse(_icap);
+        if (!success) {
+            return false;
+        }
+        if (!isEnabled(sha3(symbol, Features.ICAP))) {
+            return false;
+        }
+        if (!_prepareTransfer(to, _value, symbol, _reference)) {
+            return false;
+        }
+        TransferToICAP(msg.sender, to, sha3(_icap), _icap, _value, _reference);
+        return true;
     }
 
     function transferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) returns(bool) {
