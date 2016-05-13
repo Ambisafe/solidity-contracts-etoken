@@ -11,7 +11,7 @@ contract Proxy {
 }
 
 contract RegistryICAP {
-    function parse(string) returns(address, bytes32, bool);
+    function parse(bytes32) returns(address, bytes32, bool);
 }
 
 contract Switchable is Owned {
@@ -42,7 +42,7 @@ contract MultiAsset is Switchable {
     event OwnershipChange(address indexed from, address indexed to, bytes32 indexed symbol);
     event Approve(address indexed from, address indexed spender, bytes32 indexed symbol, uint value);
     event Recovery(address indexed from, address indexed to, address by);
-    event TransferToICAP(address indexed from, address indexed to, bytes32 indexed icapHash, string icap, uint value, string reference);
+    event TransferToICAP(address indexed from, address indexed to, bytes32 indexed icap, uint value, string reference);
 
     enum Features { Issue, TransferWithReference, Revoke, ChangeOwnership, Allowances, ICAP }
 
@@ -211,9 +211,17 @@ contract MultiAsset is Switchable {
         return _prepareTransfer(_to, _value, _symbol, "");
     }
 
-    function transferToICAP(string _icap, uint _value, string _reference) returns(bool) {
+    function transferToICAP(bytes32 _icap, uint _value) returns(bool) {
+        return transferToICAPWithReference(_icap, _value, "");
+    }
+
+    // Feature checks done internally due to unknown symbol when the function is called.
+    function transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) returns(bool) {
         var (to, symbol, success) = registryICAP.parse(_icap);
         if (!success) {
+            return false;
+        }
+        if (bytes(_reference).length > 0 && !isEnabled(sha3(symbol, Features.TransferWithReference))) {
             return false;
         }
         if (!isEnabled(sha3(symbol, Features.ICAP))) {
@@ -222,7 +230,7 @@ contract MultiAsset is Switchable {
         if (!_prepareTransfer(to, _value, symbol, _reference)) {
             return false;
         }
-        TransferToICAP(msg.sender, to, sha3(_icap), _icap, _value, _reference);
+        TransferToICAP(msg.sender, to, _icap, _value, _reference);
         return true;
     }
 

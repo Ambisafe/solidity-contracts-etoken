@@ -27,11 +27,10 @@ contract RegistryICAP {
         return (string(asset), string(institution), string(client), true);
     }
 
-    function parse(string _icap) constant returns(address, bytes32, bool) {
-        bytes memory icap = bytes(_icap);
-        bytes memory bban = new bytes(icap.length - 4);
-        for (uint i = 0; i < bban.length; i++) {
-             bban[i] = icap[i + 4];
+    function parse(bytes32 _icap) constant returns(address, bytes32, bool) {
+        bytes memory bban = new bytes(16);
+        for (uint i = 0; i < 16; i++) {
+             bban[i] = _icap[i + 4];
         }
         var (asset, institution, _, success) = decodeIndirect(bban);
         if (!success) {
