@@ -36,10 +36,7 @@ contract Asset {
     }
 
     function transfer(address _to, uint _value) returns(bool) {
-        if (!multiAsset.proxyTransfer(_to, _value, symbol)) {
-            return false;
-        }
-        return true;
+        return transferWithReference(_to, _value, "");
     }
 
     function transferWithReference(address _to, uint _value, string _reference) returns(bool) {
@@ -50,10 +47,7 @@ contract Asset {
     }
     
     function transferFrom(address _from, address _to, uint _value) returns(bool) {
-        if (!multiAsset.proxyTransferFrom(_from, _to, _value, symbol)) {
-            return false;
-        }
-        return true;
+        return transferFromWithReference(_from, _to, _value, "");
     }
 
     function transferFromWithReference(address _from, address _to, uint _value, string _reference) returns(bool) {

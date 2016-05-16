@@ -176,12 +176,6 @@ contract MultiAsset is Switchable {
     }
 
     function _transferDirect(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol, string _reference) internal returns(bool) {
-        if (_value < 1 || _balanceOf(_posFrom, _symbol) < _value) {
-            return false;
-        }
-        if (_posFrom == _posTo) {
-            return false;
-        }
         assets[_symbol].wallets[_posFrom].balance -= _value;
         assets[_symbol].wallets[_posTo].balance += _value;
         Transfer(_address(_posFrom), _address(_posTo), _symbol, _value, _reference);
@@ -193,57 +187,70 @@ contract MultiAsset is Switchable {
         if (_proxyCheck(_symbol)) {
             return false;
         }
+        if (_posFrom == _posTo) {
+            return false;
+        }
+        if (_value < 1 || _balanceOf(_posFrom, _symbol) < _value) {
+            return false;
+        }
+        if (bytes(_reference).length > 0 && !isEnabled(sha3(_symbol, Features.TransferWithReference))) {
+            return false;
+        }
+        if (_posFrom != _posSender && _allowance(_posFrom, _posSender, _symbol) < _value) {
+            return false;
+        }
         if(!_transferDirect(_posFrom, _posTo, _value, _symbol, _reference)) {
             return false;
+        }
+        if (_posFrom != _posSender) {
+            assets[_symbol].wallets[_posFrom].allowance[_posSender] -= _value;
         }
         return true;
     }
 
-    function _transferWithReference(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol, string _reference, uint _posSender) internal checkEnabledSwitch(sha3(_symbol, Features.TransferWithReference)) returns(bool) {
-        return _transfer(_posFrom, _posTo, _value, _symbol, _reference, _posSender);
-    }
-
-    function _prepareTransfer(address _to, uint _value, bytes32 _symbol, string _reference) internal returns(bool) {
-        return _transfer(getHolderId(msg.sender), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(msg.sender));
-    }
-
     function transfer(address _to, uint _value, bytes32 _symbol) returns(bool) {
-        return _prepareTransfer(_to, _value, _symbol, "");
+        return transferWithReference(_to, _value, _symbol, "");
     }
 
     function transferToICAP(bytes32 _icap, uint _value) returns(bool) {
         return transferToICAPWithReference(_icap, _value, "");
     }
 
-    // Feature checks done internally due to unknown symbol when the function is called.
     function transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) returns(bool) {
+        return _transferToICAPWithReference(msg.sender, _icap, _value, _reference, msg.sender);
+    }
+
+    // Feature and proxy checks done internally due to unknown symbol when the function is called.
+    function _transferToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference, address _sender) internal returns(bool) {
         var (to, symbol, success) = registryICAP.parse(_icap);
         if (!success) {
-            return false;
-        }
-        if (bytes(_reference).length > 0 && !isEnabled(sha3(symbol, Features.TransferWithReference))) {
             return false;
         }
         if (!isEnabled(sha3(symbol, Features.ICAP))) {
             return false;
         }
-        if (!_prepareTransfer(to, _value, symbol, _reference)) {
+        if (msg.sender != _sender && !proxies[symbol].isProxy[msg.sender]) {
             return false;
         }
-        TransferToICAP(msg.sender, to, _icap, _value, _reference);
+        uint posFrom = getHolderId(_from);
+        uint posTo = _createPosHolder(to);
+        if (!_transfer(posFrom, posTo, _value, symbol, _reference, getHolderId(_sender))) {
+            return false;
+        }
+        TransferToICAP(_address(posFrom), _address(posTo), _icap, _value, _reference);
         return true;
     }
 
     function transferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) returns(bool) {
-        return _transferWithReference(getHolderId(msg.sender), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(msg.sender));
-    }
-
-    function proxyTransfer(address _to, uint _value, bytes32 _symbol) onlyProxy(_symbol) returns(bool) {
-        return _transfer(getHolderId(tx.origin), _createPosHolder(_to), _value, _symbol, "", getHolderId(tx.origin));
+        return _transfer(getHolderId(msg.sender), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(msg.sender));
     }
 
     function proxyTransferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) onlyProxy(_symbol) returns(bool) {
-        return _transferWithReference(getHolderId(tx.origin), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(tx.origin));
+        return _transfer(getHolderId(tx.origin), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(tx.origin));
+    }
+
+    function proxyTransferToICAPWithReference(bytes32 _icap, uint _value, string _reference) returns(bool) {
+        return _transferToICAPWithReference(tx.origin, _icap, _value, _reference, tx.origin);
     }
 
     function _proxyTransferEvent(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol) internal returns(bool) {
@@ -422,35 +429,28 @@ contract MultiAsset is Switchable {
         return assets[_symbol].wallets[_posFrom].allowance[_posTo];
     }
 
-    function _transferFrom(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol, string _reference, uint _posSpender) internal returns(bool) {
-        if (_allowance(_posFrom, _posSpender, _symbol) < _value) {
-            return false;
-        }
-        if (!_transfer(_posFrom, _posTo, _value, _symbol, _reference, _posSpender)) {
-            return false;
-        }
-        assets[_symbol].wallets[_posFrom].allowance[_posSpender] -= _value;
-        return true;
-    }
-
-    function _transferFromWithReference(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol, string _reference, uint _posSender) internal checkEnabledSwitch(sha3(_symbol, Features.TransferWithReference)) returns(bool) {
-        return _transferFrom(_posFrom, _posTo, _value, _symbol, _reference, _posSender);
-    }
-
     function transferFrom(address _from, address _to, uint _value, bytes32 _symbol) returns(bool) {
-        return _transferFrom(getHolderId(_from), _createPosHolder(_to), _value, _symbol, "", getHolderId(msg.sender));
+        return transferFromWithReference(_from, _to, _value, _symbol, "");
     }
 
     function transferFromWithReference(address _from, address _to, uint _value, bytes32 _symbol, string _reference) returns(bool) {
-        return _transferFromWithReference(getHolderId(_from), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(msg.sender));
+        return _transfer(getHolderId(_from), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(msg.sender));
     }
 
-    function proxyTransferFrom(address _from, address _to, uint _value, bytes32 _symbol) onlyProxy(_symbol) returns(bool) {
-        return _transferFrom(getHolderId(_from), _createPosHolder(_to), _value, _symbol, "", getHolderId(tx.origin));
+    function transferFromToICAP(address _from, bytes32 _icap, uint _value) returns(bool) {
+        return transferFromToICAPWithReference(_from, _icap, _value, "");
+    }
+
+    function transferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) returns(bool) {
+        return _transferToICAPWithReference(_from, _icap, _value, _reference, msg.sender);
     }
 
     function proxyTransferFromWithReference(address _from, address _to, uint _value, bytes32 _symbol, string _reference) onlyProxy(_symbol) returns(bool) {
-        return _transferFromWithReference(getHolderId(_from), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(tx.origin));
+        return _transfer(getHolderId(_from), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(tx.origin));
+    }
+
+    function proxyTransferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) returns(bool) {
+        return _transferToICAPWithReference(_from, _icap, _value, _reference, tx.origin);
     }
 
     mapping(bytes32 => Cosigner) cosigners;

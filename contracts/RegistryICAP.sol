@@ -46,7 +46,7 @@ contract RegistryICAP {
     mapping(bytes32 => bytes32) public assets;
 
     function registerInstitution(string _asset, string _institution, address _address) returns(bool) {
-        if (assets[sha3(_asset)] == 0x0) {
+        if (!registered[sha3(_asset)]) {
             return false;
         }
         bytes32 institutionHash = sha3(_asset, _institution);
@@ -60,9 +60,10 @@ contract RegistryICAP {
 
     function registerAsset(string _asset, bytes32 _symbol) returns(bool) {
         bytes32 asset = sha3(_asset);
-        if (assets[asset] != 0x0) {
+        if (registered[asset]) {
             return false;
         }
+        registered[asset] = true;
         assets[asset] = _symbol;
         return true;
     }

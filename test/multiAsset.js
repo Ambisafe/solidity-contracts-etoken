@@ -22,7 +22,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   var BASE_UNIT = 2;
   var IS_REISSUABLE = false;
 
-  var Features = { Issue: 0, TransferWithReference: 1, Revoke: 2, ChangeOwnership: 3, Allowances: 4 };
+  var Features = { Issue: 0, TransferWithReference: 1, Revoke: 2, ChangeOwnership: 3, Allowances: 4, ICAP: 5 };
 
   var multiAsset;
   var multiAssetAbi;
@@ -1860,7 +1860,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), VALUE);
     }).then(done).catch(done);
   });
-  it('should not be possible to do allowance transfer from oneself', function(done) {
+  // Why not allow this?
+  it.skip('should not be possible to do allowance transfer from oneself', function(done) {
     var holder = accounts[0];
     var receiver = accounts[1];
     var watcher;
@@ -3259,6 +3260,38 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.isFalse(result.valueOf());
     }).then(done).catch(done);
   });
+  it('should be possible to switch off transfer to ICAP', function(done) {
+    var icap = RegistryICAP.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setup(icap.address);
+    }).then(function() {
+      return icap.registerAsset("TST", SYMBOL);
+    }).then(function() {
+      return icap.registerInstitution("TST", "XREG", accounts[2]);
+    }).then(function() {
+      return multiAsset.setSwitch(sha3(SYMBOL, Features.ICAP), true);
+    }).then(function() {
+      return multiAsset.transferToICAP.call("XXXXTSTXREG123456789", 100);
+    }).then(function(result) {
+      assert.isFalse(result.valueOf());
+    }).then(done).catch(done);
+  });
+  it('should be possible to switch off transfer to ICAP with reference', function(done) {
+    var icap = RegistryICAP.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setup(icap.address);
+    }).then(function() {
+      return icap.registerAsset("TST", SYMBOL);
+    }).then(function() {
+      return icap.registerInstitution("TST", "XREG", accounts[2]);
+    }).then(function() {
+      return multiAsset.setSwitch(sha3(SYMBOL, Features.TransferWithReference), true);
+    }).then(function() {
+      return multiAsset.transferToICAPWithReference.call("XXXXTSTXREG123456789", 100, "Ref");
+    }).then(function(result) {
+      assert.isFalse(result.valueOf());
+    }).then(done).catch(done);
+  });
   it.skip('should be possible to switch off cosigning configuration per user per asset', function(done) {
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.setSwitch(sha3(bytes32(1), Features.Cosigning), true);
@@ -3447,6 +3480,70 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return cosignerUser.signChecks.call();
     }).then(function(result) {
       assert.equal(result.valueOf(), cosignerUserChecks + 1);
+    }).then(done).catch(done);
+  });
+  it('should be possible to do transfer to ICAP', function(done) {
+    var icap = RegistryICAP.deployed();
+    var _icap = "XXXXTSTXREG123456789";
+    var watcher;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setup(icap.address);
+    }).then(function() {
+      return icap.registerAsset("TST", SYMBOL);
+    }).then(function() {
+      return icap.registerInstitution("TST", "XREG", accounts[2]);
+    }).then(function() {
+      watcher = multiAsset.TransferToICAP();
+      eventsHelper.setupEvents(multiAsset);
+      return multiAsset.transferToICAP(_icap, 100);
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), accounts[0]);
+      assert.equal(events[0].args.to.valueOf(), accounts[2]);
+      assert.equal(web3.toAscii(events[0].args.icap.valueOf().substr(0, 42)), _icap);
+      assert.equal(events[0].args.value.toNumber(), 100);
+      assert.equal(events[0].args.reference.valueOf(), "");
+    }).then(function() {
+      return multiAsset.balanceOf(accounts[2], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 100);
+      return multiAsset.balanceOf(accounts[0], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE-100);
+    }).then(done).catch(done);
+  });
+  it('should be possible to do transfer to ICAP with reference', function(done) {
+    var icap = RegistryICAP.deployed();
+    var _icap = "XXXXTSTXREG123456789";
+    var watcher;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setup(icap.address);
+    }).then(function() {
+      return icap.registerAsset("TST", SYMBOL);
+    }).then(function() {
+      return icap.registerInstitution("TST", "XREG", accounts[2]);
+    }).then(function() {
+      watcher = multiAsset.TransferToICAP();
+      eventsHelper.setupEvents(multiAsset);
+      return multiAsset.transferToICAPWithReference(_icap, 100, "Ref");
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), accounts[0]);
+      assert.equal(events[0].args.to.valueOf(), accounts[2]);
+      assert.equal(web3.toAscii(events[0].args.icap.valueOf().substr(0, 42)), _icap);
+      assert.equal(events[0].args.value.toNumber(), 100);
+      assert.equal(events[0].args.reference.valueOf(), "Ref");
+    }).then(function() {
+      return multiAsset.balanceOf(accounts[2], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 100);
+      return multiAsset.balanceOf(accounts[0], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE-100);
     }).then(done).catch(done);
   });
 });

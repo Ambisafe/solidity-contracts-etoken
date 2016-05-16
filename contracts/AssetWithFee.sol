@@ -137,7 +137,7 @@ contract AssetWithFee is AmbiEnabled {
 
     function _transfer(address _to, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferCallGas;
-        if (!multiAsset.proxyTransfer(_to, _value, symbol)) {
+        if (!multiAsset.proxyTransferWithReference(_to, _value, symbol, "")) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
@@ -145,7 +145,7 @@ contract AssetWithFee is AmbiEnabled {
 
     function _transferFrom(address _from, address _to, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromCallGas;
-        if (!multiAsset.proxyTransferFrom(_from, _to, _value, symbol)) {
+        if (!multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, "")) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
