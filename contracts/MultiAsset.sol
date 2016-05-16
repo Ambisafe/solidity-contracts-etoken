@@ -34,22 +34,7 @@ contract Switchable is Owned {
     }
 }
 
-contract Versioned is Owned {
-    address public nextVersionAddress;
-
-    function version() constant returns(bytes32);
-
-    function setNextVersion(address _nextVersionAddress) onlyContractOwner() returns(bool) {
-        nextVersionAddress = _nextVersionAddress;
-        return true;
-    }
-}
-
-contract MultiAsset is Switchable, Versioned {
-
-    function version() constant returns(bytes32) {
-        return "1.0.0";
-    }
+contract MultiAsset is Switchable {
 
     event Transfer(address indexed from, address indexed to, bytes32 indexed symbol, uint value, string reference);
     event Issue(bytes32 indexed symbol, uint value, address by);
