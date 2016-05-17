@@ -45,6 +45,17 @@ contract Asset {
         }
         return true;
     }
+
+    function transferToICAP(bytes32 _icap, uint _value) returns(bool) {
+        return transferToICAPWithReference(_icap, _value, "");
+    }
+
+    function transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) returns(bool) {
+        if (!multiAsset.proxyTransferToICAPWithReference(_icap, _value, _reference)) {
+            return false;
+        }
+        return true;
+    }
     
     function transferFrom(address _from, address _to, uint _value) returns(bool) {
         return transferFromWithReference(_from, _to, _value, "");
@@ -52,6 +63,17 @@ contract Asset {
 
     function transferFromWithReference(address _from, address _to, uint _value, string _reference) returns(bool) {
         if (!multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference)) {
+            return false;
+        }
+        return true;
+    }
+
+    function transferFromToICAP(address _from, bytes32 _icap, uint _value) returns(bool) {
+        return transferFromToICAPWithReference(_from, _icap, _value, "");
+    }
+
+    function transferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) returns(bool) {
+        if (!multiAsset.proxyTransferFromToICAPWithReference(_from, _icap, _value, _reference)) {
             return false;
         }
         return true;

@@ -1,6 +1,6 @@
 var assetBase = require('./assetBase');
 
-contract('Asset', {reset_state: true}, function(accounts) {
+contract('AssetWithExchange', {reset_state: true}, function(accounts) {
   var SYMBOL = "0x000000000000000000000000000000000000000000000000000000000000000a";
   var SYMBOL2 = "0x00000000000000000000000000000000000000000000000000000000000003e8";
   var NAME = 'Test Name';
@@ -12,7 +12,7 @@ contract('Asset', {reset_state: true}, function(accounts) {
 
   before('setup others', function(done) {
     this.multiAsset = MultiAsset.deployed();
-    this.asset = Asset.deployed();
+    this.asset = AssetWithExchange.deployed();
     this.multiAssetAbi = web3.eth.contract(this.multiAsset.abi).at(0x0);
     this.icap = RegistryICAP.deployed();
     var that = this;

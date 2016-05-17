@@ -26,10 +26,16 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
 
   var multiAsset;
   var multiAssetAbi;
+  var userContract;
 
-  before('setup', function() {
+  before('setup', function(done) {
     multiAsset = MultiAsset.deployed();
     multiAssetAbi = web3.eth.contract(multiAsset.abi).at(0x0);
+    userContract = UserContract.deployed();
+    userContract.init(multiAsset.address).then(function() {
+      userContract = MultiAsset.at(userContract.address);
+      done();
+    });
   });
 
   it('should not be possible to issue asset with existing symbol', function(done) {
@@ -1571,7 +1577,247 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), value);
     }).then(done).catch(done);
   });
-  it('should work with msg.sender');
+
+  it('should respect user contracts when issuing asset', function(done) {
+    userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.balanceOf.call(userContract.address, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should respect user contracts when reissuing asset', function(done) {
+    userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
+      return userContract.reissueAsset(SYMBOL, VALUE);
+    }).then(function() {
+      return multiAsset.balanceOf.call(userContract.address, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE*2);
+    }).then(done).catch(done);
+  });
+  it('should respect user contracts when revoking asset', function(done) {
+    userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
+      return userContract.revokeAsset(SYMBOL, VALUE);
+    }).then(function() {
+      return multiAsset.balanceOf.call(userContract.address, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should respect user contracts when doing transfer', function(done) {
+    userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
+      return userContract.transfer(accounts[1], VALUE, SYMBOL);
+    }).then(function() {
+      return multiAsset.balanceOf.call(userContract.address, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.balanceOf.call(accounts[1], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should respect user contracts when doing transfer with reference', function(done) {
+    userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
+      return userContract.transferWithReference(accounts[1], VALUE, SYMBOL, "Ref");
+    }).then(function() {
+      return multiAsset.balanceOf.call(userContract.address, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.balanceOf.call(accounts[1], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should respect user contracts when doing transfer from', function(done) {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true, {from: accounts[1]}).then(function() {
+      return multiAsset.approve(userContract.address, VALUE, SYMBOL, {from: accounts[1]});
+    }).then(function() {
+      return userContract.transferFrom(accounts[1], accounts[0], VALUE, SYMBOL);
+    }).then(function() {
+      return multiAsset.balanceOf.call(accounts[1], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.balanceOf.call(accounts[0], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should respect user contracts when doing transfer from with reference', function(done) {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true, {from: accounts[1]}).then(function() {
+      return multiAsset.approve(userContract.address, VALUE, SYMBOL, {from: accounts[1]});
+    }).then(function() {
+      return userContract.transferFromWithReference(accounts[1], accounts[0], VALUE, SYMBOL, "Ref");
+    }).then(function() {
+      return multiAsset.balanceOf.call(accounts[1], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.balanceOf.call(accounts[0], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should respect user contracts when doing approve', function(done) {
+    userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
+      return userContract.approve(accounts[0], VALUE, SYMBOL);
+    }).then(function() {
+      return multiAsset.transferFrom(userContract.address, accounts[1], VALUE-1, SYMBOL);
+    }).then(function() {
+      return multiAsset.balanceOf.call(userContract.address, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 1);
+      return multiAsset.balanceOf.call(accounts[1], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE-1);
+      return multiAsset.allowance.call(userContract.address, accounts[0], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 1);
+    }).then(done).catch(done);
+  });
+  it('should respect user contracts when doing transfer to ICAP', function(done) {
+    var icap = RegistryICAP.deployed();
+    var _icap = "XXXXTSTXREG123456789";
+    userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
+      return multiAsset.setup(icap.address);
+    }).then(function() {
+      return icap.registerAsset("TST", SYMBOL);
+    }).then(function() {
+      return icap.registerInstitution("TST", "XREG", accounts[2]);
+    }).then(function() {
+      return userContract.transferToICAP(_icap, VALUE);
+    }).then(function() {
+      return multiAsset.balanceOf.call(userContract.address, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.balanceOf.call(accounts[2], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should respect user contracts when doing transfer to ICAP with reference', function(done) {
+    var icap = RegistryICAP.deployed();
+    var _icap = "XXXXTSTXREG123456789";
+    userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
+      return multiAsset.setup(icap.address);
+    }).then(function() {
+      return icap.registerAsset("TST", SYMBOL);
+    }).then(function() {
+      return icap.registerInstitution("TST", "XREG", accounts[2]);
+    }).then(function() {
+      return userContract.transferToICAPWithReference(_icap, VALUE, "Ref");
+    }).then(function() {
+      return multiAsset.balanceOf.call(userContract.address, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.balanceOf.call(accounts[2], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should respect user contracts when doing transfer from to ICAP', function(done) {
+    var icap = RegistryICAP.deployed();
+    var _icap = "XXXXTSTXREG123456789";
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
+      return multiAsset.setup(icap.address);
+    }).then(function() {
+      return icap.registerAsset("TST", SYMBOL);
+    }).then(function() {
+      return icap.registerInstitution("TST", "XREG", accounts[2]);
+    }).then(function() {
+      return multiAsset.approve(userContract.address, VALUE, SYMBOL);
+    }).then(function() {
+      return userContract.transferFromToICAP(accounts[0], _icap, VALUE);
+    }).then(function() {
+      return multiAsset.balanceOf.call(accounts[0], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.balanceOf.call(accounts[2], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should respect user contracts when doing transfer from to ICAP with reference', function(done) {
+    var icap = RegistryICAP.deployed();
+    var _icap = "XXXXTSTXREG123456789";
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
+      return multiAsset.setup(icap.address);
+    }).then(function() {
+      return icap.registerAsset("TST", SYMBOL);
+    }).then(function() {
+      return icap.registerInstitution("TST", "XREG", accounts[2]);
+    }).then(function() {
+      return multiAsset.approve(userContract.address, VALUE, SYMBOL);
+    }).then(function() {
+      return userContract.transferFromToICAPWithReference(accounts[0], _icap, VALUE, "Ref");
+    }).then(function() {
+      return multiAsset.balanceOf.call(accounts[0], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.balanceOf.call(accounts[2], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+
+  it('should not allow proxy transfers from user contracts', function(done) {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
+      return userContract.proxyTransferWithReference(accounts[1], VALUE, SYMBOL, "");
+    }).then(function() {
+      return multiAsset.balanceOf.call(accounts[0], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+      return multiAsset.balanceOf.call(accounts[1], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should not allow proxy transfer froms from user contracts', function(done) {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true, {from: accounts[1]}).then(function() {
+      return multiAsset.approve(accounts[0], VALUE, SYMBOL, {from: accounts[1]});
+    }).then(function() {
+      return userContract.proxyTransferFromWithReference(accounts[1], accounts[2], VALUE, SYMBOL, "");
+    }).then(function() {
+      return multiAsset.balanceOf.call(accounts[1], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+      return multiAsset.balanceOf.call(accounts[2], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.allowance.call(accounts[1], accounts[0], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should not allow proxy approves from user contracts', function(done) {
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
+      return userContract.proxyApprove(accounts[1], VALUE, SYMBOL);
+    }).then(function() {
+      return multiAsset.allowance.call(accounts[0], accounts[1], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.allowance.call(userContract.address, accounts[1], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should not allow proxy transfers to ICAP from user contracts', function(done) {
+    var icap = RegistryICAP.deployed();
+    var _icap = "XXXXTSTXREG123456789";
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
+      return multiAsset.setup(icap.address);
+    }).then(function() {
+      return icap.registerAsset("TST", SYMBOL);
+    }).then(function() {
+      return icap.registerInstitution("TST", "XREG", accounts[2]);
+    }).then(function() {
+      return userContract.proxyTransferToICAPWithReference(_icap, VALUE, "");
+    }).then(function() {
+      return multiAsset.balanceOf.call(accounts[0], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+      return multiAsset.balanceOf.call(accounts[2], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
 
   it('should not be possible to set allowance for missing symbol', function(done) {
     var owner = accounts[0];
@@ -3544,6 +3790,80 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return multiAsset.balanceOf(accounts[0], SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), VALUE-100);
+    }).then(done).catch(done);
+  });
+  it('should be possible to do transfer from to ICAP', function(done) {
+    var icap = RegistryICAP.deployed();
+    var _icap = "XXXXTSTXREG123456789";
+    var watcher;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setup(icap.address);
+    }).then(function() {
+      return icap.registerAsset("TST", SYMBOL);
+    }).then(function() {
+      return icap.registerInstitution("TST", "XREG", accounts[2]);
+    }).then(function() {
+      return multiAsset.approve(accounts[1], 200, SYMBOL);
+    }).then(function() {
+      watcher = multiAsset.TransferToICAP();
+      eventsHelper.setupEvents(multiAsset);
+      return multiAsset.transferFromToICAP(accounts[0], _icap, 100, {from: accounts[1]});
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), accounts[0]);
+      assert.equal(events[0].args.to.valueOf(), accounts[2]);
+      assert.equal(web3.toAscii(events[0].args.icap.valueOf().substr(0, 42)), _icap);
+      assert.equal(events[0].args.value.toNumber(), 100);
+      assert.equal(events[0].args.reference.valueOf(), "");
+    }).then(function() {
+      return multiAsset.balanceOf(accounts[2], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 100);
+      return multiAsset.balanceOf(accounts[0], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE-100);
+      return multiAsset.allowance(accounts[0], accounts[1], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 100);
+    }).then(done).catch(done);
+  });
+  it('should be possible to do transfer from to ICAP with reference', function(done) {
+    var icap = RegistryICAP.deployed();
+    var _icap = "XXXXTSTXREG123456789";
+    var watcher;
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setup(icap.address);
+    }).then(function() {
+      return icap.registerAsset("TST", SYMBOL);
+    }).then(function() {
+      return icap.registerInstitution("TST", "XREG", accounts[2]);
+    }).then(function() {
+      return multiAsset.approve(accounts[1], 200, SYMBOL);
+    }).then(function() {
+      watcher = multiAsset.TransferToICAP();
+      eventsHelper.setupEvents(multiAsset);
+      return multiAsset.transferFromToICAPWithReference(accounts[0], _icap, 100, "Ref", {from: accounts[1]});
+    }).then(function(txHash) {
+      return eventsHelper.getEvents(txHash, watcher);
+    }).then(function(events) {
+      assert.equal(events.length, 1);
+      assert.equal(events[0].args.from.valueOf(), accounts[0]);
+      assert.equal(events[0].args.to.valueOf(), accounts[2]);
+      assert.equal(web3.toAscii(events[0].args.icap.valueOf().substr(0, 42)), _icap);
+      assert.equal(events[0].args.value.toNumber(), 100);
+      assert.equal(events[0].args.reference.valueOf(), "Ref");
+    }).then(function() {
+      return multiAsset.balanceOf(accounts[2], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 100);
+      return multiAsset.balanceOf(accounts[0], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE-100);
+      return multiAsset.allowance(accounts[0], accounts[1], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 100);
     }).then(done).catch(done);
   });
 });

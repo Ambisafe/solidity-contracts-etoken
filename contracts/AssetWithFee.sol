@@ -1,15 +1,8 @@
-import "MultiAsset.sol";
 import "EtherTreasuryInterface.sol";
+import "Asset.sol";
+import "AmbiEnabled.sol";
 
-// DEPLOY REMOVE START
-contract AmbiEnabled {
-    modifier checkAccess(bytes32) {
-        _
-    }
-}
-// DEPLOY REMOVE END
-
-contract AssetWithFee is AmbiEnabled {
+contract AssetWithFee is Asset, AmbiEnabled {
     uint public refundGas = 40000;
     uint public feeGas = 40000;
     uint public transferCallGas = 21000;
@@ -25,9 +18,9 @@ contract AssetWithFee is AmbiEnabled {
     uint public buyLimitMax = 0;
     uint public sellLimitMin = 0;
     uint public sellLimitMax = 0;
-    EtherTreasuryInterface treasury;
-    address public feeAddress;
     address public exchangeAddress;
+    EtherTreasuryInterface public treasury;
+    address public feeAddress;
     mapping(uint32 => address) public allowedForwards;
 
     function setupFee(address _feeAddress) checkAccess("admin") returns(bool) {
@@ -283,49 +276,7 @@ contract AssetWithFee is AmbiEnabled {
         }
         return true;
     }
-
-    event Transfer(address indexed from, address indexed to, uint value);
-    event Approve(address indexed from, address indexed spender, uint value);
-
-    MultiAsset multiAsset;
-    bytes32 symbol;
-
-    function init(address _multiAsset, bytes32 _symbol) returns(bool) {
-        MultiAsset ma = MultiAsset(_multiAsset);
-        if (address(multiAsset) != 0x0 || !ma.isCreated(_symbol)) {
-            return false;
-        }
-        multiAsset = ma;
-        symbol = _symbol;
-        return true;
-    }
-
-    modifier onlyMultiAsset() {
-        if (msg.sender == address(multiAsset)) {
-            _
-        }
-    }
-
-    function totalSupply() constant returns(uint) {
-        return multiAsset.totalSupply(symbol);
-    }
-
-    function balanceOf(address _owner) constant returns(uint) {
-        return multiAsset.balanceOf(_owner, symbol);
-    }
-
-    function allowance(address _from, address _spender) constant returns(uint) {
-        return multiAsset.allowance(_from, _spender, symbol);
-    }
-
-    function emitTransfer(address _from, address _to, uint _value) onlyMultiAsset() {
-        Transfer(_from, _to, _value);
-    }
-
-    function emitApprove(address _from, address _spender, uint _value) onlyMultiAsset() {
-        Approve(_from, _spender, _value);
-    }
 }
 
-// RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(refundGas|feeGas|transferCallGas|transferWithReferenceCallGas|transferFromCallGas|transferFromWithReferenceCallGas|approveCallGas|forwardCallGas|setupFee|setupExchange|setTokenPrice|setWholeTokenPrice|updateFeeGas|updateRefundGas|setOperationsCallGas|setupTreasury|setForward|takeFee|init|emitTransfer|emitApprove|ambiC|name|getAddress|setAmbiAddress|remove)"[^\]]+[^}]+},\s+
-// RegEx to remove all admin and exchange functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(tokenPriceInWeiBuy|buyLimitMin|buyLimitMax|sellLimitMin|sellLimitMax|exchangeAddress|buy|sell|refundGas|feeGas|transferCallGas|transferWithReferenceCallGas|transferFromCallGas|transferFromWithReferenceCallGas|approveCallGas|forwardCallGas|setupFee|setupExchange|setTokenPrice|setWholeTokenPrice|updateFeeGas|updateRefundGas|setOperationsCallGas|setupTreasury|setForward|takeFee|init|emitTransfer|emitApprove|ambiC|name|getAddress|setAmbiAddress|remove)"[^\]]+[^}]+},\s+
+// RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(refundGas|feeGas|transferCallGas|transferWithReferenceCallGas|transferFromCallGas|transferFromWithReferenceCallGas|approveCallGas|forwardCallGas|setupFee|setupExchange|setTokenPrice|setWholeTokenPrice|updateFeeGas|updateRefundGas|setOperationsCallGas|setupTreasury|treasury|setForward|takeFee|init|emitTransfer|emitApprove|ambiC|name|getAddress|setAmbiAddress|remove)"[^\]]+[^}]+},\s+
+// RegEx to remove all admin and exchange functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(tokenPriceInWeiBuy|buyLimitMin|buyLimitMax|sellLimitMin|sellLimitMax|exchangeAddress|buy|sell|refundGas|feeGas|transferCallGas|transferWithReferenceCallGas|transferFromCallGas|transferFromWithReferenceCallGas|approveCallGas|forwardCallGas|setupFee|setupExchange|setTokenPrice|setWholeTokenPrice|updateFeeGas|updateRefundGas|setOperationsCallGas|setupTreasury|treasury|setForward|takeFee|init|emitTransfer|emitApprove|ambiC|name|getAddress|setAmbiAddress|remove)"[^\]]+[^}]+},\s+
