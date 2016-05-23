@@ -4,8 +4,8 @@ contract Asset {
     event Transfer(address indexed from, address indexed to, uint value);
     event Approve(address indexed from, address indexed spender, uint value);
 
-    MultiAsset multiAsset;
-    bytes32 symbol;
+    MultiAsset public multiAsset;
+    bytes32 public symbol;
 
     function init(address _multiAsset, bytes32 _symbol) returns(bool) {
         MultiAsset ma = MultiAsset(_multiAsset);
