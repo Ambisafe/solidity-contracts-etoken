@@ -5,16 +5,13 @@ contract RegistryICAP {
     //   institution: 'XREG',
     //   client: 'GAVOFYORK'
     // }
-    function decodeIndirect(bytes _bban) returns(string, string, string, bool) {
-        if (_bban.length != 16) {
-            return ("","","",false);
-        }
+    function decodeIndirect(bytes _bban) constant returns(string, string, string) {
         bytes memory asset = new bytes(3);
         bytes memory institution = new bytes(4);
         bytes memory client = new bytes(9);
-         
+
         uint k = 0;
-         
+
         for (uint i = 0; i < asset.length; i++) {
             asset[i] = _bban[k++];
         }
@@ -24,23 +21,70 @@ contract RegistryICAP {
         for (i = 0; i < client.length; i++) {
             client[i] = _bban[k++];
         }
-        return (string(asset), string(institution), string(client), true);
+        return (string(asset), string(institution), string(client));
     }
 
     function parse(bytes32 _icap) constant returns(address, bytes32, bool) {
-        bytes memory bban = new bytes(16);
-        for (uint i = 0; i < 16; i++) {
+        // Should start with XE.
+        if (_icap[0] != 88 || _icap[1] != 69) {
+            return (0, 0, false);
+        }
+        bytes memory bban = new bytes(18);
+        for (uint8 i = 0; i < 16; i++) {
              bban[i] = _icap[i + 4];
         }
-        var (asset, institution, _, success) = decodeIndirect(bban);
-        if (!success) {
-            return (0,0,false);
-        }
-        
+        var (asset, institution, _) = decodeIndirect(bban);
+
         bytes32 institutionHash = sha3(asset, institution);
+
+        uint8 parseChecksum = (uint8(_icap[2]) - 48) * 10 + (uint8(_icap[3]) - 48);
+        uint8 calcChecksum = 98 - mod9710(prepare(bban));
+        if (parseChecksum != calcChecksum) {
+            return (institutions[institutionHash], assets[sha3(asset)], false);
+        }
         return (institutions[institutionHash], assets[sha3(asset)], registered[institutionHash]);
     }
-    
+
+    function prepare(bytes memory _bban) constant returns(bytes) {
+        for (uint8 i = 0; i < 16; i++) {
+            uint8 charCode = uint8(_bban[i]);
+            if (charCode >= 65 && charCode <= 90) {
+                _bban[i] = byte(charCode - 65 + 10);
+            }
+        }
+        _bban[16] = 33; // X
+        _bban[17] = 14; // E
+        //_bban[18] = 48; // 0
+        //_bban[19] = 48; // 0
+        return _bban;
+    }
+
+    function mod9710(bytes _prepared) constant returns(uint8) {
+        uint m = 0;
+        for (uint8 i = 0; i < 18; i++) {
+            uint8 charCode = uint8(_prepared[i]);
+            if (charCode >= 48) {
+                m *= 10;
+                m += charCode - 48; // number
+                m %= 97;
+            } else {
+                m *= 10;
+                m += charCode / 10; // part1
+                m %= 97;
+                m *= 10;
+                m += charCode % 10; // part2
+                m %= 97;
+            }
+        }
+        m *= 10;
+        //m += uint8(_prepared[18]) - 48;
+        m %= 97;
+        m *= 10;
+        //m += uint8(_prepared[19]) - 48;
+        m %= 97;
+        return uint8(m);
+    }
+
     mapping(bytes32 => bool) public registered;
     mapping(bytes32 => address) public institutions;
     mapping(bytes32 => bytes32) public assets;
