@@ -3,7 +3,6 @@ module.exports = function(accounts) {
   var testHelper = require('../truffle-helpers/testHelper.js');
   var bytes32 = testHelper.bytes32;
   var sha3 = testHelper.sha3;
-  var stringEncode = testHelper.stringEncode;
 
   var UINT_256_MINUS_3 = '1.15792089237316195423570985008687907853269984665640564039457584007913129639933e+77';
   var UINT_256_MINUS_2 = '1.15792089237316195423570985008687907853269984665640564039457584007913129639934e+77';
