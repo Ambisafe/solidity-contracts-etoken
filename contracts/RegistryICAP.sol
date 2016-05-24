@@ -1,4 +1,6 @@
-contract RegistryICAP {
+import "Owned.sol";
+
+contract RegistryICAP is Owned {
     //ICAP.toAsset('XE81ETHXREGGAVOFYORK')
     // returns {
     //   asset: 'ETH',
@@ -89,7 +91,7 @@ contract RegistryICAP {
     mapping(bytes32 => address) public institutions;
     mapping(bytes32 => bytes32) public assets;
 
-    function registerInstitution(string _asset, string _institution, address _address) returns(bool) {
+    function registerInstitution(string _asset, string _institution, address _address) onlyContractOwner() returns(bool) {
         if (!registered[sha3(_asset)]) {
             return false;
         }
@@ -102,7 +104,7 @@ contract RegistryICAP {
         return true;
     }
 
-    function registerAsset(string _asset, bytes32 _symbol) returns(bool) {
+    function registerAsset(string _asset, bytes32 _symbol) onlyContractOwner() returns(bool) {
         bytes32 asset = sha3(_asset);
         if (registered[asset]) {
             return false;
