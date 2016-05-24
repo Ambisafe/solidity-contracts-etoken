@@ -1673,7 +1673,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should respect user contracts when doing transfer to ICAP', function(done) {
     var icap = RegistryICAP.deployed();
-    var _icap = "XXXXTSTXREG123456789";
+    var _icap = "XE73TSTXREG123456789";
     userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
       return multiAsset.setup(icap.address);
     }).then(function() {
@@ -1693,7 +1693,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should respect user contracts when doing transfer to ICAP with reference', function(done) {
     var icap = RegistryICAP.deployed();
-    var _icap = "XXXXTSTXREG123456789";
+    var _icap = "XE73TSTXREG123456789";
     userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
       return multiAsset.setup(icap.address);
     }).then(function() {
@@ -1713,7 +1713,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should respect user contracts when doing transfer from to ICAP', function(done) {
     var icap = RegistryICAP.deployed();
-    var _icap = "XXXXTSTXREG123456789";
+    var _icap = "XE73TSTXREG123456789";
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
       return multiAsset.setup(icap.address);
     }).then(function() {
@@ -1735,7 +1735,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should respect user contracts when doing transfer from to ICAP with reference', function(done) {
     var icap = RegistryICAP.deployed();
-    var _icap = "XXXXTSTXREG123456789";
+    var _icap = "XE73TSTXREG123456789";
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
       return multiAsset.setup(icap.address);
     }).then(function() {
@@ -1799,7 +1799,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should not allow proxy transfers to ICAP from user contracts', function(done) {
     var icap = RegistryICAP.deployed();
-    var _icap = "XXXXTSTXREG123456789";
+    var _icap = "XE73TSTXREG123456789";
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
       return multiAsset.setup(icap.address);
     }).then(function() {
@@ -3516,7 +3516,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return multiAsset.setSwitch(sha3(SYMBOL, Features.ICAP), true);
     }).then(function() {
-      return multiAsset.transferToICAP.call("XXXXTSTXREG123456789", 100);
+      return multiAsset.transferToICAP.call("XE73TSTXREG123456789", 100);
     }).then(function(result) {
       assert.isFalse(result.valueOf());
     }).then(done).catch(done);
@@ -3532,7 +3532,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return multiAsset.setSwitch(sha3(SYMBOL, Features.TransferWithReference), true);
     }).then(function() {
-      return multiAsset.transferToICAPWithReference.call("XXXXTSTXREG123456789", 100, "Ref");
+      return multiAsset.transferToICAPWithReference.call("XE73TSTXREG123456789", 100, "Ref");
     }).then(function(result) {
       assert.isFalse(result.valueOf());
     }).then(done).catch(done);
@@ -3729,7 +3729,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to do transfer to ICAP', function(done) {
     var icap = RegistryICAP.deployed();
-    var _icap = "XXXXTSTXREG123456789";
+    var _icap = "XE73TSTXREG123456789";
     var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.setup(icap.address);
@@ -3761,7 +3761,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to do transfer to ICAP with reference', function(done) {
     var icap = RegistryICAP.deployed();
-    var _icap = "XXXXTSTXREG123456789";
+    var _icap = "XE73TSTXREG123456789";
     var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.setup(icap.address);
@@ -3793,7 +3793,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to do transfer from to ICAP', function(done) {
     var icap = RegistryICAP.deployed();
-    var _icap = "XXXXTSTXREG123456789";
+    var _icap = "XE73TSTXREG123456789";
     var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.setup(icap.address);
@@ -3830,7 +3830,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should be possible to do transfer from to ICAP with reference', function(done) {
     var icap = RegistryICAP.deployed();
-    var _icap = "XXXXTSTXREG123456789";
+    var _icap = "XE73TSTXREG123456789";
     var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.setup(icap.address);

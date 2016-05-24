@@ -23,7 +23,7 @@ module.exports = function(accounts) {
   var BASE_UNIT = 2;
   var IS_REISSUABLE = false;
 
-  var ICAP = "XXXXTSTXREG123456789";
+  var ICAP = "XE73TSTXREG123456789";
 
   var Features = { Issue: 0, TransferWithReference: 1, Revoke: 2, ChangeOwnership: 3, Allowances: 4, ICAP: 5 };
 
