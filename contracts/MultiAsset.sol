@@ -509,3 +509,6 @@ contract MultiAsset is Switchable {
         return address(cosigners[_identity]);
     }
 }
+
+
+// RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(proxy[^"]+|issueAsset|reissueAsset|revokeAsset|changeOwnership|setSwitch|[^"]+Proxy|isEnabled|setup|changeContractOwnership)"[^\]]+[^}]+},\s+

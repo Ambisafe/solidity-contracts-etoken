@@ -1,6 +1,12 @@
-import "Owned.sol";
+// DEPLOY REMOVE START
+contract AmbiEnabled {
+    modifier checkAccess(bytes32) {
+        _
+    }
+}
+// DEPLOY REMOVE END
 
-contract RegistryICAP is Owned {
+contract RegistryICAP is AmbiEnabled {
     //ICAP.toAsset('XE81ETHXREGGAVOFYORK')
     // returns {
     //   asset: 'ETH',
@@ -91,7 +97,7 @@ contract RegistryICAP is Owned {
     mapping(bytes32 => address) public institutions;
     mapping(bytes32 => bytes32) public assets;
 
-    function registerInstitution(string _asset, string _institution, address _address) onlyContractOwner() returns(bool) {
+    function registerInstitution(string _asset, string _institution, address _address) checkAccess("admin") returns(bool) {
         if (!registered[sha3(_asset)]) {
             return false;
         }
@@ -104,7 +110,26 @@ contract RegistryICAP is Owned {
         return true;
     }
 
-    function registerAsset(string _asset, bytes32 _symbol) onlyContractOwner() returns(bool) {
+    function updateInstitution(string _asset, string _institution, address _address) checkAccess("admin") returns(bool) {
+        bytes32 institutionHash = sha3(_asset, _institution);
+        if (!registered[institutionHash]) {
+            return false;
+        }
+        institutions[institutionHash] = _address;
+        return true;
+    }
+
+    function removeInstitution(string _asset, string _institution) checkAccess("admin") returns(bool) {
+        bytes32 institutionHash = sha3(_asset, _institution);
+        if (!registered[institutionHash]) {
+            return false;
+        }
+        delete registered[institutionHash];
+        delete institutions[institutionHash];
+        return true;
+    }
+
+    function registerAsset(string _asset, bytes32 _symbol) checkAccess("admin") returns(bool) {
         bytes32 asset = sha3(_asset);
         if (registered[asset]) {
             return false;

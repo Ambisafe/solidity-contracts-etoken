@@ -17,10 +17,6 @@ contract EtherTreasuryNano is AmbiEnabled, EtherTreasuryInterface {
         }
     }
 
-    function() returns(bool) {
-        return deposit();
-    }
-
     function deposit() returns(bool) {
         if (msg.value > 0) {
             return true;
