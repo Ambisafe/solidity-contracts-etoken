@@ -2,7 +2,6 @@ import "Owned.sol";
 
 contract Cosigner {
     function isSigned(bytes32) returns(bool);
-    function confirm(bytes32 _opHash, address _account, uint _nonce, uint8 _v, bytes32 _r, bytes32 _s) returns(bool);
 }
 
 contract Proxy {
@@ -24,7 +23,7 @@ contract Switchable is Owned {
 
     function setSwitch(bytes32 _switch, bool _state) onlyContractOwner() returns(bool) {
         switches[_switch] = _state;
-        return _state;
+        return true;
     }
 
     modifier checkEnabledSwitch(bytes32 _switch) {

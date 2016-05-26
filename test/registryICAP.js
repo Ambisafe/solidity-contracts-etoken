@@ -6,12 +6,13 @@ contract('RegistryICAP', {reset_state: true}, function(accounts) {
   var icap;
   var institutionAddress = accounts[5];
   var ASSET = "EXP";
+  var INSTITUTION = "XREG";
   var SYMBOL = "EXMPL";
 
   before('setup', function(done) {
     icap = RegistryICAP.deployed();
     icap.registerAsset(ASSET, SYMBOL).then(function() {
-      return icap.registerInstitution(ASSET, "XREG", institutionAddress);
+      return icap.registerInstitution(ASSET, INSTITUTION, institutionAddress);
     }).then(function() {
       done();
     });
@@ -56,6 +57,29 @@ contract('RegistryICAP', {reset_state: true}, function(accounts) {
   it('should not parse valid ICAP of unknown institution', function(done) {
     var _icap = "XE85EXPXREH123456789";
     icap.parse(_icap).then(function(result) {
+      assert.equal(result.length, 3);
+      assert.equal(web3.toDecimal(result[0]), 0);
+      assert.equal(result[1], bytes32(SYMBOL));
+      assert.isFalse(result[2]);
+    }).then(done).catch(done);
+  });
+  it('should update institution', function(done) {
+    var _icap = "XE33EXPXREG123456789";
+    var newAddress = accounts[1];
+    icap.updateInstitution(ASSET, INSTITUTION, newAddress).then(function() {
+      return icap.parse(_icap);
+    }).then(function(result) {
+      assert.equal(result.length, 3);
+      assert.equal(result[0], newAddress);
+      assert.equal(result[1], bytes32(SYMBOL));
+      assert.isTrue(result[2]);
+    }).then(done).catch(done);
+  });
+  it('should remove institution', function(done) {
+    var _icap = "XE33EXPXREG123456789";
+    icap.removeInstitution(ASSET, INSTITUTION).then(function() {
+      return icap.parse(_icap);
+    }).then(function(result) {
       assert.equal(result.length, 3);
       assert.equal(web3.toDecimal(result[0]), 0);
       assert.equal(result[1], bytes32(SYMBOL));
