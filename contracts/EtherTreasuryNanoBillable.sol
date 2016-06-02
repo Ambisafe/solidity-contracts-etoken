@@ -1,12 +1,5 @@
 import "EtherTreasuryInterface.sol";
-
-// DEPLOY REMOVE START
-contract AmbiEnabled {
-    modifier checkAccess(bytes32) {
-        _
-    }
-}
-// DEPLOY REMOVE END
+import "AmbiEnabled.sol";
 
 contract EtherTreasuryNanoBillable is AmbiEnabled, EtherTreasuryInterface {
     mapping(address => bytes32) public subscriptions;

@@ -27,7 +27,8 @@
     "AssetWithExchange",
     "EtherTreasury",
     "RegistryICAP",
-    "UserContract"
+    "UserContract",
+    "AssetWithRefund"
   ],
   "rpc": {
     // Default RPC configuration.

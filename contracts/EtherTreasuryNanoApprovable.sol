@@ -1,11 +1,12 @@
 import "EtherTreasuryInterface.sol";
 import "AmbiEnabled.sol";
 
-contract EtherTreasuryNano is AmbiEnabled, EtherTreasuryInterface {
+contract EtherTreasuryNanoApprovable is AmbiEnabled, EtherTreasuryInterface {
     mapping(address => bool) public hasAccess;
+    mapping(address => bool) public approved;
 
-    modifier onlyAccess() {
-        if (hasAccess[msg.sender]) {
+    modifier allowed(address _to) {
+        if (hasAccess[msg.sender] && approved[_to]) {
             _
         }
     }
@@ -24,7 +25,7 @@ contract EtherTreasuryNano is AmbiEnabled, EtherTreasuryInterface {
         return true;
     }
 
-    function withdraw(address _to, uint _value) onlyAccess() returns(bool) {
+    function withdraw(address _to, uint _value) allowed(_to) returns(bool) {
         return _to.send(_value);
     }
 
@@ -43,6 +44,16 @@ contract EtherTreasuryNano is AmbiEnabled, EtherTreasuryInterface {
 
     function removeAddress(address _address) checkAccess("admin") returns(bool) {
         hasAccess[_address] = false;
+        return true;
+    }
+
+    function approve(address _address) checkAccess("approver") returns(bool) {
+        approved[_address] = true;
+        return true;
+    }
+
+    function deny(address _address) checkAccess("approver") returns(bool) {
+        approved[_address] = false;
         return true;
     }
 

@@ -1,10 +1,4 @@
-// DEPLOY REMOVE START
-contract AmbiEnabled {
-    modifier checkAccess(bytes32) {
-        _
-    }
-}
-// DEPLOY REMOVE END
+import "AmbiEnabled.sol";
 
 contract RegistryICAP is AmbiEnabled {
     //ICAP.toAsset('XE81ETHXREGGAVOFYORK')
