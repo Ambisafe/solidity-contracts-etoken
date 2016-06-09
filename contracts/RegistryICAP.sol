@@ -91,6 +91,14 @@ contract RegistryICAP is AmbiEnabled {
     mapping(bytes32 => address) public institutions;
     mapping(bytes32 => bytes32) public assets;
 
+    function addr(bytes32 _institution) constant returns(address) {
+        bytes memory institution = new bytes(4);
+        for (var i = 0; i < 4; i++) {
+            institution[i] = _institution[i];
+        }
+        return institutions[sha3("ETH", string(institution))];
+    }
+
     function registerInstitution(string _asset, string _institution, address _address) checkAccess("admin") returns(bool) {
         if (!registered[sha3(_asset)]) {
             return false;
