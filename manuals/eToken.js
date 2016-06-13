@@ -88,7 +88,7 @@ deployContract(
   icapName: 'EVU',
   icapInstName: 'EVAP',
   icapInstAddress: 'HereShouldBeAddress',
-  env: 'test'
+  env: 'test' // For prod use commonAmbi private key from 1password
 });
 var setupIcap = function(args) {
   if (args.symbol) { var symbol = args.symbol; } else throw "symbol not specified";
@@ -393,7 +393,7 @@ var setupAssetWithFee = function(args) {
                 safeTransactionFunction(proxyWithFee.updateFeeGas, [], address),
                 safeTransactionFunction(proxyWithFee.updateFeeGas, [], address),
                 safeTransactionFunction(proxyWithFee.setOperationsCallGas, [
-                  24113 + addGas, 24698 + addGas, 23814 + addGas, 25457 + addGas, 24681 + addGas, 25578 + addGas, 24393 + addGas, 25952 + addGas, 23134 + addGas, 21957, 23747
+                  24177 + addGas, 24762 + addGas, 23878 + addGas, 25521 + addGas, 24745 + addGas, 25642 + addGas, 24457 + addGas, 26016 + addGas, 23198 + addGas, 21957, 23747
                 ], address),
                 syncFunction(function() {
                   log("Proxy(proxy" + ambiSuffix + ") set up at address: " + proxyWithFee.address + 

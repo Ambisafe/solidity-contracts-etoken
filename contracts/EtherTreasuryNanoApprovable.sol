@@ -1,7 +1,8 @@
 import "EtherTreasuryInterface.sol";
 import "AmbiEnabled.sol";
+import "Safe.sol";
 
-contract EtherTreasuryNanoApprovable is AmbiEnabled, EtherTreasuryInterface {
+contract EtherTreasuryNanoApprovable is AmbiEnabled, EtherTreasuryInterface, Safe {
     mapping(address => bool) public hasAccess;
     mapping(address => bool) public approved;
 
@@ -25,7 +26,7 @@ contract EtherTreasuryNanoApprovable is AmbiEnabled, EtherTreasuryInterface {
         return true;
     }
 
-    function withdraw(address _to, uint _value) allowed(_to) returns(bool) {
+    function withdraw(address _to, uint _value) noValue() allowed(_to) returns(bool) {
         return _to.send(_value);
     }
 
@@ -37,22 +38,22 @@ contract EtherTreasuryNanoApprovable is AmbiEnabled, EtherTreasuryInterface {
         return true;
     }
 
-    function addAddress(address _address) checkAccess("admin") returns(bool) {
+    function addAddress(address _address) noValue() checkAccess("admin") returns(bool) {
         hasAccess[_address] = true;
         return true;
     }
 
-    function removeAddress(address _address) checkAccess("admin") returns(bool) {
+    function removeAddress(address _address) noValue() checkAccess("admin") returns(bool) {
         hasAccess[_address] = false;
         return true;
     }
 
-    function approve(address _address) checkAccess("approver") returns(bool) {
+    function approve(address _address) noValue() checkAccess("approver") returns(bool) {
         approved[_address] = true;
         return true;
     }
 
-    function deny(address _address) checkAccess("approver") returns(bool) {
+    function deny(address _address) noValue() checkAccess("approver") returns(bool) {
         approved[_address] = false;
         return true;
     }

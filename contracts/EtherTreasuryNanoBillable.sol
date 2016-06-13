@@ -1,13 +1,10 @@
 import "EtherTreasuryInterface.sol";
 import "AmbiEnabled.sol";
+import "Safe.sol";
 
-contract EtherTreasuryNanoBillable is AmbiEnabled, EtherTreasuryInterface {
+contract EtherTreasuryNanoBillable is AmbiEnabled, EtherTreasuryInterface, Safe {
     mapping(address => bytes32) public subscriptions;
     mapping(bytes32 => bool) public statuses;
-
-    function() returns(bool) {
-        return deposit();
-    }
 
     function deposit() returns(bool) {
         return depositWithReference("");
@@ -32,7 +29,7 @@ contract EtherTreasuryNanoBillable is AmbiEnabled, EtherTreasuryInterface {
         return _withdraw(_to, _value, _subscription, _reference);
     }
 
-    function _withdraw(address _to, uint _value, bytes32 _subscription, string _reference) internal returns(bool) {
+    function _withdraw(address _to, uint _value, bytes32 _subscription, string _reference) internal noValue() returns(bool) {
         if (!statuses[_subscription]) {
             return false;
         }
@@ -43,7 +40,7 @@ contract EtherTreasuryNanoBillable is AmbiEnabled, EtherTreasuryInterface {
         return true;
     }
 
-    function subscribe(address _address, bytes32 _subscription) checkAccess("admin") returns(bool) {
+    function subscribe(address _address, bytes32 _subscription) noValue() checkAccess("admin") returns(bool) {
         if (subscriptions[_address] != 0) {
             return false;
         }
@@ -51,7 +48,7 @@ contract EtherTreasuryNanoBillable is AmbiEnabled, EtherTreasuryInterface {
         return true;
     }
 
-    function unsubscribe(address _address) checkAccess("admin") returns(bool) {
+    function unsubscribe(address _address) noValue() checkAccess("admin") returns(bool) {
         if (subscriptions[_address] == 0) {
             return false;
         }
@@ -59,7 +56,7 @@ contract EtherTreasuryNanoBillable is AmbiEnabled, EtherTreasuryInterface {
         return true;
     }
 
-    function setSubscriptionStatus(bool _status, bytes32 _subscription) checkAccess("admin") returns(bool) {
+    function setSubscriptionStatus(bool _status, bytes32 _subscription) noValue() checkAccess("admin") returns(bool) {
         statuses[_subscription] = _status;
         return true;
     }

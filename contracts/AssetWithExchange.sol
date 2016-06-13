@@ -12,7 +12,7 @@ contract AssetWithExchange is Asset, AmbiEnabled {
     address public exchangeAddress;
     EtherTreasuryInterface public treasury;
 
-    function setupExchange(address _exchangeAddress, uint _buyLimitMin, uint _buyLimitMax, uint _sellLimitMin, uint _sellLimitMax) checkAccess("admin") returns(bool) {
+    function setupExchange(address _exchangeAddress, uint _buyLimitMin, uint _buyLimitMax, uint _sellLimitMin, uint _sellLimitMax) noValue() checkAccess("admin") returns(bool) {
         if (_buyLimitMin > _buyLimitMax || _sellLimitMin > _sellLimitMax) {
             return false;
         }
@@ -24,7 +24,7 @@ contract AssetWithExchange is Asset, AmbiEnabled {
         return true;
     }
 
-    function setTokenPrice(uint _tokenPriceInWeiSell, uint _tokenPriceInWeiBuy) checkAccess("cron") returns(bool) {
+    function setTokenPrice(uint _tokenPriceInWeiSell, uint _tokenPriceInWeiBuy) noValue() checkAccess("cron") returns(bool) {
         if (_tokenPriceInWeiSell == 0 || _tokenPriceInWeiBuy == 0 || _tokenPriceInWeiSell > _tokenPriceInWeiBuy) {
             return false;
         }
@@ -33,7 +33,7 @@ contract AssetWithExchange is Asset, AmbiEnabled {
         return true;
     }
 
-    function setWholeTokenPrice(uint _wholeTokenPriceInWeiSell, uint _wholeTokenPriceInWeiBuy) returns(bool) {
+    function setWholeTokenPrice(uint _wholeTokenPriceInWeiSell, uint _wholeTokenPriceInWeiBuy) noValue() returns(bool) {
         uint wholeToken = (10 ** multiAsset.baseUnit(symbol));
         return setTokenPrice(_wholeTokenPriceInWeiSell / wholeToken, _wholeTokenPriceInWeiBuy / wholeToken);
     }
@@ -46,7 +46,7 @@ contract AssetWithExchange is Asset, AmbiEnabled {
         return true;
     }
 
-    function sell(address _to, uint _value) returns(bool) {
+    function sell(address _to, uint _value) noValue() returns(bool) {
         if (exchangeAddress == 0x0 || _value < sellLimitMin || _value > sellLimitMax) {
             return false;
         }
@@ -65,11 +65,11 @@ contract AssetWithExchange is Asset, AmbiEnabled {
         if (exchangeAddress == 0x0 || value < buyLimitMin || value > buyLimitMax) {
             return false;
         }
-        if (!exchangeAddress.send(msg.value)) {
+        if (!multiAsset.transferFromWithReference(exchangeAddress, _to, value, symbol, "Buy")) {
             return false;
         }
-        if (!multiAsset.transferFromWithReference(exchangeAddress, _to, value, symbol, "Buy")) {
-            throw;
+        if (!exchangeAddress.send(msg.value)) {
+            return safeFalse();
         }
         return true;
     }

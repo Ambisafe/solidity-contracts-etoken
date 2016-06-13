@@ -25,14 +25,14 @@ contract AssetWithFee is Asset, AmbiEnabled {
     address public exchangeAddress;
     EtherTreasuryInterface public treasury;
     address public feeAddress;
-    mapping(uint32 => address) public allowedForwards;
+    mapping(bytes32 => address) public allowedForwards;
 
-    function setupFee(address _feeAddress) checkAccess("admin") returns(bool) {
+    function setupFee(address _feeAddress) noValue() checkAccess("admin") returns(bool) {
         feeAddress = _feeAddress;
         return true;
     }
 
-    function setupExchange(address _exchangeAddress, uint _buyLimitMin, uint _buyLimitMax, uint _sellLimitMin, uint _sellLimitMax) checkAccess("admin") returns(bool) {
+    function setupExchange(address _exchangeAddress, uint _buyLimitMin, uint _buyLimitMax, uint _sellLimitMin, uint _sellLimitMax) noValue() checkAccess("admin") returns(bool) {
         if (_buyLimitMin > _buyLimitMax || _sellLimitMin > _sellLimitMax) {
             return false;
         }
@@ -44,7 +44,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
         return true;
     }
 
-    function setTokenPrice(uint _tokenPriceInWeiSell, uint _tokenPriceInWeiBuy) checkAccess("cron") returns(bool) {
+    function setTokenPrice(uint _tokenPriceInWeiSell, uint _tokenPriceInWeiBuy) noValue() checkAccess("cron") returns(bool) {
         if (_tokenPriceInWeiSell == 0 || _tokenPriceInWeiBuy == 0 || _tokenPriceInWeiSell > _tokenPriceInWeiBuy) {
             return false;
         }
@@ -53,12 +53,12 @@ contract AssetWithFee is Asset, AmbiEnabled {
         return true;
     }
 
-    function setWholeTokenPrice(uint _wholeTokenPriceInWeiSell, uint _wholeTokenPriceInWeiBuy) returns(bool) {
+    function setWholeTokenPrice(uint _wholeTokenPriceInWeiSell, uint _wholeTokenPriceInWeiBuy) noValue() returns(bool) {
         uint wholeToken = (10 ** multiAsset.baseUnit(symbol));
         return setTokenPrice(_wholeTokenPriceInWeiSell / wholeToken, _wholeTokenPriceInWeiBuy / wholeToken);
     }
 
-    function updateFeeGas() checkAccess("setup") returns(uint) {
+    function updateFeeGas() noValue() checkAccess("setup") returns(uint) {
         uint startGas = msg.gas;
         if (!_transferFee(msg.sender, 1, "Update fee conf")) {
             return 0;
@@ -67,7 +67,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
         return feeGas;
     }
 
-    function updateRefundGas() checkAccess("setup") returns(uint) {
+    function updateRefundGas() noValue() checkAccess("setup") returns(uint) {
         uint startGas = msg.gas;
         uint refund = (startGas - msg.gas + refundGas) * tx.gasprice; // just to simulate calculations, dunno if optimizer will remove this.
         if (!_refund(1)) {
@@ -90,7 +90,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
             uint _approve,
             uint _forward,
             uint _setCosigner
-        ) checkAccess("setup") returns(bool)
+        ) noValue() checkAccess("setup") returns(bool)
     {
         transferCallGas = _transfer;
         transferFromCallGas = _transferFrom;
@@ -106,7 +106,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
         return true;
     }
 
-    function setupTreasury(address _treasury) checkAccess("admin") returns(bool) {
+    function setupTreasury(address _treasury) noValue() checkAccess("admin") returns(bool) {
         treasury = EtherTreasuryInterface(_treasury);
         if (msg.value > 0 && !address(treasury).send(msg.value)) {
             throw;
@@ -114,8 +114,8 @@ contract AssetWithFee is Asset, AmbiEnabled {
         return true;
     }
 
-    function setForward(bytes4 _msgSig, address _forward) checkAccess("admin") returns(bool) {
-        allowedForwards[uint32(_msgSig)] = _forward;
+    function setForward(bytes4 _msgSig, address _forward) noValue() checkAccess("admin") returns(bool) {
+        allowedForwards[sha3(_msgSig)] = _forward;
         return true;
     }
 
@@ -146,13 +146,13 @@ contract AssetWithFee is Asset, AmbiEnabled {
         return treasury.withdraw(tx.origin, _value);
     }
 
-    function takeFee(address _feeFrom, uint _value, string _reference) checkAccess("fee") returns(bool) {
+    function takeFee(address _feeFrom, uint _value, string _reference) noValue() checkAccess("fee") returns(bool) {
         return _transferFee(_feeFrom, _value, _reference);
     }
 
     function _transfer(address _to, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferCallGas;
-        if (!multiAsset.proxyTransferWithReference(_to, _value, symbol, "")) {
+        if (!super.transfer(_to, _value)) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
@@ -160,7 +160,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
 
     function _transferFrom(address _from, address _to, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromCallGas;
-        if (!multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, "")) {
+        if (!super.transferFrom(_from, _to, _value)) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
@@ -168,7 +168,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
 
     function _transferToICAP(bytes32 _icap, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferToICAPCallGas;
-        if (!multiAsset.proxyTransferToICAPWithReference(_icap, _value, "")) {
+        if (!super.transferToICAP(_icap, _value)) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
@@ -176,7 +176,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
 
     function _transferFromToICAP(address _from, bytes32 _icap, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromToICAPCallGas;
-        if (!multiAsset.proxyTransferFromToICAPWithReference(_from, _icap, _value, "")) {
+        if (!super.transferFromToICAP(_from, _icap, _value)) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
@@ -184,7 +184,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
 
     function _transferWithReference(address _to, uint _value, string _reference) internal returns(bool, bool) {
         uint startGas = msg.gas + transferWithReferenceCallGas + _stringGas(_reference);
-        if (!multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference)) {
+        if (!super.transferWithReference(_to, _value, _reference)) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
@@ -192,7 +192,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
 
     function _transferFromWithReference(address _from, address _to, uint _value, string _reference) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromWithReferenceCallGas + _stringGas(_reference);
-        if (!multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference)) {
+        if (!super.transferFromWithReference(_from, _to, _value, _reference)) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
@@ -200,7 +200,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
 
     function _transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) internal returns(bool, bool) {
         uint startGas = msg.gas + transferToICAPWithReferenceCallGas + _stringGas(_reference);
-        if (!multiAsset.proxyTransferToICAPWithReference(_icap, _value, _reference)) {
+        if (!super.transferToICAPWithReference(_icap, _value, _reference)) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
@@ -208,7 +208,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
 
     function _transferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromToICAPWithReferenceCallGas + _stringGas(_reference);
-        if (!multiAsset.proxyTransferFromToICAPWithReference(_from, _icap, _value, _reference)) {
+        if (!super.transferFromToICAPWithReference(_from, _icap, _value, _reference)) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
@@ -216,7 +216,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
 
     function _approve(address _spender, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + approveCallGas;
-        if (!multiAsset.proxyApprove(_spender, _value, symbol)) {
+        if (!super.approve(_spender, _value)) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(msg.sender, startGas, "Approve fee"));
@@ -224,7 +224,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
 
     function _setCosignerAddress(address _cosigner) internal returns(bool, bool) {
         uint startGas = msg.gas + setCosignerCallGas;
-        if (!multiAsset.proxySetCosignerAddress(_cosigner, symbol)) {
+        if (!super.setCosignerAddress(_cosigner)) {
             return (false, false);
         }
         return (true, _applyFeeAndRefund(msg.sender, startGas, "Cosigner fee"));
@@ -330,20 +330,33 @@ contract AssetWithFee is Asset, AmbiEnabled {
         return _setCosignerAddress(_cosigner);
     }
 
-    function _forward(address _to, bytes _data) internal returns(bool) {
+    function checkForward(bytes _data) constant returns(bool, bool) {
+        bytes memory sig = new bytes(4);
+        sig[0] = _data[0];
+        sig[1] = _data[1];
+        sig[2] = _data[2];
+        sig[3] = _data[3];
+        return _forward(allowedForwards[sha3(sig)], _data);
+    }
+
+    function _forward(address _to, bytes _data) internal returns(bool, bool) {
         uint startGas = msg.gas + forwardCallGas + (_data.length * 50); // 50 gas per byte;
         if (_to == 0x0) {
-            return false;
+            return (false, safeFalse());
         }
-        _to.call.value(msg.value)(_data);
-        return _applyFeeAndRefund(msg.sender, startGas, "Forward fee");
+        if (!_to.call.value(msg.value)(_data)) {
+            return (false, safeFalse());
+        }
+        return (true, _applyFeeAndRefund(msg.sender, startGas, "Forward fee"));
     }
 
     function () returns(bool) {
-        return _forward(allowedForwards[uint32(msg.sig)], msg.data);
+        bool success;
+        (success,) = _forward(allowedForwards[sha3(msg.sig)], msg.data);
+        return success;
     }
 
-    function sell(address _to, uint _value) returns(bool) {
+    function sell(address _to, uint _value) noValue() returns(bool) {
         if (exchangeAddress == 0x0 || _value < sellLimitMin || _value > sellLimitMax) {
             return false;
         }
@@ -362,11 +375,11 @@ contract AssetWithFee is Asset, AmbiEnabled {
         if (exchangeAddress == 0x0 || value < buyLimitMin || value > buyLimitMax) {
             return false;
         }
-        if (!exchangeAddress.send(msg.value)) {
+        if (!multiAsset.transferFromWithReference(exchangeAddress, _to, value, symbol, "Buy")) {
             return false;
         }
-        if (!multiAsset.transferFromWithReference(exchangeAddress, _to, value, symbol, "Buy")) {
-            throw;
+        if (!exchangeAddress.send(msg.value)) {
+            return safeFalse();
         }
         return true;
     }

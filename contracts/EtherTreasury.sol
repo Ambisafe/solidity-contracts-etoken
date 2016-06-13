@@ -2,6 +2,8 @@ import "Asset.sol";
 import "EtherTreasuryInterface.sol";
 
 contract EtherTreasury is Asset, EtherTreasuryInterface {
+    bool private isWithdraw = false;
+
     function() {
         deposit(msg.sender);
     }
@@ -17,8 +19,8 @@ contract EtherTreasury is Asset, EtherTreasuryInterface {
         return false;
     }
 
-    function _withdraw(address _to, uint _value) internal returns(bool) {
-        return _to.send(_value);
+    function _withdraw(address _to, uint _value) internal noValue() returns(bool) {
+        return safeSend(_to, _value);
     }
     
     function withdraw(address _to, uint _value) returns(bool) {
@@ -26,17 +28,18 @@ contract EtherTreasury is Asset, EtherTreasuryInterface {
     }
 
     function withdrawWithReference(address _to, uint _value, string _reference) returns(bool) {
-        if (multiAsset.proxyTransferWithReference(address(this), _value, symbol, _reference)) {
+        isWithdraw = true;
+        if (super.transferWithReference(address(this), _value, _reference)) {
             return _withdraw(_to, _value);
         }
         return false;
     }
 
-    function revokeAll() returns(bool) {
+    function revokeAll() noValue() returns(bool) {
         return multiAsset.revokeAsset(symbol, balanceOf(address(this)));
     }
 
-    function init(address _multiAsset, bytes32 _symbol) returns(bool) {
+    function init(address _multiAsset, bytes32 _symbol) noValue() returns(bool) {
         if (address(multiAsset) != 0x0) {
             return false;
         }
@@ -44,31 +47,20 @@ contract EtherTreasury is Asset, EtherTreasuryInterface {
         symbol = _symbol;
         if (multiAsset.issueAsset(symbol, 0, "WeiToken", "1-to-1 with wei.", 0, true)
             && multiAsset.setProxy(address(this), true, symbol)
-            && multiAsset.setEventsProxy(address(this), symbol)
-            && multiAsset.setOnlyProxy(true, symbol))
+            && multiAsset.setEventsProxy(address(this), symbol))
         {
             return true;
         }
         return false;
     }
 
-    function transferWithReference(address _to, uint _value, string _reference) returns(bool) {
-        if (!multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference)) {
-            return false;
-        }
+    function emitTransfer(address _from, address _to, uint _value) {
+        super.emitTransfer(_from, _to, _value);
         if (_to == address(this)) {
-            return _withdraw(tx.origin, _value);
+            if (!isWithdraw) {
+                throw;
+            }
+            isWithdraw = false;
         }
-        return true;
-    }
-    
-    function transferFromWithReference(address _from, address _to, uint _value, string _reference) returns(bool) {
-        if (!multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference)) {
-            return false;
-        }
-        if (_to == address(this)) {
-            return _withdraw(tx.origin, _value);
-        }
-        return true;
     }
 }

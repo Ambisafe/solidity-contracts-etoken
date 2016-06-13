@@ -1,10 +1,11 @@
 import "MultiAsset.sol";
+import "Safe.sol";
 
-contract ExampleIssuer is Owned {
+contract ExampleIssuer is Owned, Safe {
     MultiAsset public multiAsset;
     bytes32 public symbol;
 
-    function init(address _multiAsset, bytes32 _symbol, string _name, string _description, uint8 _baseUnit) onlyContractOwner() returns(bool) {
+    function init(address _multiAsset, bytes32 _symbol, string _name, string _description, uint8 _baseUnit) noValue() onlyContractOwner() returns(bool) {
         MultiAsset ma = MultiAsset(_multiAsset);
         if (address(multiAsset) != 0x0 || ma.isCreated(_symbol)) {
             return false;
@@ -15,14 +16,14 @@ contract ExampleIssuer is Owned {
         return true;
     }
 
-    function initProxy(address _proxy) onlyContractOwner() returns(bool) {
+    function initProxy(address _proxy) noValue() onlyContractOwner() returns(bool) {
         if (!multiAsset.setProxy(_proxy, true, symbol)) {
             return false;
         }
         return multiAsset.setEventsProxy(_proxy, symbol);
     }
 
-    function request() returns(bool) {
+    function request() noValue() returns(bool) {
         if (!multiAsset.reissueAsset(symbol, 10000)) {
             return false;
         }

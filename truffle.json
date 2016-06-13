@@ -34,6 +34,6 @@
     // Default RPC configuration.
     "host": "localhost",
     "port": 8545,
-    "gas": 4000000
+    "gas": 4700000
   }
 }

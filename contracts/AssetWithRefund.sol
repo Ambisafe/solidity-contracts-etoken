@@ -17,9 +17,9 @@ contract AssetWithRefund is Asset, AmbiEnabled {
     uint public forwardCallGas = 21000;
     uint public setCosignerCallGas = 21000;
     EtherTreasuryInterface public treasury;
-    mapping(uint32 => address) public allowedForwards;
+    mapping(bytes32 => address) public allowedForwards;
 
-    function updateRefundGas() checkAccess("setup") returns(uint) {
+    function updateRefundGas() noValue() checkAccess("setup") returns(uint) {
         uint startGas = msg.gas;
         // just to simulate calculations, dunno if optimizer will remove this.
         uint refund = (startGas - msg.gas + refundGas) * tx.gasprice;
@@ -47,7 +47,7 @@ contract AssetWithRefund is Asset, AmbiEnabled {
             uint _approve,
             uint _forward,
             uint _setCosigner
-        ) checkAccess("setup") returns(bool)
+        ) noValue() checkAccess("setup") returns(bool)
     {
         transferCallGas = _transfer;
         transferFromCallGas = _transferFrom;
@@ -75,8 +75,8 @@ contract AssetWithRefund is Asset, AmbiEnabled {
         return true;
     }
 
-    function setForward(bytes4 _msgSig, address _forward) checkAccess("admin") returns(bool) {
-        allowedForwards[uint32(_msgSig)] = _forward;
+    function setForward(bytes4 _msgSig, address _forward) noValue() checkAccess("admin") returns(bool) {
+        allowedForwards[sha3(_msgSig)] = _forward;
         return true;
     }
 
@@ -98,7 +98,7 @@ contract AssetWithRefund is Asset, AmbiEnabled {
 
     function _transfer(address _to, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferCallGas;
-        if (!multiAsset.proxyTransferWithReference(_to, _value, symbol, "")) {
+        if (!super.transfer(_to, _value)) {
             return (false, false);
         }
         return (true, _applyRefund(startGas));
@@ -106,7 +106,7 @@ contract AssetWithRefund is Asset, AmbiEnabled {
 
     function _transferFrom(address _from, address _to, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromCallGas;
-        if (!multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, "")) {
+        if (!super.transferFrom(_from, _to, _value)) {
             return (false, false);
         }
         return (true, _applyRefund(startGas));
@@ -114,7 +114,7 @@ contract AssetWithRefund is Asset, AmbiEnabled {
 
     function _transferToICAP(bytes32 _icap, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferToICAPCallGas;
-        if (!multiAsset.proxyTransferToICAPWithReference(_icap, _value, "")) {
+        if (!super.transferToICAP(_icap, _value)) {
             return (false, false);
         }
         return (true, _applyRefund(startGas));
@@ -122,7 +122,7 @@ contract AssetWithRefund is Asset, AmbiEnabled {
 
     function _transferFromToICAP(address _from, bytes32 _icap, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromToICAPCallGas;
-        if (!multiAsset.proxyTransferFromToICAPWithReference(_from, _icap, _value, "")) {
+        if (!super.transferFromToICAP(_from, _icap, _value)) {
             return (false, false);
         }
         return (true, _applyRefund(startGas));
@@ -130,7 +130,7 @@ contract AssetWithRefund is Asset, AmbiEnabled {
 
     function _transferWithReference(address _to, uint _value, string _reference) internal returns(bool, bool) {
         uint startGas = msg.gas + transferWithReferenceCallGas + _stringGas(_reference);
-        if (!multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference)) {
+        if (!super.transferWithReference(_to, _value, _reference)) {
             return (false, false);
         }
         return (true, _applyRefund(startGas));
@@ -138,7 +138,7 @@ contract AssetWithRefund is Asset, AmbiEnabled {
 
     function _transferFromWithReference(address _from, address _to, uint _value, string _reference) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromWithReferenceCallGas + _stringGas(_reference);
-        if (!multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference)) {
+        if (!super.transferFromWithReference(_from, _to, _value, _reference)) {
             return (false, false);
         }
         return (true, _applyRefund(startGas));
@@ -146,7 +146,7 @@ contract AssetWithRefund is Asset, AmbiEnabled {
 
     function _transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) internal returns(bool, bool) {
         uint startGas = msg.gas + transferToICAPWithReferenceCallGas + _stringGas(_reference);
-        if (!multiAsset.proxyTransferToICAPWithReference(_icap, _value, _reference)) {
+        if (!super.transferToICAPWithReference(_icap, _value, _reference)) {
             return (false, false);
         }
         return (true, _applyRefund(startGas));
@@ -154,7 +154,7 @@ contract AssetWithRefund is Asset, AmbiEnabled {
 
     function _transferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromToICAPWithReferenceCallGas + _stringGas(_reference);
-        if (!multiAsset.proxyTransferFromToICAPWithReference(_from, _icap, _value, _reference)) {
+        if (!super.transferFromToICAPWithReference(_from, _icap, _value, _reference)) {
             return (false, false);
         }
         return (true, _applyRefund(startGas));
@@ -162,7 +162,7 @@ contract AssetWithRefund is Asset, AmbiEnabled {
 
     function _approve(address _spender, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + approveCallGas;
-        if (!multiAsset.proxyApprove(_spender, _value, symbol)) {
+        if (!super.approve(_spender, _value)) {
             return (false, false);
         }
         return (true, _applyRefund(startGas));
@@ -170,7 +170,7 @@ contract AssetWithRefund is Asset, AmbiEnabled {
 
     function _setCosignerAddress(address _cosigner) internal returns(bool, bool) {
         uint startGas = msg.gas + setCosignerCallGas;
-        if (!multiAsset.proxySetCosignerAddress(_cosigner, symbol)) {
+        if (!super.setCosignerAddress(_cosigner)) {
             return (false, false);
         }
         return (true, _applyRefund(startGas));
@@ -276,19 +276,31 @@ contract AssetWithRefund is Asset, AmbiEnabled {
         return _setCosignerAddress(_cosigner);
     }
 
-    function _forward(address _to, bytes _data) internal returns(bool) {
+    function checkForward(bytes _data) constant returns(bool, bool) {
+        bytes memory sig = new bytes(4);
+        sig[0] = _data[0];
+        sig[1] = _data[1];
+        sig[2] = _data[2];
+        sig[3] = _data[3];
+        return _forward(allowedForwards[sha3(sig)], _data);
+    }
+
+    function _forward(address _to, bytes _data) internal returns(bool, bool) {
         uint startGas = msg.gas + forwardCallGas + (_data.length * 50); // 50 gas per byte;
         if (_to == 0x0) {
-            return false;
+            return (false, safeFalse());
         }
-        _to.call.value(msg.value)(_data);
-        return _applyRefund(startGas);
+        if (!_to.call.value(msg.value)(_data)) {
+            return (false, safeFalse());
+        }
+        return (true, _applyRefund(startGas));
     }
 
     function () returns(bool) {
-        return _forward(allowedForwards[uint32(msg.sig)], msg.data);
+        bool success;
+        (success,) = _forward(allowedForwards[sha3(msg.sig)], msg.data);
+        return success;
     }
 }
 
-// RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(refundGas|feeGas|transferCallGas|transferWithReferenceCallGas|transferFromCallGas|transferFromWithReferenceCallGas|approveCallGas|forwardCallGas|setupFee|setupExchange|setTokenPrice|setWholeTokenPrice|updateFeeGas|updateRefundGas|setOperationsCallGas|setupTreasury|treasury|setForward|takeFee|init|emitTransfer|emitApprove|ambiC|name|getAddress|setAmbiAddress|remove)"[^\]]+[^}]+},\s+
-// RegEx to remove all admin and exchange functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(tokenPriceInWeiBuy|buyLimitMin|buyLimitMax|sellLimitMin|sellLimitMax|exchangeAddress|buy|sell|refundGas|feeGas|transferCallGas|transferWithReferenceCallGas|transferFromCallGas|transferFromWithReferenceCallGas|approveCallGas|forwardCallGas|setupFee|setupExchange|setTokenPrice|setWholeTokenPrice|updateFeeGas|updateRefundGas|setOperationsCallGas|setupTreasury|treasury|setForward|takeFee|init|emitTransfer|emitApprove|ambiC|name|getAddress|setAmbiAddress|remove)"[^\]]+[^}]+},\s+
+// RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(transferFromToICAPCallGas|transferFromToICAPWithReferenceCallGas|transferToICAPCallGas|transferToICAPWithReferenceCallGas|refundGas|transferCallGas|transferWithReferenceCallGas|transferFromCallGas|transferFromWithReferenceCallGas|approveCallGas|forwardCallGas|updateRefundGas|setOperationsCallGas|setupTreasury|treasury|setForward|init|emitTransfer|emitApprove|ambiC|name|getAddress|setAmbiAddress|remove)"[^\]]+[^}]+},\s+

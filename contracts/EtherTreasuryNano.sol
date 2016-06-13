@@ -1,7 +1,8 @@
 import "EtherTreasuryInterface.sol";
 import "AmbiEnabled.sol";
+import "Safe.sol";
 
-contract EtherTreasuryNano is AmbiEnabled, EtherTreasuryInterface {
+contract EtherTreasuryNano is AmbiEnabled, EtherTreasuryInterface, Safe {
     mapping(address => bool) public hasAccess;
 
     modifier onlyAccess() {
@@ -24,7 +25,7 @@ contract EtherTreasuryNano is AmbiEnabled, EtherTreasuryInterface {
         return true;
     }
 
-    function withdraw(address _to, uint _value) onlyAccess() returns(bool) {
+    function withdraw(address _to, uint _value) noValue() onlyAccess() returns(bool) {
         return _to.send(_value);
     }
 
@@ -36,12 +37,12 @@ contract EtherTreasuryNano is AmbiEnabled, EtherTreasuryInterface {
         return true;
     }
 
-    function addAddress(address _address) checkAccess("admin") returns(bool) {
+    function addAddress(address _address) noValue() checkAccess("admin") returns(bool) {
         hasAccess[_address] = true;
         return true;
     }
 
-    function removeAddress(address _address) checkAccess("admin") returns(bool) {
+    function removeAddress(address _address) noValue() checkAccess("admin") returns(bool) {
         hasAccess[_address] = false;
         return true;
     }
