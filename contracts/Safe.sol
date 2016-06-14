@@ -6,17 +6,17 @@ contract Safe {
       _
     }
 
-    function safeFalse() returns(bool) {
-      if (msg.value > 1) {
-        throw;
-      }
+    function safeFalse() noValue() returns(bool) {
       return false;
     }
 
-    function safeSend(address _to, uint _value) returns(bool) {
-      if (!_to.send(_value)) {
+    function safeSend(address _to, uint _value) {
+      if (!unsafeSend(_to, _value)) {
         throw;
       }
-      return true;
+    }
+
+    function unsafeSend(address _to, uint _value) returns(bool) {
+      return _to.call.value(_value)();
     }
 }

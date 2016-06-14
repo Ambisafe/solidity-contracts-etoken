@@ -10,7 +10,7 @@ contract RouterICAP is AmbiEnabled, Safe {
 
     RegistryICAP public registryICAP;
 
-    function setup(address _registryICAP) checkAccess("admin") returns(bool) {
+    function setup(address _registryICAP) noValue() checkAccess("admin") returns(bool) {
         registryICAP = RegistryICAP(_registryICAP);
         return true;
     }

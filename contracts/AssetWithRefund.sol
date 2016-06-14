@@ -69,8 +69,8 @@ contract AssetWithRefund is Asset, AmbiEnabled {
         }
         treasury = EtherTreasuryInterface(_treasury);
         txGasPriceLimit = _txGasPriceLimit;
-        if (msg.value > 0 && !address(treasury).send(msg.value)) {
-            throw;
+        if (msg.value > 0) {
+            safeSend(_treasury, msg.value);
         }
         return true;
     }

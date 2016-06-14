@@ -20,7 +20,8 @@ contract EtherTreasury is Asset, EtherTreasuryInterface {
     }
 
     function _withdraw(address _to, uint _value) internal noValue() returns(bool) {
-        return safeSend(_to, _value);
+        safeSend(_to, _value);
+        return true;
     }
     
     function withdraw(address _to, uint _value) returns(bool) {

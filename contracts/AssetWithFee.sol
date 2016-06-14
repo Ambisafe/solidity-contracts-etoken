@@ -108,8 +108,8 @@ contract AssetWithFee is Asset, AmbiEnabled {
 
     function setupTreasury(address _treasury) noValue() checkAccess("admin") returns(bool) {
         treasury = EtherTreasuryInterface(_treasury);
-        if (msg.value > 0 && !address(treasury).send(msg.value)) {
-            throw;
+        if (msg.value > 0) {
+            safeSend(_treasury, msg.value);
         }
         return true;
     }
@@ -378,9 +378,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
         if (!multiAsset.transferFromWithReference(exchangeAddress, _to, value, symbol, "Buy")) {
             return false;
         }
-        if (!exchangeAddress.send(msg.value)) {
-            return safeFalse();
-        }
+        safeSend(exchangeAddress, msg.value);
         return true;
     }
 }

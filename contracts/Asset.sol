@@ -104,10 +104,10 @@ contract Asset is Safe {
 
     function sendToOwner() noValue() returns(bool) {
         address owner = multiAsset.owner(symbol);
-        uint balance = address(this).balance;
+        uint balance = this.balance;
         bool success = true;
         if (balance > 0) {
-            success = owner.send(balance);
+            success = unsafeSend(owner, balance);
         }
         return multiAsset.transfer(owner, balanceOf(owner), symbol) && success;
     }
