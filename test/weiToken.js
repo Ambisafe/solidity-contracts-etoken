@@ -1,6 +1,6 @@
 var assetBase = require('./assetBase');
 
-contract('EtherTreasury', {reset_state: true}, function(accounts) {
+contract('WeiToken', {reset_state: true}, function(accounts) {
   var SYMBOL = "0x000000000000000000000000000000000000000000000000000000000000000a";
   var SYMBOL2 = "0x00000000000000000000000000000000000000000000000000000000000003e8";
   var NAME = 'Test Name';
@@ -12,7 +12,7 @@ contract('EtherTreasury', {reset_state: true}, function(accounts) {
 
   before('setup others', function(done) {
     this.multiAsset = MultiAsset.deployed();
-    this.asset = EtherTreasury.deployed();
+    this.asset = WeiToken.deployed();
     this.multiAssetAbi = web3.eth.contract(this.multiAsset.abi).at(0x0);
     this.icap = RegistryICAP.deployed();
     var that = this;

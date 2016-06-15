@@ -25,7 +25,7 @@
     "Cosigner3",
     "AssetWithFee",
     "AssetWithExchange",
-    "EtherTreasury",
+    "WeiToken",
     "RegistryICAP",
     "UserContract",
     "AssetWithRefund"

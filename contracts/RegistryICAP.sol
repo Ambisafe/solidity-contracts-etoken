@@ -1,12 +1,6 @@
 import "AmbiEnabled.sol";
 
 contract RegistryICAP is AmbiEnabled {
-    //ICAP.toAsset('XE81ETHXREGGAVOFYORK')
-    // returns {
-    //   asset: 'ETH',
-    //   institution: 'XREG',
-    //   client: 'GAVOFYORK'
-    // }
     function decodeIndirect(bytes _bban) constant returns(string, string, string) {
         bytes memory asset = new bytes(3);
         bytes memory institution = new bytes(4);

@@ -6,6 +6,12 @@ contract Safe {
       _
     }
 
+    modifier onlyHuman {
+      if (isHuman()) {
+        _
+      }
+    }
+
     function safeFalse() noValue() returns(bool) {
       return false;
     }
@@ -18,5 +24,13 @@ contract Safe {
 
     function unsafeSend(address _to, uint _value) returns(bool) {
       return _to.call.value(_value)();
+    }
+
+    function isContract() constant returns(bool) {
+      return msg.sender != tx.origin;
+    }
+
+    function isHuman() constant returns(bool) {
+      return !isContract();
     }
 }

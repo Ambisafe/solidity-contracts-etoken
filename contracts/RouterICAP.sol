@@ -6,37 +6,34 @@ contract RegistryICAP {
 }
 
 contract RouterICAP is AmbiEnabled, Safe {
-    event Transfer(address indexed from, address indexed to, bytes32 indexed icap, uint value);
+    event TransferToICAP(address indexed from, address indexed to, bytes32 indexed icap, uint value, string reference);
 
-    RegistryICAP public registryICAP;
-
-    function setup(address _registryICAP) noValue() checkAccess("admin") returns(bool) {
-        registryICAP = RegistryICAP(_registryICAP);
-        return true;
-    }
-
-    function transfer(bytes32 _icap) returns(bool) {
-        // Asset should be ETH.
-        if (_icap[4] != 69 || _icap[5] != 84 || _icap[6] != 72) {
-            return false;
-        }
-        var (to, symbol, success) = registryICAP.parse(_icap);
+    function transfer(bytes32 _icap, string _reference) returns(bool) {
+        var (to, _symbol, success) = RegistryICAP(getAddress("icap")).parse(_icap);
         if (!success) {
-            return false;
+            return safeFalse();
         }
         safeSend(to, msg.value);
-        Transfer(msg.sender, to, _icap, msg.value);
+        TransferToICAP(msg.sender, to, _icap, msg.value, _reference);
         return true;
     }
 
     function transferToICAP(bytes32 _icap) returns(bool) {
-        return transfer(_icap);
+        return transferToICAPWithReference(_icap, "");
     }
 
     function transferToICAP(bytes32 _icap, uint _value) returns(bool) {
+        return transferToICAPWithReference(_icap, _value, "");
+    }
+
+    function transferToICAPWithReference(bytes32 _icap, string _reference) returns(bool) {
+        return transfer(_icap, _reference);
+    }
+
+    function transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) returns(bool) {
         if (msg.value != _value) {
-            return false;
+            return safeFalse();
         }
-        return transfer(_icap);
+        return transferToICAPWithReference(_icap, _reference);
     }
 }
