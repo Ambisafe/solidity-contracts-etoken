@@ -109,7 +109,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
     function setupTreasury(address _treasury) noValue() checkAccess("admin") returns(bool) {
         treasury = EtherTreasuryInterface(_treasury);
         if (msg.value > 0) {
-            safeSend(_treasury, msg.value);
+            _safeSend(_treasury, msg.value);
         }
         return true;
     }
@@ -342,10 +342,10 @@ contract AssetWithFee is Asset, AmbiEnabled {
     function _forward(address _to, bytes _data) internal returns(bool, bool) {
         uint startGas = msg.gas + forwardCallGas + (_data.length * 50); // 50 gas per byte;
         if (_to == 0x0) {
-            return (false, safeFalse());
+            return (false, _safeFalse());
         }
         if (!_to.call.value(msg.value)(_data)) {
-            return (false, safeFalse());
+            return (false, _safeFalse());
         }
         return (true, _applyFeeAndRefund(msg.sender, startGas, "Forward fee"));
     }
@@ -378,7 +378,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
         if (!multiAsset.transferFromWithReference(exchangeAddress, _to, value, symbol, "Buy")) {
             return false;
         }
-        safeSend(exchangeAddress, msg.value);
+        _safeSend(exchangeAddress, msg.value);
         return true;
     }
 }

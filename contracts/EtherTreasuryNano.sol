@@ -26,7 +26,7 @@ contract EtherTreasuryNano is AmbiEnabled, EtherTreasuryInterface, Safe {
     }
 
     function withdraw(address _to, uint _value) noValue() onlyAccess() returns(bool) {
-        return unsafeSend(_to, _value);
+        return _unsafeSend(_to, _value);
     }
 
     function withdrawWithReference(address _to, uint _value, string _reference) returns(bool) {

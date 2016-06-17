@@ -70,7 +70,7 @@ contract AssetWithRefund is Asset, AmbiEnabled {
         treasury = EtherTreasuryInterface(_treasury);
         txGasPriceLimit = _txGasPriceLimit;
         if (msg.value > 0) {
-            safeSend(_treasury, msg.value);
+            _safeSend(_treasury, msg.value);
         }
         return true;
     }
@@ -288,10 +288,10 @@ contract AssetWithRefund is Asset, AmbiEnabled {
     function _forward(address _to, bytes _data) internal returns(bool, bool) {
         uint startGas = msg.gas + forwardCallGas + (_data.length * 50); // 50 gas per byte;
         if (_to == 0x0) {
-            return (false, safeFalse());
+            return (false, _safeFalse());
         }
         if (!_to.call.value(msg.value)(_data)) {
-            return (false, safeFalse());
+            return (false, _safeFalse());
         }
         return (true, _applyRefund(startGas));
     }

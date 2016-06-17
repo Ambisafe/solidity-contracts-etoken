@@ -1,7 +1,6 @@
 import "MultiAsset.sol";
-import "Safe.sol";
 
-contract ExampleIssuer is Owned, Safe {
+contract ExampleIssuer is Owned {
     MultiAsset public multiAsset;
     bytes32 public symbol;
 

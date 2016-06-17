@@ -1,4 +1,5 @@
 import "Owned.sol";
+import "RegistryICAP.sol";
 
 contract Cosigner {
     function isSigned(bytes32) returns(bool);
@@ -7,10 +8,6 @@ contract Cosigner {
 contract Proxy {
     function emitTransfer(address, address, uint);
     function emitApprove(address, address, uint);
-}
-
-contract RegistryICAP {
-    function parse(bytes32) returns(address, bytes32, bool);
 }
 
 contract Switchable is Owned {
@@ -80,6 +77,10 @@ contract MultiAsset is Switchable {
     mapping(bytes32 => ProxyConf) public proxies;
 
     RegistryICAP public registryICAP;
+
+    function () {
+        // donations
+    }
 
     function setup(address _registryICAP) onlyContractOwner() returns(bool) {
         registryICAP = RegistryICAP(_registryICAP);
@@ -174,12 +175,9 @@ contract MultiAsset is Switchable {
         return proxies[_symbol].onlyProxy && !proxies[_symbol].isProxy[msg.sender];
     }
 
-    function _transferDirect(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol, string _reference) internal returns(bool) {
+    function _transferDirect(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol, string _reference) internal {
         assets[_symbol].wallets[_posFrom].balance -= _value;
         assets[_symbol].wallets[_posTo].balance += _value;
-        Transfer(_address(_posFrom), _address(_posTo), _symbol, _value, _reference);
-        _proxyTransferEvent(_posFrom, _posTo, _value, _symbol);
-        return true;
     }
 
     function _transfer(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol, string _reference, uint _posSender) internal checkSigned(_symbol, _posSender) returns(bool) {
@@ -198,12 +196,12 @@ contract MultiAsset is Switchable {
         if (_posFrom != _posSender && _allowance(_posFrom, _posSender, _symbol) < _value) {
             return false;
         }
-        if(!_transferDirect(_posFrom, _posTo, _value, _symbol, _reference)) {
-            return false;
-        }
+        _transferDirect(_posFrom, _posTo, _value, _symbol, _reference);
         if (_posFrom != _posSender) {
             assets[_symbol].wallets[_posFrom].allowance[_posSender] -= _value;
         }
+        Transfer(_address(_posFrom), _address(_posTo), _symbol, _value, _reference);
+        _proxyTransferEvent(_posFrom, _posTo, _value, _symbol);
         return true;
     }
 
@@ -244,17 +242,19 @@ contract MultiAsset is Switchable {
         return _transfer(getHolderId(msg.sender), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(msg.sender));
     }
 
-    function proxyTransferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) onlyProxy(_symbol) returns(bool) {
+    function proxyTransferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) onlyProxy(_symbol) noCallback() returns(bool) {
         return _transfer(getHolderId(tx.origin), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(tx.origin));
     }
 
-    function proxyTransferToICAPWithReference(bytes32 _icap, uint _value, string _reference) returns(bool) {
+    function proxyTransferToICAPWithReference(bytes32 _icap, uint _value, string _reference) noCallback() returns(bool) {
         return _transferToICAPWithReference(tx.origin, _icap, _value, _reference, tx.origin);
     }
 
-    function _proxyTransferEvent(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol) internal returns(bool) {
+    function _proxyTransferEvent(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol) internal {
         if (address(proxies[_symbol].proxy) != 0x0) {
+            _setupNoCallback();
             proxies[_symbol].proxy.emitTransfer(_address(_posFrom), _address(_posTo), _value);
+            _finishNoCallback();
         }
     }
 
@@ -407,7 +407,9 @@ contract MultiAsset is Switchable {
         assets[_symbol].wallets[_posSender].allowance[_posSpender] = _value;
         Approve(_address(_posSender), _address(_posSpender), _symbol, _value);
         if (address(proxies[_symbol].proxy) != 0x0) {
+            _setupNoCallback();
             proxies[_symbol].proxy.emitApprove(_address(_posSender), _address(_posSpender), _value);
+            _finishNoCallback();
         }
         return true;
     }
@@ -416,7 +418,7 @@ contract MultiAsset is Switchable {
         return _approve(_createPosHolder(_spender), _value, _symbol, _createPosHolder(msg.sender));
     }
 
-    function proxyApprove(address _spender, uint _value, bytes32 _symbol) onlyProxy(_symbol) returns(bool) {
+    function proxyApprove(address _spender, uint _value, bytes32 _symbol) onlyProxy(_symbol) noCallback() returns(bool) {
         return _approve(_createPosHolder(_spender), _value, _symbol, _createPosHolder(tx.origin));
     }
 
@@ -444,11 +446,11 @@ contract MultiAsset is Switchable {
         return _transferToICAPWithReference(_from, _icap, _value, _reference, msg.sender);
     }
 
-    function proxyTransferFromWithReference(address _from, address _to, uint _value, bytes32 _symbol, string _reference) onlyProxy(_symbol) returns(bool) {
+    function proxyTransferFromWithReference(address _from, address _to, uint _value, bytes32 _symbol, string _reference) onlyProxy(_symbol) noCallback() returns(bool) {
         return _transfer(getHolderId(_from), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(tx.origin));
     }
 
-    function proxyTransferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) returns(bool) {
+    function proxyTransferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) noCallback() returns(bool) {
         return _transferToICAPWithReference(_from, _icap, _value, _reference, tx.origin);
     }
 
@@ -495,7 +497,7 @@ contract MultiAsset is Switchable {
         return _setCosignerAddress(_address, sha3(_createPosHolder(msg.sender)));
     }
 
-    function proxySetCosignerAddress(address _address, bytes32 _symbol) checkSigned(_symbol, getHolderId(tx.origin)) onlyProxy(_symbol) returns(bool) {
+    function proxySetCosignerAddress(address _address, bytes32 _symbol) checkSigned(_symbol, getHolderId(tx.origin)) onlyProxy(_symbol) noCallback() returns(bool) {
         return _setCosignerAddress(_address, sha3(_createPosHolder(tx.origin), _symbol));
     }
 

@@ -41,7 +41,7 @@ contract AssetWithExchange is Asset, AmbiEnabled {
     function setupTreasury(address _treasury) checkAccess("admin") returns(bool) {
         treasury = EtherTreasuryInterface(_treasury);
         if (msg.value > 0) {
-            safeSend(_treasury, msg.value);
+            _safeSend(_treasury, msg.value);
         }
         return true;
     }
@@ -68,7 +68,7 @@ contract AssetWithExchange is Asset, AmbiEnabled {
         if (!multiAsset.transferFromWithReference(exchangeAddress, _to, value, symbol, "Buy")) {
             return false;
         }
-        safeSend(exchangeAddress, msg.value);
+        _safeSend(exchangeAddress, msg.value);
         return true;
     }
 }

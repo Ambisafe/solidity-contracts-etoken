@@ -2,14 +2,13 @@ import "Asset.sol";
 import "EtherTreasuryInterface.sol";
 import "AmbiEnabled.sol";
 
-contract RouterICAP {
+contract RouterICAPInterface {
     function transferToICAPWithReference(bytes32 _icap, string _reference) returns(bool);
 }
 
 contract WeiToken is AmbiEnabled, Asset, EtherTreasuryInterface {
-    bool private isWithdraw = false;
+    bool private isWithdrawOrReissue = false;
     mapping(address => bool) public autoDeposit;
-    mapping(bytes32 => bool) public autoDepositICAP;
 
     function() {
         deposit(msg.sender);
@@ -23,12 +22,14 @@ contract WeiToken is AmbiEnabled, Asset, EtherTreasuryInterface {
         if (msg.value == 0) {
             return false;
         }
+        isWithdrawOrReissue = true;
         if (balanceOf(address(this)) >= msg.value || multiAsset.reissueAsset(symbol, msg.value)) {
-            if (!multiAsset.transferWithReference(_to, msg.value, symbol, _reference)) {
-                return safeFalse();
+            if (multiAsset.transferWithReference(_to, msg.value, symbol, _reference)) {
+                isWithdrawOrReissue = false;
+                return true;
             }
         }
-        return safeFalse();
+        throw;
     }
 
     function setAutoDeposit(bool _enabled) returns(bool) {
@@ -36,24 +37,8 @@ contract WeiToken is AmbiEnabled, Asset, EtherTreasuryInterface {
         return true;
     }
 
-    function setAutoDepositICAP(bytes32 _icap, bool _enabled) returns(bool) {
-        var (_address, _symbol, _success) = multiAsset.registryICAP().parse(_icap);
-        if (!_success) {
-            return false;
-        }
-        if (_symbol != symbol) {
-            return false;
-        }
-        if (_address != msg.sender) {
-            return false;
-        }
-        autoDepositICAP[_institutionHash(_icap)] = _enabled;
-        return true;
-    }
-
     function isAutoDepositICAP(bytes32 _icap) constant returns(bool) {
-        // DEPLOY REMOVE `!`
-        return !autoDepositICAP[_institutionHash(_icap)];
+        return isAutoDeposit(multiAsset.registryICAP().institutions(_institutionHash(_icap)));
     }
 
     function isAutoDeposit(address _to) constant returns(bool) {
@@ -62,15 +47,15 @@ contract WeiToken is AmbiEnabled, Asset, EtherTreasuryInterface {
     }
 
     function _institutionHash(bytes32 _icap) internal constant returns(bytes32) {
-        return sha3(_icap[7], _icap[8], _icap[9], _icap[10]);
+        return sha3(_icap[4], _icap[5], _icap[6], _icap[7], _icap[8], _icap[9], _icap[10]);
     }
 
     function _withdraw(address _to, uint _value) internal {
-        safeSend(_to, _value);
+        _safeSend(_to, _value);
     }
 
     function _sendToICAPWithReference(bytes32 _icap, uint _value, string _reference) internal {
-        if (!RouterICAP(getAddress("router")).transferToICAPWithReference.value(_value)(_icap, _reference)) {
+        if (!RouterICAPInterface(getAddress("router")).transferToICAPWithReference.value(_value)(_icap, _reference)) {
             throw;
         }
     }
@@ -85,8 +70,8 @@ contract WeiToken is AmbiEnabled, Asset, EtherTreasuryInterface {
 
     function _withdrawWithReference(address _to, uint _value, string _reference) internal returns(bool) {
         if (isAutoDeposit(_to) && msg.sender != _to) {
-            return isHuman() ?
-                super.transferWithReference(_to, _value, _reference) :
+            return _isHuman() ?
+                multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference) :
                 multiAsset.transferFromWithReference(msg.sender, _to, _value, symbol, _reference);
         }
         bool success = _prepareWithdraw(_value, _reference);
@@ -102,8 +87,8 @@ contract WeiToken is AmbiEnabled, Asset, EtherTreasuryInterface {
 
     function _withdrawToICAPWithReference(bytes32 _icap, uint _value, string _reference) internal returns(bool) {
         if (isAutoDepositICAP(_icap)) {
-            return isHuman() ?
-                super.transferToICAPWithReference(_icap, _value, _reference) :
+            return _isHuman() ?
+                multiAsset.proxyTransferToICAPWithReference(_icap, _value, _reference) :
                 multiAsset.transferFromToICAPWithReference(msg.sender, _icap, _value, _reference);
         }
         bool success = _prepareWithdraw(_value, _reference);
@@ -114,18 +99,18 @@ contract WeiToken is AmbiEnabled, Asset, EtherTreasuryInterface {
     }
 
     function _prepareWithdraw(uint _value, string _reference) internal returns(bool) {
-        isWithdraw = true;
-        bool success = isHuman() ?
-            super.transferWithReference(address(this), _value, _reference) :
+        isWithdrawOrReissue = true;
+        bool success = _isHuman() ?
+            multiAsset.proxyTransferWithReference(address(this), _value, symbol, _reference) :
             multiAsset.transferFromWithReference(msg.sender, address(this), _value, symbol, _reference);
-        isWithdraw = false;
+        isWithdrawOrReissue = false;
         return success;
     }
 
     function _prepareWithdrawFrom(address _from, uint _value, string _reference) internal returns(bool) {
-        isWithdraw = true;
+        isWithdrawOrReissue = true;
         bool success = multiAsset.proxyTransferFromWithReference(_from, address(this), _value, symbol, _reference);
-        isWithdraw = false;
+        isWithdrawOrReissue = false;
         return success;
     }
 
@@ -137,23 +122,28 @@ contract WeiToken is AmbiEnabled, Asset, EtherTreasuryInterface {
         if (address(multiAsset) != 0x0) {
             return false;
         }
-        multiAsset = MultiAsset(_multiAsset);
-        symbol = _symbol;
-        if (multiAsset.issueAsset(symbol, 0, "WeiToken", "1-to-1 with wei.", 0, true)
-            && multiAsset.setProxy(address(this), true, symbol)
-            && multiAsset.setEventsProxy(address(this), symbol))
-        {
+        var mAsset = MultiAsset(_multiAsset);
+        if (!mAsset.issueAsset(_symbol, 0, "WeiToken", "1-to-1 with wei.", 0, true)) {
+            // DEPLOY REMOVE START
+            if (isAutoDeposit(0x0)) {
+                multiAsset = mAsset;
+                symbol = _symbol;
+            }
+            // DEPLOY REMOVE END
+            return false;
+        }
+        if(mAsset.setProxy(address(this), true, _symbol) && mAsset.setEventsProxy(address(this), _symbol)) {
+            multiAsset = mAsset;
+            symbol = _symbol;
             return true;
         }
-        return false;
+        throw;
     }
 
     function transferWithReference(address _to, uint _value, string _reference) returns(bool) {
-        if (msg.value > 0) {
-            deposit(msg.sender);
-        }
+        deposit(msg.sender);
         if (isAutoDeposit(_to)) {
-            if (isContract()) {
+            if (_isContract()) {
                 return multiAsset.transferFromWithReference(msg.sender, _to, _value, symbol, _reference);
             }
             return multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference);
@@ -173,11 +163,9 @@ contract WeiToken is AmbiEnabled, Asset, EtherTreasuryInterface {
     }
 
     function transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) returns(bool) {
-        if (msg.value > 0) {
-            deposit(msg.sender);
-        }
+        deposit(msg.sender);
         if (isAutoDepositICAP(_icap)) {
-            if (isContract()) {
+            if (_isContract()) {
                 return multiAsset.transferFromToICAPWithReference(msg.sender, _icap, _value, _reference);
             }
             return multiAsset.proxyTransferToICAPWithReference(_icap, _value, _reference);
@@ -199,9 +187,12 @@ contract WeiToken is AmbiEnabled, Asset, EtherTreasuryInterface {
     function emitTransfer(address _from, address _to, uint _value) {
         super.emitTransfer(_from, _to, _value);
         if (_to == address(this)) {
-            if (!isWithdraw) {
+            if (!isWithdrawOrReissue) {
                 throw;
             }
+        }
+        if (!isAutoDeposit(_to)) {
+            throw;
         }
     }
 

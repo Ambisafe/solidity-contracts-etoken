@@ -27,6 +27,7 @@
     "AssetWithExchange",
     "WeiToken",
     "RegistryICAP",
+    "RouterICAP",
     "UserContract",
     "AssetWithRefund"
   ],

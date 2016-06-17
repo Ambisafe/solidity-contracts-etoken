@@ -90,7 +90,7 @@ contract RegistryICAP is AmbiEnabled {
         for (var i = 0; i < 4; i++) {
             institution[i] = _institution[i];
         }
-        return institutions[sha3("ETH", string(institution))];
+        return institutions[sha3("ETH", institution)];
     }
 
     function registerInstitution(string _asset, string _institution, address _address) checkAccess("admin") returns(bool) {

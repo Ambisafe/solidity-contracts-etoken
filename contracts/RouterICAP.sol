@@ -1,9 +1,6 @@
 import "AmbiEnabled.sol";
 import "Safe.sol";
-
-contract RegistryICAP {
-    function parse(bytes32) returns(address, bytes32, bool);
-}
+import "RegistryICAP.sol";
 
 contract RouterICAP is AmbiEnabled, Safe {
     event TransferToICAP(address indexed from, address indexed to, bytes32 indexed icap, uint value, string reference);
@@ -11,9 +8,9 @@ contract RouterICAP is AmbiEnabled, Safe {
     function transfer(bytes32 _icap, string _reference) returns(bool) {
         var (to, _symbol, success) = RegistryICAP(getAddress("icap")).parse(_icap);
         if (!success) {
-            return safeFalse();
+            return _safeFalse();
         }
-        safeSend(to, msg.value);
+        _safeSend(to, msg.value);
         TransferToICAP(msg.sender, to, _icap, msg.value, _reference);
         return true;
     }
@@ -32,7 +29,7 @@ contract RouterICAP is AmbiEnabled, Safe {
 
     function transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) returns(bool) {
         if (msg.value != _value) {
-            return safeFalse();
+            return _safeFalse();
         }
         return transferToICAPWithReference(_icap, _reference);
     }

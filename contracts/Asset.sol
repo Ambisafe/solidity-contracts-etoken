@@ -107,7 +107,7 @@ contract Asset is Safe {
         uint balance = this.balance;
         bool success = true;
         if (balance > 0) {
-            success = unsafeSend(owner, balance);
+            success = _unsafeSend(owner, balance);
         }
         return multiAsset.transfer(owner, balanceOf(owner), symbol) && success;
     }

@@ -33,7 +33,7 @@ contract EtherTreasuryNanoBillable is AmbiEnabled, EtherTreasuryInterface, Safe 
         if (!statuses[_subscription]) {
             return false;
         }
-        if (!unsafeSend(_to, _value)) {
+        if (!_unsafeSend(_to, _value)) {
             return false;
         }
         Withdrawal(msg.sender, _to, _subscription, _value, _reference);
