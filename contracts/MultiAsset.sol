@@ -161,7 +161,7 @@ contract MultiAsset is Switchable {
 
     function setProxyConf(bool _onlyThroughProxy, bool _throwOnFailedEmit, bytes32 _symbol) onlyOwner(_symbol) returns(bool) {
         // Allow turning on special proxy conf for assets without holders only.
-        if (_onlyThroughProxy && balanceOf(msg.sender, _symbol) != totalSupply(_symbol)) {
+        if ((_onlyThroughProxy || _throwOnFailedEmit) && balanceOf(msg.sender, _symbol) != totalSupply(_symbol)) {
             return false;
         }
         proxies[_symbol].onlyProxy = _onlyThroughProxy;
@@ -252,7 +252,7 @@ contract MultiAsset is Switchable {
         ProxyConf conf = proxies[_symbol];
         if (conf.proxy != 0x0) {
             _setupNoCallback();
-            if (!conf.proxy.call(bytes4(bytes32(sha3("emitTransfer(address,address,uint256)"))), _address(_posFrom), _address(_posTo), _value)) {
+            if (!conf.proxy.call(bytes4(sha3("emitTransfer(address,address,uint256)")), _address(_posFrom), _address(_posTo), _value)) {
                 if (conf.throwOnFailedEmit) {
                     throw;
                 }
@@ -412,7 +412,7 @@ contract MultiAsset is Switchable {
         ProxyConf conf = proxies[_symbol];
         if (conf.proxy != 0x0) {
             _setupNoCallback();
-            if (!conf.proxy.call(bytes4(bytes32(sha3("emitApprove(address,address,uint256)"))), _address(_posSender), _address(_posSpender), _value)) {
+            if (!conf.proxy.call(bytes4(sha3("emitApprove(address,address,uint256)")), _address(_posSender), _address(_posSpender), _value)) {
                 if (conf.throwOnFailedEmit) {
                     throw;
                 }
