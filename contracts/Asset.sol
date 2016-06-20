@@ -41,10 +41,7 @@ contract Asset is Safe {
     }
 
     function transferWithReference(address _to, uint _value, string _reference) noValue() onlyHuman() returns(bool) {
-        if (!multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference)) {
-            return false;
-        }
-        return true;
+        return multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference);
     }
 
     function transferToICAP(bytes32 _icap, uint _value) returns(bool) {
@@ -52,10 +49,7 @@ contract Asset is Safe {
     }
 
     function transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) noValue() onlyHuman() returns(bool) {
-        if (!multiAsset.proxyTransferToICAPWithReference(_icap, _value, _reference)) {
-            return false;
-        }
-        return true;
+        return multiAsset.proxyTransferToICAPWithReference(_icap, _value, _reference);
     }
     
     function transferFrom(address _from, address _to, uint _value) returns(bool) {
@@ -63,10 +57,7 @@ contract Asset is Safe {
     }
 
     function transferFromWithReference(address _from, address _to, uint _value, string _reference) noValue() onlyHuman() returns(bool) {
-        if (!multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference)) {
-            return false;
-        }
-        return true;
+        return multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference);
     }
 
     function transferFromToICAP(address _from, bytes32 _icap, uint _value) returns(bool) {
@@ -74,24 +65,15 @@ contract Asset is Safe {
     }
 
     function transferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) noValue() onlyHuman() returns(bool) {
-        if (!multiAsset.proxyTransferFromToICAPWithReference(_from, _icap, _value, _reference)) {
-            return false;
-        }
-        return true;
+        return multiAsset.proxyTransferFromToICAPWithReference(_from, _icap, _value, _reference);
     }
 
     function approve(address _spender, uint _value) noValue() onlyHuman() returns(bool) {
-        if (!multiAsset.proxyApprove(_spender, _value, symbol)) {
-            return false;
-        }
-        return true;
+        return multiAsset.proxyApprove(_spender, _value, symbol);
     }
 
     function setCosignerAddress(address _cosigner) noValue() onlyHuman() returns(bool) {
-        if (!multiAsset.proxySetCosignerAddress(_cosigner, symbol)) {
-            return false;
-        }
-        return true;
+        return multiAsset.proxySetCosignerAddress(_cosigner, symbol);
     }
 
     function emitTransfer(address _from, address _to, uint _value) onlyMultiAsset() {

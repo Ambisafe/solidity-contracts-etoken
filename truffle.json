@@ -29,7 +29,9 @@
     "RegistryICAP",
     "RouterICAP",
     "UserContract",
-    "AssetWithRefund"
+    "AssetWithRefund",
+    "RecursiveAttackAsset",
+    "ExceptionAttackAsset"
   ],
   "rpc": {
     // Default RPC configuration.

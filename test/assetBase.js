@@ -1374,7 +1374,7 @@ module.exports = function(accounts) {
     var holder2 = accounts[1];
     var balance2 = 100;
     that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
-      return that.multiAsset.setOnlyProxy(true, SYMBOL);
+      return that.multiAsset.setProxyConf(true, false, SYMBOL);
     }).then(function() {
       return that.asset.transfer(holder2, balance2);
     }).then(function() {
@@ -1395,7 +1395,7 @@ module.exports = function(accounts) {
     var allowance = 100;
     var allowane2 = 200;
     that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
-      return that.multiAsset.setOnlyProxy(true, SYMBOL);
+      return that.multiAsset.setProxyConf(true, false, SYMBOL);
     }).then(function() {
       return that.asset.approve(holder2, allowance);
     }).then(function() {
@@ -1412,9 +1412,9 @@ module.exports = function(accounts) {
     var holder2 = accounts[1];
     var balance2 = 100;
     that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
-      return that.multiAsset.setOnlyProxy(true, SYMBOL);
+      return that.multiAsset.setProxyConf(true, false, SYMBOL);
     }).then(function() {
-      return that.multiAsset.setOnlyProxy(false, SYMBOL);
+      return that.multiAsset.setProxyConf(false, false, SYMBOL);
     }).then(function() {
       return that.asset.transfer(holder2, balance2);
     }).then(function() {

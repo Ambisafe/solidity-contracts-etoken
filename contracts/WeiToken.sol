@@ -132,7 +132,7 @@ contract WeiToken is AmbiEnabled, Asset, EtherTreasuryInterface {
             // DEPLOY REMOVE END
             return false;
         }
-        if(mAsset.setProxy(address(this), true, _symbol) && mAsset.setEventsProxy(address(this), _symbol)) {
+        if(mAsset.setProxy(address(this), true, _symbol) && mAsset.setEventsProxy(address(this), _symbol) && mAsset.setProxyConf(false, true, _symbol)) {
             multiAsset = mAsset;
             symbol = _symbol;
             return true;

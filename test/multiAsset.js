@@ -13,6 +13,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
 
   var BYTES_32 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
   var BITS_257 = '0x10000000000000000000000000000000000000000000000000000000000000000';
+  var ADDRESS_ZERO = '0x0000000000000000000000000000000000000000';
 
   var SYMBOL = bytes32(0);
   var NAME = 'Test Name';
@@ -490,7 +491,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.owner.call(nonAsset);
     }).then(function(result) {
-      assert.equal(result.valueOf(), '0x0000000000000000000000000000000000000000');
+      assert.equal(result.valueOf(), ADDRESS_ZERO);
     }).then(done).catch(done);
   });
   it('should not be possible to get total supply of missing asset', function(done) {
@@ -536,7 +537,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), owner);
       return multiAsset.owner.call(nonAsset);
     }).then(function(result) {
-      assert.equal(result.valueOf(),'0x0000000000000000000000000000000000000000');
+      assert.equal(result.valueOf(), ADDRESS_ZERO);
     }).then(done).catch(done);
   });
   it('should be possible to change ownership of asset', function(done) {
@@ -3429,14 +3430,15 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
   it('should checkSigned on recovery', function(done) {
-    multiAsset.recover(accounts[1], accounts[2]).then(function() {
+    multiAsset.trust(accounts[0], {from: accounts[1]}).then(function() {
+      return multiAsset.recover(accounts[1], accounts[2]);
     }).then(function() {
       return multiAsset.signChecks.call();
     }).then(function(result) {
       assert.equal(result.valueOf(), 1);
       return multiAsset.lastOperation.call();
     }).then(function(result) {
-      assert.equal(result.valueOf(), sha3(multiAssetAbi.recover.getData(accounts[1], accounts[2]), bytes32(0)));
+      assert.equal(result.valueOf(), sha3(multiAssetAbi.recover.getData(accounts[1], accounts[2]), bytes32(1)));
     }).then(done).catch(done);
   });
 
@@ -3714,6 +3716,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return cosignerUser.signChecks.call();
     }).then(function(result) {
       cosignerUserChecks = result.toNumber();
+      return multiAsset.trust(accounts[2]);
+    }).then(function() {
       return multiAsset.recover(accounts[0], accounts[1], {from: accounts[2]});
     }).then(function() {
     //  return cosignerAsset.signChecks.call();
@@ -3863,6 +3867,180 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return multiAsset.allowance(accounts[0], accounts[1], SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 100);
+    }).then(done).catch(done);
+  });
+
+  it('should not be possible to do proxy transfer recursively when doing transfer', function(done) {
+    var icap = RegistryICAP.deployed();
+    var _icap = "XE73TSTXREG123456789";
+    var holder = accounts[0];
+    var holder2 = accounts[1];
+    var amount = 1;
+    var recursiveAttackAsset = RecursiveAttackAsset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setup(icap.address);
+    }).then(function() {
+      return icap.registerAsset("TST", SYMBOL);
+    }).then(function() {
+      return icap.registerInstitution("TST", "XREG", recursiveAttackAsset.address);
+    }).then(function() {
+      return multiAsset.setProxy(recursiveAttackAsset.address, true, SYMBOL);
+    }).then(function() {
+      return multiAsset.setEventsProxy(recursiveAttackAsset.address, SYMBOL);
+    }).then(function() {
+      return recursiveAttackAsset.init(multiAsset.address, SYMBOL);
+    }).then(function() {
+      return recursiveAttackAsset.setIcap(_icap);
+    }).then(function() {
+      return multiAsset.transfer(holder2, amount, SYMBOL);
+    }).then(function() {
+      return multiAsset.balanceOf.call(holder2, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), amount);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+      return multiAsset.balanceOf.call(recursiveAttackAsset.address, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.allowance.call(holder, recursiveAttackAsset.address, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.cosigners.call(sha3(bytes32(1), SYMBOL));
+    }).then(function(result) {
+      assert.equal(result.valueOf(), ADDRESS_ZERO);
+    }).then(done).catch(done);
+  });
+  it('should not be possible to do proxy transfer recursively when doing approve', function(done) {
+    var icap = RegistryICAP.deployed();
+    var _icap = "XE73TSTXREG123456789";
+    var holder = accounts[0];
+    var holder2 = accounts[1];
+    var amount = 1;
+    var recursiveAttackAsset = RecursiveAttackAsset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setup(icap.address);
+    }).then(function() {
+      return icap.registerAsset("TST", SYMBOL);
+    }).then(function() {
+      return icap.registerInstitution("TST", "XREG", recursiveAttackAsset.address);
+    }).then(function() {
+      return multiAsset.setProxy(recursiveAttackAsset.address, true, SYMBOL);
+    }).then(function() {
+      return multiAsset.setEventsProxy(recursiveAttackAsset.address, SYMBOL);
+    }).then(function() {
+      return recursiveAttackAsset.init(multiAsset.address, SYMBOL);
+    }).then(function() {
+      return recursiveAttackAsset.setIcap(_icap);
+    }).then(function() {
+      return multiAsset.approve(holder2, amount, SYMBOL);
+    }).then(function() {
+      return multiAsset.allowance.call(holder, holder2, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), amount);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+      return multiAsset.balanceOf.call(recursiveAttackAsset.address, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.allowance.call(holder, recursiveAttackAsset.address, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.cosigners.call(sha3(bytes32(1), SYMBOL));
+    }).then(function(result) {
+      assert.equal(result.valueOf(), ADDRESS_ZERO);
+    }).then(done).catch(done);
+  });
+  it('should not throw on failed emit transfer by default', function(done) {
+    var holder = accounts[0];
+    var holder2 = accounts[1];
+    var amount = 1;
+    var exceptionAttackAsset = ExceptionAttackAsset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setProxy(exceptionAttackAsset.address, true, SYMBOL);
+    }).then(function() {
+      return multiAsset.setEventsProxy(exceptionAttackAsset.address, SYMBOL);
+    }).then(function() {
+      return exceptionAttackAsset.init(multiAsset.address, SYMBOL);
+    }).then(function() {
+      return multiAsset.transfer(holder2, amount, SYMBOL);
+    }).then(function() {
+      return multiAsset.balanceOf.call(holder2, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), amount);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+    }).then(done).catch(done);
+  });
+  it('should not throw on failed emit approve by default', function(done) {
+    var holder = accounts[0];
+    var holder2 = accounts[1];
+    var amount = 1;
+    var exceptionAttackAsset = ExceptionAttackAsset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setProxy(exceptionAttackAsset.address, true, SYMBOL);
+    }).then(function() {
+      return multiAsset.setEventsProxy(exceptionAttackAsset.address, SYMBOL);
+    }).then(function() {
+      return exceptionAttackAsset.init(multiAsset.address, SYMBOL);
+    }).then(function() {
+      return multiAsset.approve(holder2, amount, SYMBOL);
+    }).then(function() {
+      return multiAsset.allowance.call(holder, holder2, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), amount);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should throw on failed emit transfer if configured', function(done) {
+    var holder = accounts[0];
+    var holder2 = accounts[1];
+    var amount = 1;
+    var throwOnFailedEmit = true;
+    var exceptionAttackAsset = ExceptionAttackAsset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setProxy(exceptionAttackAsset.address, true, SYMBOL);
+    }).then(function() {
+      return multiAsset.setEventsProxy(exceptionAttackAsset.address, SYMBOL);
+    }).then(function() {
+      return multiAsset.setProxyConf(false, throwOnFailedEmit, SYMBOL);
+    }).then(function() {
+      return exceptionAttackAsset.init(multiAsset.address, SYMBOL);
+    }).then(function() {
+      return multiAsset.transfer(holder2, amount, SYMBOL);
+    }).catch(function(){}).then(function() {
+      return multiAsset.balanceOf.call(holder2, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should throw on failed emit approve if configured', function(done) {
+    var holder = accounts[0];
+    var holder2 = accounts[1];
+    var amount = 1;
+    var throwOnFailedEmit = true;
+    var exceptionAttackAsset = ExceptionAttackAsset.deployed();
+    multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return multiAsset.setProxy(exceptionAttackAsset.address, true, SYMBOL);
+    }).then(function() {
+      return multiAsset.setEventsProxy(exceptionAttackAsset.address, SYMBOL);
+    }).then(function() {
+      return multiAsset.setProxyConf(false, throwOnFailedEmit, SYMBOL);
+    }).then(function() {
+      return exceptionAttackAsset.init(multiAsset.address, SYMBOL);
+    }).then(function() {
+      return multiAsset.approve(holder2, amount, SYMBOL);
+    }).catch(function(){}).then(function() {
+      return multiAsset.allowance.call(holder, holder2, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
   });
 });

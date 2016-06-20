@@ -127,10 +127,7 @@ contract AssetWithFee is Asset, AmbiEnabled {
         if (feeAddress == 0x0 || feeAddress == _feeFrom) {
             return true;
         }
-        if (!multiAsset.transferFromWithReference(_feeFrom, feeAddress, _value, symbol, _reference)) {
-            return false;
-        }
-        return true;
+        return multiAsset.transferFromWithReference(_feeFrom, feeAddress, _value, symbol, _reference);
     }
 
     function _applyFeeAndRefund(address _feeFrom, uint _startGas, string _reference) internal returns(bool) {
