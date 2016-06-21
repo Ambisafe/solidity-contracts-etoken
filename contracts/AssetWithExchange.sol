@@ -1,8 +1,7 @@
 import "EtherTreasuryInterface.sol";
 import "Asset.sol";
-import "AmbiEnabled.sol";
 
-contract AssetWithExchange is Asset, AmbiEnabled {
+contract AssetWithExchange is Asset {
     uint public tokenPriceInWeiSell = 1;
     uint public tokenPriceInWeiBuy = 2;
     uint public buyLimitMin = 0;

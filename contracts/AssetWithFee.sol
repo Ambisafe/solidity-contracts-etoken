@@ -1,8 +1,7 @@
 import "EtherTreasuryInterface.sol";
 import "Asset.sol";
-import "AmbiEnabled.sol";
 
-contract AssetWithFee is Asset, AmbiEnabled {
+contract AssetWithFee is Asset {
     uint public refundGas = 40000;
     uint public feeGas = 40000;
     uint public transferCallGas = 21000;

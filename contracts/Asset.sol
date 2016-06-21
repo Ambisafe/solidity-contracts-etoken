@@ -1,7 +1,8 @@
 import "MultiAsset.sol";
+import "AmbiEnabled.sol";
 import "Safe.sol";
 
-contract Asset is Safe {
+contract Asset is Safe, AmbiEnabled {
     event Transfer(address indexed from, address indexed to, uint value);
     event Approve(address indexed from, address indexed spender, uint value);
 

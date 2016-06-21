@@ -31,7 +31,9 @@
     "UserContract",
     "AssetWithRefund",
     "RecursiveAttackAsset",
-    "ExceptionAttackAsset"
+    "ExceptionAttackAsset",
+    "EventsHistory",
+    "MultiAssetEmitter"
   ],
   "rpc": {
     // Default RPC configuration.

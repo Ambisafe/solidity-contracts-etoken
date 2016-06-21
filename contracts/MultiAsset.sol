@@ -5,6 +5,16 @@ contract Cosigner {
     function isSigned(bytes32) returns(bool);
 }
 
+contract EventsHistory {
+    function emitTransfer(address _from, address _to, bytes32 _symbol, uint _value, string _reference);
+    function emitIssue(bytes32 _symbol, uint _value, address _by);
+    function emitRevoke(bytes32 _symbol, uint _value, address _by);
+    function emitOwnershipChange(address _from, address _to, bytes32 _symbol);
+    function emitApprove(address _from, address _spender, bytes32 _symbol, uint _value);
+    function emitRecovery(address _from, address _to, address _by);
+    function emitTransferToICAP(address _from, address _to, bytes32 _icap, uint _value, string _reference);
+}
+
 contract Switchable is Owned {
     mapping(bytes32 => bool) public switches;
 
@@ -26,15 +36,6 @@ contract Switchable is Owned {
 }
 
 contract MultiAsset is Switchable {
-
-    event Transfer(address indexed from, address indexed to, bytes32 indexed symbol, uint value, string reference);
-    event Issue(bytes32 indexed symbol, uint value, address by);
-    event Revoke(bytes32 indexed symbol, uint value, address by);
-    event OwnershipChange(address indexed from, address indexed to, bytes32 indexed symbol);
-    event Approve(address indexed from, address indexed spender, bytes32 indexed symbol, uint value);
-    event Recovery(address indexed from, address indexed to, address by);
-    event TransferToICAP(address indexed from, address indexed to, bytes32 indexed icap, uint value, string reference);
-
     enum Features { Issue, TransferWithReference, Revoke, ChangeOwnership, Allowances, ICAP }
 
     struct Asset {
@@ -73,6 +74,8 @@ contract MultiAsset is Switchable {
     mapping(bytes32 => ProxyConf) public proxies;
 
     RegistryICAP public registryICAP;
+    // Should use interface of the emitter, but point to events history.
+    EventsHistory public eventsHistory;
 
     function () {
         // donations
@@ -80,6 +83,11 @@ contract MultiAsset is Switchable {
 
     function setup(address _registryICAP) onlyContractOwner() returns(bool) {
         registryICAP = RegistryICAP(_registryICAP);
+        return true;
+    }
+
+    function setupEventsHistory(address _eventsHistory) immutable(address(eventsHistory)) returns(bool) {
+        eventsHistory = EventsHistory(_eventsHistory);
         return true;
     }
 
@@ -185,7 +193,7 @@ contract MultiAsset is Switchable {
         if (_posFrom == _posTo) {
             return false;
         }
-        if (_value < 1 || _balanceOf(_posFrom, _symbol) < _value) {
+        if (_value == 0 || _balanceOf(_posFrom, _symbol) < _value) {
             return false;
         }
         if (bytes(_reference).length > 0 && !isEnabled(sha3(_symbol, Features.TransferWithReference))) {
@@ -198,7 +206,7 @@ contract MultiAsset is Switchable {
         if (_posFrom != _posSender) {
             assets[_symbol].wallets[_posFrom].allowance[_posSender] -= _value;
         }
-        Transfer(_address(_posFrom), _address(_posTo), _symbol, _value, _reference);
+        eventsHistory.emitTransfer(_address(_posFrom), _address(_posTo), _symbol, _value, _reference);
         _proxyTransferEvent(_posFrom, _posTo, _value, _symbol);
         return true;
     }
@@ -232,7 +240,7 @@ contract MultiAsset is Switchable {
         if (!_transfer(posFrom, posTo, _value, symbol, _reference, getHolderId(_sender))) {
             return false;
         }
-        TransferToICAP(_address(posFrom), _address(posTo), _icap, _value, _reference);
+        eventsHistory.emitTransferToICAP(_address(posFrom), _address(posTo), _icap, _value, _reference);
         return true;
     }
 
@@ -277,7 +285,7 @@ contract MultiAsset is Switchable {
     }
 
     function issueAsset(bytes32 _symbol, uint _value, string _name, string _description, uint8 _baseUnit, bool _isReissuable) noValue() checkEnabledSwitch(sha3(_symbol, _isReissuable, Features.Issue)) returns(bool) {
-        if (_value < 1 && !_isReissuable) {
+        if (_value == 0 && !_isReissuable) {
             return false;
         }
         if (isCreated(_symbol)) {
@@ -287,12 +295,12 @@ contract MultiAsset is Switchable {
 
         assets[_symbol] = Asset(posHolder, _value, _name, _description, _isReissuable, _baseUnit);
         assets[_symbol].wallets[posHolder].balance = _value;
-        Issue(_symbol, _value, _address(posHolder));
+        eventsHistory.emitIssue(_symbol, _value, _address(posHolder));
         return true;
     }
     
     function reissueAsset(bytes32 _symbol, uint _value) onlyOwner(_symbol) returns(bool) {
-        if (_value < 1) {
+        if (_value == 0) {
             return false;
         }
         Asset asset = assets[_symbol];
@@ -305,13 +313,13 @@ contract MultiAsset is Switchable {
         uint pos = getHolderId(msg.sender);
         asset.wallets[pos].balance += _value;
         asset.totalSupply += _value;
-        Issue(_symbol, _value, _address(pos));
+        eventsHistory.emitIssue(_symbol, _value, _address(pos));
         _proxyTransferEvent(0, pos, _value, _symbol);
         return true;
     }
     
     function revokeAsset(bytes32 _symbol, uint _value) onlyOwner(_symbol) checkEnabledSwitch(sha3(_symbol, Features.Revoke)) returns(bool) {
-        if (_value < 1) {
+        if (_value == 0) {
             return false;
         }
         Asset asset = assets[_symbol];
@@ -321,7 +329,7 @@ contract MultiAsset is Switchable {
         }
         asset.wallets[pos].balance -= _value;
         asset.totalSupply -= _value;
-        Revoke(_symbol, _value, _address(pos));
+        eventsHistory.emitRevoke(_symbol, _value, _address(pos));
         _proxyTransferEvent(pos, 0, _value, _symbol);
         return true;
     }
@@ -334,7 +342,7 @@ contract MultiAsset is Switchable {
         }
         address oldOwner = _address(asset.owner);
         asset.owner = posNewOwner;
-        OwnershipChange(oldOwner, _address(posNewOwner), _symbol);
+        eventsHistory.emitOwnershipChange(oldOwner, _address(posNewOwner), _symbol);
         return true;
     }
 
@@ -393,7 +401,7 @@ contract MultiAsset is Switchable {
         address from = holders[getHolderId(_from)].addr;
         holders[getHolderId(_from)].addr = _to;
         holderIndex[_to] = getHolderId(_from);
-        Recovery(from, _to, msg.sender);
+        eventsHistory.emitRecovery(from, _to, msg.sender);
         return true;
     }
 
@@ -408,7 +416,7 @@ contract MultiAsset is Switchable {
             return false;
         }
         assets[_symbol].wallets[_posSender].allowance[_posSpender] = _value;
-        Approve(_address(_posSender), _address(_posSpender), _symbol, _value);
+        eventsHistory.emitApprove(_address(_posSender), _address(_posSpender), _symbol, _value);
         ProxyConf conf = proxies[_symbol];
         if (conf.proxy != 0x0) {
             _setupNoCallback();

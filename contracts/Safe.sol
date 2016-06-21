@@ -1,51 +1,58 @@
 contract Safe {
+    // Should always be placed as first modifier!
     modifier noValue {
-      if (msg.value > 0 && !msg.sender.send(msg.value)) {
-        throw;
-      }
-      _
+        if (msg.value > 0 && !msg.sender.send(msg.value)) {
+            throw;
+        }
+        _
     }
 
     modifier onlyHuman {
-      if (_isHuman()) {
-        _
-      }
+        if (_isHuman()) {
+            _
+        }
     }
 
     modifier noCallback {
-      if (!isCall) {
-        _
-      }
+        if (!isCall) {
+            _
+        }
     }
 
-    function _safeFalse() noValue() internal returns(bool) {
-      return false;
+    modifier immutable(address _address) {
+        if (_address == 0) {
+            _
+        }
+    }
+
+    function _safeFalse() internal noValue() returns(bool) {
+        return false;
     }
 
     function _safeSend(address _to, uint _value) internal {
-      if (!_unsafeSend(_to, _value)) {
-        throw;
-      }
+        if (!_unsafeSend(_to, _value)) {
+            throw;
+        }
     }
 
     function _unsafeSend(address _to, uint _value) internal returns(bool) {
-      return _to.call.value(_value)();
+        return _to.call.value(_value)();
     }
 
     function _isContract() constant internal returns(bool) {
-      return msg.sender != tx.origin;
+        return msg.sender != tx.origin;
     }
 
     function _isHuman() constant internal returns(bool) {
-      return !_isContract();
+        return !_isContract();
     }
 
     bool private isCall = false;
     function _setupNoCallback() internal {
-      isCall = true;
+        isCall = true;
     }
 
     function _finishNoCallback() internal {
-      isCall = false;
+        isCall = false;
     }
 }

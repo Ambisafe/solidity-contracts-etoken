@@ -1,12 +1,11 @@
 import "Asset.sol";
 import "EtherTreasuryInterface.sol";
-import "AmbiEnabled.sol";
 
 contract RouterICAPInterface {
     function transferToICAPWithReference(bytes32 _icap, string _reference) returns(bool);
 }
 
-contract WeiToken is AmbiEnabled, Asset, EtherTreasuryInterface {
+contract WeiToken is Asset, EtherTreasuryInterface {
     bool private isWithdrawOrReissue = false;
     mapping(address => bool) public autoDeposit;
 

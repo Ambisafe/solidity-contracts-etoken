@@ -27,15 +27,39 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   var multiAsset;
   var multiAssetAbi;
   var userContract;
+  var eventsHistory;
 
   before('setup', function(done) {
     multiAsset = MultiAsset.deployed();
     multiAssetAbi = web3.eth.contract(multiAsset.abi).at(0x0);
     userContract = UserContract.deployed();
+    eventsHistory = EventsHistory.deployed();
+    var multiAssetEmitter = MultiAssetEmitter.deployed();
+    var multiAssetEmitterAbi = web3.eth.contract(multiAssetEmitter.abi).at(0x0);
+    var fakeArgs = [0,0,0,0,0,0,0,0,0,0,0];
     userContract.init(multiAsset.address).then(function() {
       userContract = MultiAsset.at(userContract.address);
+      return multiAsset.setupEventsHistory(eventsHistory.address);
+    }).then(function() {
+      return eventsHistory.addVersion(multiAsset.address, "Origin", "Initial version.");
+    }).then(function() {
+      return eventsHistory.addEmitter(multiAssetEmitterAbi.emitTransfer.getData.apply(this, fakeArgs).slice(0, 10), multiAssetEmitter.address);
+    }).then(function() {
+      return eventsHistory.addEmitter(multiAssetEmitterAbi.emitIssue.getData.apply(this, fakeArgs).slice(0, 10), multiAssetEmitter.address);
+    }).then(function() {
+      return eventsHistory.addEmitter(multiAssetEmitterAbi.emitRevoke.getData.apply(this, fakeArgs).slice(0, 10), multiAssetEmitter.address);
+    }).then(function() {
+      return eventsHistory.addEmitter(multiAssetEmitterAbi.emitOwnershipChange.getData.apply(this, fakeArgs).slice(0, 10), multiAssetEmitter.address);
+    }).then(function() {
+      return eventsHistory.addEmitter(multiAssetEmitterAbi.emitApprove.getData.apply(this, fakeArgs).slice(0, 10), multiAssetEmitter.address);
+    }).then(function() {
+      return eventsHistory.addEmitter(multiAssetEmitterAbi.emitRecovery.getData.apply(this, fakeArgs).slice(0, 10), multiAssetEmitter.address);
+    }).then(function() {
+      return eventsHistory.addEmitter(multiAssetEmitterAbi.emitTransferToICAP.getData.apply(this, fakeArgs).slice(0, 10), multiAssetEmitter.address);
+    }).then(function() {
+      eventsHistory = MultiAssetEmitter.at(eventsHistory.address);
       done();
-    });
+    }).catch(done);
   });
 
   it('should not be possible to issue asset with existing symbol', function(done) {
@@ -52,8 +76,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var isReissuable2 = true;
     var watcher;
     multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Issue();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Issue();
       return multiAsset.issueAsset(symbol, value2, name2, description2, baseUnit2, isReissuable2);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -216,8 +240,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var description = 'Test Description';
     var baseUnit = 2;
     var isReissuable = false;
-    var watcher = multiAsset.Issue();
-    eventsHelper.setupEvents(multiAsset);
+    var watcher = eventsHistory.Issue();
+    eventsHelper.setupEvents(eventsHistory);
     multiAsset.issueAsset(symbol, value, name, description, baseUnit, isReissuable).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
     }).then(function(events) {
@@ -512,9 +536,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   });
   it('should not be possible to change ownership to the same owner', function(done) {
     var owner = accounts[0];
-    var watcher = multiAsset.OwnershipChange();
+    var watcher = eventsHistory.OwnershipChange();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.changeOwnership(SYMBOL, owner);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher)
@@ -543,9 +567,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   it('should be possible to change ownership of asset', function(done) {
     var owner = accounts[0];
     var newOwner = accounts[1];
-    var watcher = multiAsset.OwnershipChange();
+    var watcher = eventsHistory.OwnershipChange();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.changeOwnership(SYMBOL, newOwner);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -716,9 +740,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var owner = accounts[0];
     var nonOwner = accounts[1];
     var amount = 0;
-    var watcher = multiAsset.Transfer();
+    var watcher = eventsHistory.Transfer();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.transfer(nonOwner, amount, SYMBOL);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -735,9 +759,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   it('should not be possible to transfer to oneself', function(done) {
     var owner = accounts[0];
     var amount = 100;
-    var watcher = multiAsset.Transfer();
+    var watcher = eventsHistory.Transfer();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.transfer(owner, amount, SYMBOL);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -954,8 +978,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     multiAsset.issueAsset(symbol, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.issueAsset(symbol2, value2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
     }).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Transfer();
       return multiAsset.transfer(holder2, amount, symbol);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -966,8 +990,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(events[0].args.symbol.valueOf(), symbol);
       assert.equal(events[0].args.value.valueOf(), amount);
       assert.equal(events[0].args.reference.valueOf(), "");
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Transfer();
       return multiAsset.transfer(holder2, amount2, symbol2);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -998,8 +1022,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var reference = "Invoice#AS001";
     var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Transfer();
       return multiAsset.transferWithReference(holder2, VALUE, SYMBOL, reference);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1056,8 +1080,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var amount = 0;
     var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Issue();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Issue();
       return multiAsset.reissueAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1099,8 +1123,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var amount = 1;
     var watcher;
     multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Issue();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Issue();
       return multiAsset.reissueAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1121,8 +1145,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var amount = UINT_256_MINUS_1;
     var watcher;
     multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Issue();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Issue();
       return multiAsset.reissueAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1288,9 +1312,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var owner = accounts[0];
     var amount = 0;
     var isReissuable = false;
-    var watcher = multiAsset.Revoke();
+    var watcher = eventsHistory.Revoke();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1308,9 +1332,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var owner = accounts[0];
     var amount = 0;
     var isReissuable = true;
-    var watcher = multiAsset.Revoke();
+    var watcher = eventsHistory.Revoke();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1329,9 +1353,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var value = 0;
     var amount = 1;
     var isReissuable = true;
-    var watcher = multiAsset.Revoke();
+    var watcher = eventsHistory.Revoke();
     multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1349,9 +1373,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var owner = accounts[0];
     var value = 1;
     var amount = 2;
-    var watcher = multiAsset.Revoke();
+    var watcher = eventsHistory.Revoke();
     multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1370,9 +1394,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var value = UINT_256_MINUS_2;
     var amount = UINT_256_MINUS_1;
     var isReissuable = true;
-    var watcher = multiAsset.Revoke();
+    var watcher = eventsHistory.Revoke();
     multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1391,9 +1415,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var value = UINT_255_MINUS_1;
     var amount = UINT_255;
     var isReissuable = true;
-    var watcher = multiAsset.Revoke();
+    var watcher = eventsHistory.Revoke();
     multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1411,11 +1435,11 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var owner = accounts[0];
     var nonOwner = accounts[1];
     var balance = 100;
-    var watcher = multiAsset.Revoke();
+    var watcher = eventsHistory.Revoke();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.transfer(nonOwner, balance, SYMBOL);
     }).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.revokeAsset(SYMBOL, 10, {from: nonOwner});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1437,9 +1461,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var value = 1;
     var amount = 1;
     var isReissuable = false;
-    var watcher = multiAsset.Revoke();
+    var watcher = eventsHistory.Revoke();
     multiAsset.issueAsset(SYMBOL, value, NAME, DESCRIPTION, BASE_UNIT, isReissuable).then(function() {
-      eventsHelper.setupEvents(multiAsset);
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.revokeAsset(SYMBOL, amount);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1825,8 +1849,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var missingSymbol = bytes32(33);
     var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Approve();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Approve();
       return multiAsset.approve(spender, 100, missingSymbol);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1842,8 +1866,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var missingSymbol = bytes32(33);
     var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Approve();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Approve();
       return multiAsset.approve(owner, 100, missingSymbol);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1858,8 +1882,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var owner = accounts[0];
     var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Approve();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Approve();
       return multiAsset.approve(owner, 100, SYMBOL);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -1876,8 +1900,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var value = 100;
     var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Approve();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Approve();
       return multiAsset.approve(spender, value, SYMBOL, {from: holder});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -2094,8 +2118,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.approve(spender, 50, SYMBOL);
     }).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Transfer();
       return multiAsset.transferFrom(holder, holder, 50, SYMBOL, {from: spender});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -2114,8 +2138,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.approve(holder, 50, SYMBOL);
     }).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Transfer();
       return multiAsset.transferFrom(holder, receiver, 50, SYMBOL);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -2138,8 +2162,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.approve(spender, 100, SYMBOL);
     }).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Transfer();
       return multiAsset.transferFrom(holder, spender, value, SYMBOL, {from: spender});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -2376,8 +2400,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Transfer();
       return multiAsset.transferFrom(holder, receiver, value, SYMBOL, {from: spender});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -2573,8 +2597,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.approve(spender, value, SYMBOL);
     }).then(function() {
-      eventsHelper.setupEvents(multiAsset);
-      watcher = multiAsset.Transfer();
+      eventsHelper.setupEvents(eventsHistory);
+      watcher = eventsHistory.Transfer();
       return multiAsset.transferFromWithReference(holder, receiver, value, SYMBOL, reference, {from: spender});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -3098,8 +3122,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return multiAsset.trust(trusty);
     }).then(function() {
-      watcher = multiAsset.Recovery();
-      eventsHelper.setupEvents(multiAsset);
+      watcher = eventsHistory.Recovery();
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.recover(holder, recoverTo, {from: trusty});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -3141,8 +3165,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return multiAsset.recover(holder, recoverTo, {from: trusty});
     }).then(function() {
-      watcher = multiAsset.Recovery();
-      eventsHelper.setupEvents(multiAsset);
+      watcher = eventsHistory.Recovery();
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.recover(holder, recoverTo2, {from: trusty});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -3296,8 +3320,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return multiAsset.recover(holder, recoverTo, {from: trusty});
     }).then(function() {
-      watcher = multiAsset.OwnershipChange();
-      eventsHelper.setupEvents(multiAsset);
+      watcher = eventsHistory.OwnershipChange();
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.changeOwnership(SYMBOL, newOwner, {from: holder});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -3742,8 +3766,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerInstitution("TST", "XREG", accounts[2]);
     }).then(function() {
-      watcher = multiAsset.TransferToICAP();
-      eventsHelper.setupEvents(multiAsset);
+      watcher = eventsHistory.TransferToICAP();
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.transferToICAP(_icap, 100);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -3774,8 +3798,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerInstitution("TST", "XREG", accounts[2]);
     }).then(function() {
-      watcher = multiAsset.TransferToICAP();
-      eventsHelper.setupEvents(multiAsset);
+      watcher = eventsHistory.TransferToICAP();
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.transferToICAPWithReference(_icap, 100, "Ref");
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -3808,8 +3832,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return multiAsset.approve(accounts[1], 200, SYMBOL);
     }).then(function() {
-      watcher = multiAsset.TransferToICAP();
-      eventsHelper.setupEvents(multiAsset);
+      watcher = eventsHistory.TransferToICAP();
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.transferFromToICAP(accounts[0], _icap, 100, {from: accounts[1]});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -3845,8 +3869,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return multiAsset.approve(accounts[1], 200, SYMBOL);
     }).then(function() {
-      watcher = multiAsset.TransferToICAP();
-      eventsHelper.setupEvents(multiAsset);
+      watcher = eventsHistory.TransferToICAP();
+      eventsHelper.setupEvents(eventsHistory);
       return multiAsset.transferFromToICAPWithReference(accounts[0], _icap, 100, "Ref", {from: accounts[1]});
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
@@ -4012,7 +4036,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return exceptionAttackAsset.init(multiAsset.address, SYMBOL);
     }).then(function() {
       return multiAsset.transfer(holder2, amount, SYMBOL);
-    }).catch(function(){}).then(function() {
+    }).then(assert.fail, function() {
       return multiAsset.balanceOf.call(holder2, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
@@ -4037,7 +4061,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return exceptionAttackAsset.init(multiAsset.address, SYMBOL);
     }).then(function() {
       return multiAsset.approve(holder2, amount, SYMBOL);
-    }).catch(function(){}).then(function() {
+    }).then(assert.fail, function() {
       return multiAsset.allowance.call(holder, holder2, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
