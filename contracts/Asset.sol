@@ -41,16 +41,20 @@ contract Asset is Safe, AmbiEnabled {
         return transferWithReference(_to, _value, "");
     }
 
-    function transferWithReference(address _to, uint _value, string _reference) noValue() onlyHuman() returns(bool) {
-        return multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference);
+    function transferWithReference(address _to, uint _value, string _reference) noValue() returns(bool) {
+        return _isHuman() ?
+            multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference) :
+            multiAsset.transferFromWithReference(msg.sender, _to, _value, symbol, _reference);
     }
 
     function transferToICAP(bytes32 _icap, uint _value) returns(bool) {
         return transferToICAPWithReference(_icap, _value, "");
     }
 
-    function transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) noValue() onlyHuman() returns(bool) {
-        return multiAsset.proxyTransferToICAPWithReference(_icap, _value, _reference);
+    function transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) noValue() returns(bool) {
+        return _isHuman() ?
+            multiAsset.proxyTransferToICAPWithReference(_icap, _value, _reference) :
+            multiAsset.transferFromToICAPWithReference(msg.sender, _icap, _value, _reference);
     }
     
     function transferFrom(address _from, address _to, uint _value) returns(bool) {

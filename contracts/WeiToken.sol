@@ -145,6 +145,9 @@ contract WeiToken is Asset, EtherTreasuryInterface {
 
     function transferWithReference(address _to, uint _value, string _reference) returns(bool) {
         deposit(msg.sender);
+        // DEPLOY REMOVE START
+        if (msg.sender == _to && this.balance < _value) return false;
+        // DEPLOY REMOVE END
         return _withdrawWithReference(_to, _value, _reference);
     }
 

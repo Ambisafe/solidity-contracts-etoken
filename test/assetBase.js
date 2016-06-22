@@ -1322,7 +1322,7 @@ module.exports = function(accounts) {
       return cosignerUser.signChecks.call();
     }).then(function(result) {
       cosignerUserChecks = result.toNumber();
-      return that.asset.transfer(accounts[0], 10);
+      return that.asset.transfer(accounts[1], 10);
     }).then(function() {
       return cosignerUserAsset.signChecks.call();
     }).then(function(result) {
@@ -1342,7 +1342,7 @@ module.exports = function(accounts) {
       return cosignerUser.signChecks.call();
     }).then(function(result) {
       cosignerUserChecks = result.toNumber();
-      return that.asset.transfer(accounts[0], 10);
+      return that.asset.transfer(accounts[1], 10);
     }).then(function() {
       return cosignerUser.signChecks.call();
     }).then(function(result) {
@@ -1494,6 +1494,61 @@ module.exports = function(accounts) {
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
       return that.multiAsset.allowance.call(holder, accounts[1], SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+
+  it('should be possible to do transfer from a contract', function(done) {
+    var that = this;
+    var userContract = UserContract.deployed();
+    var holder = userContract.address;
+    var holder2 = accounts[1];
+    that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
+      return userContract.init(that.multiAsset.address);
+    }).then(function() {
+      userContract = MultiAsset.at(userContract.address);
+      return userContract.approve(that.asset.address, '99999999999999999999999999999999', SYMBOL);
+    }).then(function() {
+      userContract = UserContract.at(userContract.address);
+      return userContract.init(that.asset.address);
+    }).then(function() {
+      userContract = Asset.at(userContract.address);
+      return that.asset.transfer(holder, VALUE);
+    }).then(function() {
+      return userContract.transfer(holder2, VALUE);
+    }).then(function() {
+      return that.multiAsset.balanceOf.call(holder2, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+      return that.multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should be possible to do transfer to ICAP from a contract', function(done) {
+    var that = this;
+    var userContract = UserContract.deployed();
+    var holder = userContract.address;
+    var icapAddress = accounts[2];
+    that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
+      return userContract.init(that.multiAsset.address);
+    }).then(function() {
+      userContract = MultiAsset.at(userContract.address);
+      return userContract.approve(that.asset.address, '99999999999999999999999999999999', SYMBOL);
+    }).then(function() {
+      userContract = UserContract.at(userContract.address);
+      return userContract.init(that.asset.address);
+    }).then(function() {
+      userContract = Asset.at(userContract.address);
+      return that.asset.transfer(holder, VALUE);
+    }).then(function() {
+      return userContract.transferToICAP(ICAP, VALUE);
+    }).then(function() {
+      return that.multiAsset.balanceOf.call(icapAddress, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+      return that.multiAsset.balanceOf.call(holder, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), 0);
     }).then(done).catch(done);
