@@ -23,12 +23,16 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         }
         isWithdrawOrReissue = true;
         if (balanceOf(address(this)) >= msg.value || multiAsset.reissueAsset(symbol, msg.value)) {
+            isWithdrawOrReissue = false;
             if (multiAsset.transferWithReference(_to, msg.value, symbol, _reference)) {
-                isWithdrawOrReissue = false;
                 return true;
+            } else {
+                return revokeAll();
             }
+        } else {
+            isWithdrawOrReissue = false;
+            return _safeFalse();
         }
-        throw;
     }
 
     function setAutoDeposit(bool _enabled) returns(bool) {
@@ -49,11 +53,11 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         return sha3(_icap[4], _icap[5], _icap[6], _icap[7], _icap[8], _icap[9], _icap[10]);
     }
 
-    function _withdraw(address _to, uint _value) internal {
+    function _sendEther(address _to, uint _value) internal {
         _safeSend(_to, _value);
     }
 
-    function _sendToICAPWithReference(bytes32 _icap, uint _value, string _reference) internal {
+    function _sendEtherToICAPWithReference(bytes32 _icap, uint _value, string _reference) internal {
         if (!RouterICAPInterface(getAddress("router")).transferToICAPWithReference.value(_value)(_icap, _reference)) {
             throw;
         }
@@ -75,7 +79,7 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         }
         bool success = _prepareWithdraw(_value, _reference);
         if (success) {
-            _withdraw(_to, _value);
+            _sendEther(_to, _value);
         }
         return success;
     }
@@ -92,7 +96,7 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         }
         bool success = _prepareWithdraw(_value, _reference);
         if (success) {
-            _sendToICAPWithReference(_icap, _value, _reference);
+            _sendEtherToICAPWithReference(_icap, _value, _reference);
         }
         return success;
     }
@@ -156,7 +160,7 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         }
         bool success = _prepareWithdrawFrom(_from, _value, _reference);
         if (success) {
-            _withdraw(_to, _value);
+            _sendEther(_to, _value);
         }
         return success;
     }
@@ -178,7 +182,7 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         }
         bool success = _prepareWithdrawFrom(_from, _value, _reference);
         if (success) {
-            _sendToICAPWithReference(_icap, _value, _reference);
+            _sendEtherToICAPWithReference(_icap, _value, _reference);
         }
         return success;
     }

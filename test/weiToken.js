@@ -71,6 +71,24 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     }).catch(done);
   });
 
+  it('should not be possible to deposit to asset address', function(done) {
+    var value = 132000000;
+    asset.deposit(asset.address, {value: value}).then(function() {
+      return getTokenBalance(accounts[0]);
+    }).then(function(tokenBalance) {
+      assert.equal(tokenBalance, 0);
+      return getBalance(accounts[0]);
+    }).then(function(balance) {
+      assert.isTrue(balance.gt(startingBalance.sub(value)));
+      return getBalance(asset.address);
+    }).then(function(balance) {
+      assert.isTrue(balance.eq(0));
+      return getTokenBalance(asset.address);
+    }).then(function(tokenBalance) {
+      assert.equal(tokenBalance, 0);
+    }).then(done).catch(done);
+  });
+
   it('should be possible to deposit', function(done) {
     var value = 132000000;
     asset.deposit(accounts[0], {value: value}).then(function() {
