@@ -5,7 +5,7 @@ contract Cosigner {
     function isSigned(bytes32) returns(bool);
 }
 
-contract EventsHistory {
+contract Emitter {
     function emitTransfer(address _from, address _to, bytes32 _symbol, uint _value, string _reference);
     function emitIssue(bytes32 _symbol, uint _value, address _by);
     function emitRevoke(bytes32 _symbol, uint _value, address _by);
@@ -74,8 +74,8 @@ contract MultiAsset is Switchable {
     mapping(bytes32 => ProxyConf) public proxies;
 
     RegistryICAP public registryICAP;
-    // Should use interface of the emitter, but point to events history.
-    EventsHistory public eventsHistory;
+    // Should use interface of the emitter, but address of events history.
+    Emitter public eventsHistory;
 
     function () {
         // donations
@@ -87,7 +87,7 @@ contract MultiAsset is Switchable {
     }
 
     function setupEventsHistory(address _eventsHistory) immutable(address(eventsHistory)) returns(bool) {
-        eventsHistory = EventsHistory(_eventsHistory);
+        eventsHistory = Emitter(_eventsHistory);
         return true;
     }
 
