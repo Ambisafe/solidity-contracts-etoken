@@ -86,7 +86,7 @@ contract MultiAsset is Switchable {
         return true;
     }
 
-    function setupEventsHistory(address _eventsHistory) immutable(address(eventsHistory)) returns(bool) {
+    function setupEventsHistory(address _eventsHistory) onlyContractOwner() immutable(address(eventsHistory)) returns(bool) {
         eventsHistory = Emitter(_eventsHistory);
         return true;
     }

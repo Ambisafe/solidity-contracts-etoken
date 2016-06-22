@@ -1,8 +1,8 @@
 contract Safe {
     // Should always be placed as first modifier!
     modifier noValue {
-        if (msg.value > 0 && !msg.sender.send(msg.value)) {
-            throw;
+        if (msg.value > 0) {
+            _safeSend(msg.sender, msg.value);
         }
         _
     }
