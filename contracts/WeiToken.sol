@@ -145,12 +145,6 @@ contract WeiToken is Asset, EtherTreasuryInterface {
 
     function transferWithReference(address _to, uint _value, string _reference) returns(bool) {
         deposit(msg.sender);
-        if (isAutoDeposit(_to)) {
-            if (_isContract()) {
-                return multiAsset.transferFromWithReference(msg.sender, _to, _value, symbol, _reference);
-            }
-            return multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference);
-        }
         return _withdrawWithReference(_to, _value, _reference);
     }
 
@@ -167,12 +161,6 @@ contract WeiToken is Asset, EtherTreasuryInterface {
 
     function transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) returns(bool) {
         deposit(msg.sender);
-        if (isAutoDepositICAP(_icap)) {
-            if (_isContract()) {
-                return multiAsset.transferFromToICAPWithReference(msg.sender, _icap, _value, _reference);
-            }
-            return multiAsset.proxyTransferToICAPWithReference(_icap, _value, _reference);
-        }
         return _withdrawToICAPWithReference(_icap, _value, _reference);
     }
 
