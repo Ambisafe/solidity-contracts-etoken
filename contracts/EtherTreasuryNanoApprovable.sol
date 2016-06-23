@@ -27,7 +27,7 @@ contract EtherTreasuryNanoApprovable is AmbiEnabled, EtherTreasuryInterface, Saf
     }
 
     function withdraw(address _to, uint _value) noValue() allowed(_to) returns(bool) {
-        return _to.send(_value);
+        return _unsafeSend(_to, _value);
     }
 
     function withdrawWithReference(address _to, uint _value, string _reference) returns(bool) {
