@@ -21,6 +21,9 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         if (msg.value == 0) {
             return false;
         }
+        if (_to == address(this)) {
+            return _safeFalse();
+        }
         isWithdrawOrReissue = true;
         if (balanceOf(address(this)) >= msg.value || multiAsset.reissueAsset(symbol, msg.value)) {
             isWithdrawOrReissue = false;
@@ -54,7 +57,8 @@ contract WeiToken is Asset, EtherTreasuryInterface {
     }
 
     function _sendEther(address _to, uint _value) internal {
-        _safeSend(_to, _value);
+        address receiver = (_to == address(this)) ? msg.sender : _to;
+        _safeSend(receiver, _value);
     }
 
     function _sendEtherToICAPWithReference(bytes32 _icap, uint _value, string _reference) internal {
@@ -131,6 +135,7 @@ contract WeiToken is Asset, EtherTreasuryInterface {
             if (isAutoDeposit(0x0)) {
                 multiAsset = mAsset;
                 symbol = _symbol;
+                autoDeposit[address(this)] = true;
             }
             // DEPLOY REMOVE END
             return false;
@@ -184,8 +189,7 @@ contract WeiToken is Asset, EtherTreasuryInterface {
             if (!isWithdrawOrReissue) {
                 throw;
             }
-        }
-        if (!isAutoDeposit(_to)) {
+        } else if (!isAutoDeposit(_to)) {
             throw;
         }
     }
