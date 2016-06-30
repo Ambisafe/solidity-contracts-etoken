@@ -33,7 +33,9 @@
     "RecursiveAttackAsset",
     "ExceptionAttackAsset",
     "EventsHistory",
-    "MultiAssetEmitter"
+    "MultiAssetEmitter",
+    "StackDepthLib",
+    "DummyAsset"
   ],
   "rpc": {
     // Default RPC configuration.

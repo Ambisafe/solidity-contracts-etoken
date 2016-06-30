@@ -28,12 +28,15 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     userContract = UserContract.deployed();
     getBalance = web3.eth.getBalance;
     getTokenBalance = asset.balanceOf;
+    var stackDepthLib = StackDepthLib.deployed();
     send = function(to, value, from) {
       return web3.eth.sendTransaction({to: to, value: value, from: from || accounts[0]});
     }
     userContract.init(multiAsset.address).then(function() {
       userContract = MultiAsset.at(userContract.address);
       return multiAsset.setup(icap.address);
+    }).then(function() {
+      return multiAsset.setupStackDepthLib(stackDepthLib.address);
     }).then(function() {
       return icap.registerAsset(SYMBOL, SYMBOL);
     }).then(function() {

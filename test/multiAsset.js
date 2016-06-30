@@ -27,19 +27,26 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   var multiAsset;
   var multiAssetAbi;
   var userContract;
+  var userContractAbi;
+  var userContractPure;
   var eventsHistory;
 
   before('setup', function(done) {
     multiAsset = MultiAsset.deployed();
     multiAssetAbi = web3.eth.contract(multiAsset.abi).at(0x0);
     userContract = UserContract.deployed();
+    userContractPure = UserContract.deployed();
+    userContractAbi = web3.eth.contract(userContract.abi).at(0x0);
     eventsHistory = EventsHistory.deployed();
     var multiAssetEmitter = MultiAssetEmitter.deployed();
     var multiAssetEmitterAbi = web3.eth.contract(multiAssetEmitter.abi).at(0x0);
+    var stackDepthLib = StackDepthLib.deployed();
     var fakeArgs = [0,0,0,0,0,0,0,0,0,0,0];
     userContract.init(multiAsset.address).then(function() {
       userContract = MultiAsset.at(userContract.address);
       return multiAsset.setupEventsHistory(eventsHistory.address);
+    }).then(function() {
+      return multiAsset.setupStackDepthLib(stackDepthLib.address);
     }).then(function() {
       return eventsHistory.addVersion(multiAsset.address, "Origin", "Initial version.");
     }).then(function() {
@@ -3998,6 +4005,48 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), VALUE - amount);
     }).then(done).catch(done);
   });
+  it('should throw on failed emit transfer if call stack depth limit reached', function(done) {
+    var holder = userContract.address;
+    var holder2 = accounts[1];
+    var amount = 1;
+    var dummyAsset = DummyAsset.deployed();
+    userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return userContract.setProxy(dummyAsset.address, true, SYMBOL);
+    }).then(function() {
+      return userContract.setEventsProxy(dummyAsset.address, SYMBOL);
+    }).then(function() {
+      // Might be unstable due to: https://github.com/ethereumjs/testrpc/issues/115
+      return userContractPure.callStackDepthAttack(1, multiAssetAbi.transfer.getData(holder2, amount, SYMBOL));
+    }).then(function() {
+      return multiAsset.balanceOf.call(holder2, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should emit transfer if call stack depth limit is not reached', function(done) {
+    var holder = userContract.address;
+    var holder2 = accounts[1];
+    var amount = 1;
+    var dummyAsset = DummyAsset.deployed();
+    userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return userContract.setProxy(dummyAsset.address, true, SYMBOL);
+    }).then(function() {
+      return userContract.setEventsProxy(dummyAsset.address, SYMBOL);
+    }).then(function() {
+      // Might be unstable due to: https://github.com/ethereumjs/testrpc/issues/115
+      return userContractPure.callStackDepthAttack(2, multiAssetAbi.transfer.getData(holder2, amount, SYMBOL));
+    }).then(function() {
+      return multiAsset.balanceOf.call(holder2, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), amount);
+      return multiAsset.balanceOf.call(holder, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), VALUE - amount);
+    }).then(done).catch(done);
+  });
   it('should not throw on failed emit approve by default', function(done) {
     var holder = accounts[0];
     var holder2 = accounts[1];
@@ -4018,6 +4067,42 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return multiAsset.balanceOf.call(holder, SYMBOL);
     }).then(function(result) {
       assert.equal(result.valueOf(), VALUE);
+    }).then(done).catch(done);
+  });
+  it('should throw on failed emit approve if call stack depth limit reached', function(done) {
+    var holder = userContract.address;
+    var holder2 = accounts[1];
+    var amount = 1;
+    var dummyAsset = DummyAsset.deployed();
+    userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return userContract.setProxy(dummyAsset.address, true, SYMBOL);
+    }).then(function() {
+      return userContract.setEventsProxy(dummyAsset.address, SYMBOL);
+    }).then(function() {
+      // Might be unstable due to: https://github.com/ethereumjs/testrpc/issues/115
+      return userContractPure.callStackDepthAttack(1, multiAssetAbi.approve.getData(holder2, amount, SYMBOL));
+    }).then(function() {
+      return multiAsset.allowance.call(holder, holder2, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 0);
+    }).then(done).catch(done);
+  });
+  it('should emit approve if call stack depth limit is not reached', function(done) {
+    var holder = userContract.address;
+    var holder2 = accounts[1];
+    var amount = 1;
+    var dummyAsset = DummyAsset.deployed();
+    userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
+      return userContract.setProxy(dummyAsset.address, true, SYMBOL);
+    }).then(function() {
+      return userContract.setEventsProxy(dummyAsset.address, SYMBOL);
+    }).then(function() {
+      // Might be unstable due to: https://github.com/ethereumjs/testrpc/issues/115
+      return userContractPure.callStackDepthAttack(2, multiAssetAbi.approve.getData(holder2, amount, SYMBOL));
+    }).then(function() {
+      return multiAsset.allowance.call(holder, holder2, SYMBOL);
+    }).then(function(result) {
+      assert.equal(result.valueOf(), amount);
     }).then(done).catch(done);
   });
   it('should throw on failed emit transfer if configured', function(done) {

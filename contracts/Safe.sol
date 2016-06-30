@@ -1,7 +1,12 @@
+import "StackDepthLib.sol";
+
 contract Safe {
     // Should always be placed as first modifier!
     modifier noValue {
         if (msg.value > 0) {
+            // Internal Out Of Gas/Throw: revert this transaction too;
+            // Call Stack Depth Limit reached: revert this transaction too;
+            // Recursive Call: safe, no any changes applied yet, we are inside of modifier.
             _safeSend(msg.sender, msg.value);
         }
         _
@@ -23,6 +28,25 @@ contract Safe {
         if (_address == 0) {
             _
         }
+    }
+
+    address stackDepthLib;
+    function setupStackDepthLib(address _stackDepthLib) immutable(address(stackDepthLib)) returns(bool) {
+        stackDepthLib = _stackDepthLib;
+        return true;
+    }
+
+    modifier requireStackDepth(uint16 _depth) {
+        if (stackDepthLib == 0x0) {
+            throw;
+        }
+        if (_depth > 1023) {
+            throw;
+        }
+        if (!stackDepthLib.delegatecall(0x32921690, stackDepthLib, _depth)) {
+            throw;
+        }
+        _
     }
 
     function _safeFalse() internal noValue() returns(bool) {

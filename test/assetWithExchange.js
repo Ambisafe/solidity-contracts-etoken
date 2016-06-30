@@ -15,9 +15,12 @@ contract('AssetWithExchange', {reset_state: true}, function(accounts) {
     this.asset = AssetWithExchange.deployed();
     this.multiAssetAbi = web3.eth.contract(this.multiAsset.abi).at(0x0);
     this.icap = RegistryICAP.deployed();
+    var stackDepthLib = StackDepthLib.deployed();
     var that = this;
     this.multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
       return that.multiAsset.issueAsset(SYMBOL2, VALUE2, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE);
+    }).then(function() {
+      return that.multiAsset.setupStackDepthLib(stackDepthLib.address);
     }).then(function() {
       return that.multiAsset.setup(that.icap.address);
     }).then(function() {

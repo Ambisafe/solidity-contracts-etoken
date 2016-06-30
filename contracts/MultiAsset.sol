@@ -206,6 +206,9 @@ contract MultiAsset is Switchable {
         if (_posFrom != _posSender) {
             assets[_symbol].wallets[_posFrom].allowance[_posSender] -= _value;
         }
+        // Internal Out Of Gas/Throw: revert this transaction too;
+        // Call Stack Depth Limit reached: revert this transaction too;
+        // Recursive Call: safe, all changes already made.
         eventsHistory.emitTransfer(_address(_posFrom), _address(_posTo), _symbol, _value, _reference);
         _proxyTransferEvent(_posFrom, _posTo, _value, _symbol);
         return true;
@@ -240,6 +243,9 @@ contract MultiAsset is Switchable {
         if (!_transfer(posFrom, posTo, _value, symbol, _reference, getHolderId(_sender))) {
             return false;
         }
+        // Internal Out Of Gas/Throw: revert this transaction too;
+        // Call Stack Depth Limit reached: revert this transaction too;
+        // Recursive Call: safe, all changes already made.
         eventsHistory.emitTransferToICAP(_address(posFrom), _address(posTo), _icap, _value, _reference);
         return true;
     }
@@ -256,10 +262,13 @@ contract MultiAsset is Switchable {
         return _transferToICAPWithReference(tx.origin, _icap, _value, _reference, tx.origin);
     }
 
-    function _proxyTransferEvent(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol) internal {
+    function _proxyTransferEvent(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol) internal requireStackDepth(1) {
         ProxyConf conf = proxies[_symbol];
         if (conf.proxy != 0x0) {
             _setupNoCallback();
+            // Internal Out Of Gas/Throw: revert this transaction too if configured, or ignore;
+            // Call Stack Depth Limit reached: revert this transaction too;
+            // Recursive Call: safe, all changes already made, tx.origin cannot be exploited due to noCallback() modifier on every proxy funtion.
             if (!conf.proxy.call(bytes4(sha3("emitTransfer(address,address,uint256)")), _address(_posFrom), _address(_posTo), _value)) {
                 if (conf.throwOnFailedEmit) {
                     throw;
@@ -295,6 +304,9 @@ contract MultiAsset is Switchable {
 
         assets[_symbol] = Asset(posHolder, _value, _name, _description, _isReissuable, _baseUnit);
         assets[_symbol].wallets[posHolder].balance = _value;
+        // Internal Out Of Gas/Throw: revert this transaction too;
+        // Call Stack Depth Limit reached: revert this transaction too;
+        // Recursive Call: safe, all changes already made.
         eventsHistory.emitIssue(_symbol, _value, _address(posHolder));
         return true;
     }
@@ -313,6 +325,9 @@ contract MultiAsset is Switchable {
         uint pos = getHolderId(msg.sender);
         asset.wallets[pos].balance += _value;
         asset.totalSupply += _value;
+        // Internal Out Of Gas/Throw: revert this transaction too;
+        // Call Stack Depth Limit reached: revert this transaction too;
+        // Recursive Call: safe, all changes already made.
         eventsHistory.emitIssue(_symbol, _value, _address(pos));
         _proxyTransferEvent(0, pos, _value, _symbol);
         return true;
@@ -329,6 +344,9 @@ contract MultiAsset is Switchable {
         }
         asset.wallets[pos].balance -= _value;
         asset.totalSupply -= _value;
+        // Internal Out Of Gas/Throw: revert this transaction too;
+        // Call Stack Depth Limit reached: revert this transaction too;
+        // Recursive Call: safe, all changes already made.
         eventsHistory.emitRevoke(_symbol, _value, _address(pos));
         _proxyTransferEvent(pos, 0, _value, _symbol);
         return true;
@@ -342,6 +360,9 @@ contract MultiAsset is Switchable {
         }
         address oldOwner = _address(asset.owner);
         asset.owner = posNewOwner;
+        // Internal Out Of Gas/Throw: revert this transaction too;
+        // Call Stack Depth Limit reached: revert this transaction too;
+        // Recursive Call: safe, all changes already made.
         eventsHistory.emitOwnershipChange(oldOwner, _address(posNewOwner), _symbol);
         return true;
     }
@@ -401,11 +422,14 @@ contract MultiAsset is Switchable {
         address from = holders[getHolderId(_from)].addr;
         holders[getHolderId(_from)].addr = _to;
         holderIndex[_to] = getHolderId(_from);
+        // Internal Out Of Gas/Throw: revert this transaction too;
+        // Call Stack Depth Limit reached: revert this transaction too;
+        // Recursive Call: safe, all changes already made.
         eventsHistory.emitRecovery(from, _to, msg.sender);
         return true;
     }
 
-    function _approve(uint _posSpender, uint _value, bytes32 _symbol, uint _posSender) internal noValue() checkEnabledSwitch(sha3(_symbol, Features.Allowances)) checkSigned(_symbol, _posSender) returns(bool) {
+    function _approve(uint _posSpender, uint _value, bytes32 _symbol, uint _posSender) internal noValue() requireStackDepth(1) checkEnabledSwitch(sha3(_symbol, Features.Allowances)) checkSigned(_symbol, _posSender) returns(bool) {
         if (_proxyCheck(_symbol)) {
             return false;
         }
@@ -416,10 +440,16 @@ contract MultiAsset is Switchable {
             return false;
         }
         assets[_symbol].wallets[_posSender].allowance[_posSpender] = _value;
+        // Internal Out Of Gas/Throw: revert this transaction too;
+        // Call Stack Depth Limit reached: revert this transaction too;
+        // Recursive Call: safe, all changes already made.
         eventsHistory.emitApprove(_address(_posSender), _address(_posSpender), _symbol, _value);
         ProxyConf conf = proxies[_symbol];
         if (conf.proxy != 0x0) {
             _setupNoCallback();
+            // Internal Out Of Gas/Throw: revert this transaction too;
+            // Call Stack Depth Limit reached: revert this transaction too;
+            // Recursive Call: safe, all changes already made, tx.origin cannot be exploited due to noCallback() modifier on every proxy funtion.
             if (!conf.proxy.call(bytes4(sha3("emitApprove(address,address,uint256)")), _address(_posSender), _address(_posSpender), _value)) {
                 if (conf.throwOnFailedEmit) {
                     throw;
@@ -480,10 +510,16 @@ contract MultiAsset is Switchable {
         bytes32 perUserPerAsset = sha3(_posSender, _symbol);
         bytes32 perUser = sha3(_posSender);
         if (address(cosigners[perUserPerAsset]) != 0x0) {
+            // Internal Out Of Gas/Throw: revert this transaction too;
+            // Call Stack Depth Limit reached: revert this transaction too;
+            // Recursive Call: safe, no any changes applied yet, we are inside of modifier.
             if (cosigners[perUserPerAsset].isSigned(sha3(msg.data, _posSender))) {
                 _
             }
         } else if (address(cosigners[perUser]) != 0x0) {
+            // Internal Out Of Gas/Throw: revert this transaction too;
+            // Call Stack Depth Limit reached: revert this transaction too;
+            // Recursive Call: safe, no any changes applied yet, we are inside of modifier.
             if (cosigners[perUser].isSigned(sha3(msg.data, _posSender))) {
                 _
             }
@@ -497,6 +533,9 @@ contract MultiAsset is Switchable {
         lastOperation = sha3(msg.data, _posSender); // DEPLOY REMOVE
         bytes32 perUser = sha3(_posSender);
         if (address(cosigners[perUser]) != 0x0) {
+            // Internal Out Of Gas/Throw: revert this transaction too;
+            // Call Stack Depth Limit reached: revert this transaction too;
+            // Recursive Call: safe, no any changes applied yet, we are inside of modifier.
             if (cosigners[perUser].isSigned(sha3(msg.data, _posSender))) {
                 _
             }
@@ -522,6 +561,5 @@ contract MultiAsset is Switchable {
         return true;
     }
 }
-
 
 // RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(proxy[^"]+|issueAsset|reissueAsset|revokeAsset|changeOwnership|setSwitch|[^"]+Proxy|isEnabled|setup|changeContractOwnership)"[^\]]+[^}]+},\s+
