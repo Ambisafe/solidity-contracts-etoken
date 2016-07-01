@@ -43,7 +43,9 @@ contract EventsHistory is AmbiEnabled, Safe {
         if (versions[msg.sender] == 0) {
             return;
         }
-        // In case call stack depth is reached, let's notify the caller, so he can roll everything back.
+        // Internal Out Of Gas/Throw: revert this transaction too;
+        // Call Stack Depth Limit reached: revert this transaction too;
+        // Recursive Call: safe, all changes already made.
         if (!emitters[msg.sig].delegatecall(msg.data)) {
             throw;
         }

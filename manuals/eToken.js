@@ -20,7 +20,8 @@ var deployEToken = function(args) {
             'eToken has been successfully deployed at ' + eToken.address + 
             '. With EventsHistory at ' + history.address + 
             '. Add it here if neccessary: https://ambisafe.atlassian.net/wiki/display/ETOKEN ' +
-            ' compiler: 2ccfea8, commit: <this one>.'
+            ' compiler: 2ccfea8, commit: 56085e5.',
+            $logs
           );
         })
       );
