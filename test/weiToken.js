@@ -34,7 +34,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     }
     userContract.init(multiAsset.address).then(function() {
       userContract = MultiAsset.at(userContract.address);
-      return multiAsset.setup(icap.address);
+      return multiAsset.setupRegistryICAP(icap.address);
     }).then(function() {
       return multiAsset.setupStackDepthLib(stackDepthLib.address);
     }).then(function() {

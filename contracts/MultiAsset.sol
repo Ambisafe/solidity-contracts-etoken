@@ -81,7 +81,7 @@ contract MultiAsset is Switchable {
         // donations
     }
 
-    function setup(address _registryICAP) onlyContractOwner() returns(bool) {
+    function setupRegistryICAP(address _registryICAP) onlyContractOwner() immutable(address(registryICAP)) returns(bool) {
         registryICAP = RegistryICAP(_registryICAP);
         return true;
     }

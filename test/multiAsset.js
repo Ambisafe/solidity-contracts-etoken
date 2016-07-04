@@ -1707,7 +1707,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var icap = RegistryICAP.deployed();
     var _icap = "XE73TSTXREG123456789";
     userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
-      return multiAsset.setup(icap.address);
+      return multiAsset.setupRegistryICAP(icap.address);
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
@@ -1727,7 +1727,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var icap = RegistryICAP.deployed();
     var _icap = "XE73TSTXREG123456789";
     userContract.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
-      return multiAsset.setup(icap.address);
+      return multiAsset.setupRegistryICAP(icap.address);
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
@@ -1747,7 +1747,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var icap = RegistryICAP.deployed();
     var _icap = "XE73TSTXREG123456789";
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
-      return multiAsset.setup(icap.address);
+      return multiAsset.setupRegistryICAP(icap.address);
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
@@ -1769,7 +1769,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var icap = RegistryICAP.deployed();
     var _icap = "XE73TSTXREG123456789";
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
-      return multiAsset.setup(icap.address);
+      return multiAsset.setupRegistryICAP(icap.address);
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
@@ -1833,7 +1833,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var icap = RegistryICAP.deployed();
     var _icap = "XE73TSTXREG123456789";
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, true).then(function() {
-      return multiAsset.setup(icap.address);
+      return multiAsset.setupRegistryICAP(icap.address);
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
@@ -3541,7 +3541,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   it('should be possible to switch off transfer to ICAP', function(done) {
     var icap = RegistryICAP.deployed();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.setup(icap.address);
+      return multiAsset.setupRegistryICAP(icap.address);
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
@@ -3557,7 +3557,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
   it('should be possible to switch off transfer to ICAP with reference', function(done) {
     var icap = RegistryICAP.deployed();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.setup(icap.address);
+      return multiAsset.setupRegistryICAP(icap.address);
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
@@ -3767,7 +3767,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var _icap = "XE73TSTXREG123456789";
     var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.setup(icap.address);
+      return multiAsset.setupRegistryICAP(icap.address);
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
@@ -3799,7 +3799,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var _icap = "XE73TSTXREG123456789";
     var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.setup(icap.address);
+      return multiAsset.setupRegistryICAP(icap.address);
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
@@ -3831,7 +3831,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var _icap = "XE73TSTXREG123456789";
     var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.setup(icap.address);
+      return multiAsset.setupRegistryICAP(icap.address);
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
@@ -3868,7 +3868,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var _icap = "XE73TSTXREG123456789";
     var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.setup(icap.address);
+      return multiAsset.setupRegistryICAP(icap.address);
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
@@ -3909,7 +3909,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var amount = 1;
     var recursiveAttackAsset = RecursiveAttackAsset.deployed();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.setup(icap.address);
+      return multiAsset.setupRegistryICAP(icap.address);
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
@@ -3950,7 +3950,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     var amount = 1;
     var recursiveAttackAsset = RecursiveAttackAsset.deployed();
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.setup(icap.address);
+      return multiAsset.setupRegistryICAP(icap.address);
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {

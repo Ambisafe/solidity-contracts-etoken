@@ -49,6 +49,7 @@ contract Safe {
         _
     }
 
+    // Must not be used inside the functions that have noValue() modifier!
     function _safeFalse() internal noValue() returns(bool) {
         return false;
     }

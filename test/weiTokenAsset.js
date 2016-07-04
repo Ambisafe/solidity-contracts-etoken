@@ -22,7 +22,7 @@ contract('WeiTokenAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return that.multiAsset.setupStackDepthLib(stackDepthLib.address);
     }).then(function() {
-      return that.multiAsset.setup(that.icap.address);
+      return that.multiAsset.setupRegistryICAP(that.icap.address);
     }).then(function() {
       return that.icap.registerAsset("TST", SYMBOL);
     }).then(function() {
