@@ -12,7 +12,9 @@ contract('RegistryICAP', {reset_state: true}, function(accounts) {
   before('setup', function(done) {
     icap = RegistryICAP.deployed();
     icap.registerAsset(ASSET, SYMBOL).then(function() {
-      return icap.registerInstitution(ASSET, INSTITUTION, institutionAddress);
+      return icap.registerInstitution(INSTITUTION, institutionAddress);
+    }).then(function() {
+      return icap.registerInstitutionAsset(ASSET, INSTITUTION, institutionAddress, {from: institutionAddress});
     }).then(function() {
       done();
     });
@@ -63,10 +65,23 @@ contract('RegistryICAP', {reset_state: true}, function(accounts) {
       assert.isFalse(result[2]);
     }).then(done).catch(done);
   });
-  it('should update institution', function(done) {
+  it('should not update institution by non institution owner', function(done) {
     var _icap = "XE33EXPXREG123456789";
     var newAddress = accounts[1];
-    icap.updateInstitution(ASSET, INSTITUTION, newAddress).then(function() {
+    icap.updateInstitutionAsset.call(ASSET, INSTITUTION, newAddress).then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+  it('should not remove institution by non institution owner', function(done) {
+    var _icap = "XE33EXPXREG123456789";
+    icap.removeInstitutionAsset.call(ASSET, INSTITUTION).then(function(result) {
+      assert.isFalse(result);
+    }).then(done).catch(done);
+  });
+  it('should update institution by institution owner', function(done) {
+    var _icap = "XE33EXPXREG123456789";
+    var newAddress = accounts[1];
+    icap.updateInstitutionAsset(ASSET, INSTITUTION, newAddress, {from: institutionAddress}).then(function() {
       return icap.parse(_icap);
     }).then(function(result) {
       assert.equal(result.length, 3);
@@ -75,9 +90,9 @@ contract('RegistryICAP', {reset_state: true}, function(accounts) {
       assert.isTrue(result[2]);
     }).then(done).catch(done);
   });
-  it('should remove institution', function(done) {
+  it('should remove institution by institution owner', function(done) {
     var _icap = "XE33EXPXREG123456789";
-    icap.removeInstitution(ASSET, INSTITUTION).then(function() {
+    icap.removeInstitutionAsset(ASSET, INSTITUTION, {from: institutionAddress}).then(function() {
       return icap.parse(_icap);
     }).then(function(result) {
       assert.equal(result.length, 3);

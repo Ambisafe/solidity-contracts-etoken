@@ -31,14 +31,14 @@ contract RegistryICAP is AmbiEnabled {
         }
         var (asset, institution, _) = decodeIndirect(bban);
 
-        bytes32 institutionHash = sha3(asset, institution);
+        bytes32 assetInstitutionHash = sha3(asset, institution);
 
         uint8 parseChecksum = (uint8(_icap[2]) - 48) * 10 + (uint8(_icap[3]) - 48);
         uint8 calcChecksum = 98 - mod9710(prepare(bban));
         if (parseChecksum != calcChecksum) {
-            return (institutions[institutionHash], assets[sha3(asset)], false);
+            return (institutions[assetInstitutionHash], assets[sha3(asset)], false);
         }
-        return (institutions[institutionHash], assets[sha3(asset)], registered[institutionHash]);
+        return (institutions[assetInstitutionHash], assets[sha3(asset)], registered[assetInstitutionHash]);
     }
 
     function prepare(bytes memory _bban) constant returns(bytes) {
@@ -83,7 +83,19 @@ contract RegistryICAP is AmbiEnabled {
 
     mapping(bytes32 => bool) public registered;
     mapping(bytes32 => address) public institutions;
+    mapping(bytes32 => address) public institutionOwners;
     mapping(bytes32 => bytes32) public assets;
+
+    modifier onlyInstitutionOwner(string _institution) {
+        if (msg.sender == institutionOwners[sha3(_institution)]) {
+            _
+        }
+    }
+
+    function changeInstitutionOwner(string _institution, address _address) onlyInstitutionOwner(_institution) returns(bool) {
+        institutionOwners[sha3(_institution)] = _address;
+        return true;
+    }
 
     function addr(bytes32 _institution) constant returns(address) {
         bytes memory institution = new bytes(4);
@@ -93,39 +105,53 @@ contract RegistryICAP is AmbiEnabled {
         return institutions[sha3("ETH", institution)];
     }
 
-    function registerInstitution(string _asset, string _institution, address _address) checkAccess("admin") returns(bool) {
+    function registerInstitution(string _institution, address _address) checkAccess("admin") returns(bool) {
+        if (bytes(_institution).length != 4) {
+            return false;
+        }
+        if (institutionOwners[sha3(_institution)] != 0) {
+            return false;
+        }
+        institutionOwners[sha3(_institution)] = _address;
+        return true;
+    }
+
+    function registerInstitutionAsset(string _asset, string _institution, address _address) onlyInstitutionOwner(_institution) returns(bool) {
         if (!registered[sha3(_asset)]) {
             return false;
         }
-        bytes32 institutionHash = sha3(_asset, _institution);
-        if (registered[institutionHash]) {
+        bytes32 assetInstitutionHash = sha3(_asset, _institution);
+        if (registered[assetInstitutionHash]) {
             return false;
         }
-        registered[institutionHash] = true;
-        institutions[institutionHash] = _address;
+        registered[assetInstitutionHash] = true;
+        institutions[assetInstitutionHash] = _address;
         return true;
     }
 
-    function updateInstitution(string _asset, string _institution, address _address) checkAccess("admin") returns(bool) {
-        bytes32 institutionHash = sha3(_asset, _institution);
-        if (!registered[institutionHash]) {
+    function updateInstitutionAsset(string _asset, string _institution, address _address) onlyInstitutionOwner(_institution) returns(bool) {
+        bytes32 assetInstitutionHash = sha3(_asset, _institution);
+        if (!registered[assetInstitutionHash]) {
             return false;
         }
-        institutions[institutionHash] = _address;
+        institutions[assetInstitutionHash] = _address;
         return true;
     }
 
-    function removeInstitution(string _asset, string _institution) checkAccess("admin") returns(bool) {
-        bytes32 institutionHash = sha3(_asset, _institution);
-        if (!registered[institutionHash]) {
+    function removeInstitutionAsset(string _asset, string _institution) onlyInstitutionOwner(_institution) returns(bool) {
+        bytes32 assetInstitutionHash = sha3(_asset, _institution);
+        if (!registered[assetInstitutionHash]) {
             return false;
         }
-        delete registered[institutionHash];
-        delete institutions[institutionHash];
+        delete registered[assetInstitutionHash];
+        delete institutions[assetInstitutionHash];
         return true;
     }
 
     function registerAsset(string _asset, bytes32 _symbol) checkAccess("admin") returns(bool) {
+        if (bytes(_asset).length != 3) {
+            return false;
+        }
         bytes32 asset = sha3(_asset);
         if (registered[asset]) {
             return false;

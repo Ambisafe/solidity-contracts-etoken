@@ -41,10 +41,14 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
       return icap.registerAsset(SYMBOL, SYMBOL);
     }).then(function() {
       icap2 = web3.eth.iban.fromBban(SYMBOL + 'ACC2' + '123456789').toString();
-      return icap.registerInstitution(SYMBOL, 'ACC2', accounts[2]);
+      return icap.registerInstitution('ACC2', accounts[2]);
+    }).then(function() {
+      return icap.registerInstitutionAsset(SYMBOL, 'ACC2', accounts[2], {from: accounts[2]});
     }).then(function() {
       icap3 = web3.eth.iban.fromBban(SYMBOL + 'ACC3' + '123456789').toString();
-      return icap.registerInstitution(SYMBOL, 'ACC3', accounts[3]);
+      return icap.registerInstitution('ACC3', accounts[3]);
+    }).then(function() {
+      return icap.registerInstitutionAsset(SYMBOL, 'ACC3', accounts[3], {from: accounts[3]});
     }).then(function() {
       return router.setAddress('icap', icap.address);
     }).then(function() {

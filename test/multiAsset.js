@@ -1711,7 +1711,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
-      return icap.registerInstitution("TST", "XREG", accounts[2]);
+      return icap.registerInstitution("XREG", accounts[2]);
+    }).then(function() {
+      return icap.registerInstitutionAsset("TST", "XREG", accounts[2], {from: accounts[2]});
     }).then(function() {
       return userContract.transferToICAP(_icap, VALUE);
     }).then(function() {
@@ -1731,7 +1733,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
-      return icap.registerInstitution("TST", "XREG", accounts[2]);
+      return icap.registerInstitution("XREG", accounts[2]);
+    }).then(function() {
+      return icap.registerInstitutionAsset("TST", "XREG", accounts[2], {from: accounts[2]});
     }).then(function() {
       return userContract.transferToICAPWithReference(_icap, VALUE, "Ref");
     }).then(function() {
@@ -1751,7 +1755,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
-      return icap.registerInstitution("TST", "XREG", accounts[2]);
+      return icap.registerInstitution("XREG", accounts[2]);
+    }).then(function() {
+      return icap.registerInstitutionAsset("TST", "XREG", accounts[2], {from: accounts[2]});
     }).then(function() {
       return multiAsset.approve(userContract.address, VALUE, SYMBOL);
     }).then(function() {
@@ -1773,7 +1779,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
-      return icap.registerInstitution("TST", "XREG", accounts[2]);
+      return icap.registerInstitution("XREG", accounts[2]);
+    }).then(function() {
+      return icap.registerInstitutionAsset("TST", "XREG", accounts[2], {from: accounts[2]});
     }).then(function() {
       return multiAsset.approve(userContract.address, VALUE, SYMBOL);
     }).then(function() {
@@ -1837,7 +1845,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
-      return icap.registerInstitution("TST", "XREG", accounts[2]);
+      return icap.registerInstitution("XREG", accounts[2]);
+    }).then(function() {
+      return icap.registerInstitutionAsset("TST", "XREG", accounts[2], {from: accounts[2]});
     }).then(function() {
       return userContract.proxyTransferToICAPWithReference(_icap, VALUE, "");
     }).then(function() {
@@ -3545,7 +3555,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
-      return icap.registerInstitution("TST", "XREG", accounts[2]);
+      return icap.registerInstitution("XREG", accounts[2]);
+    }).then(function() {
+      return icap.registerInstitutionAsset("TST", "XREG", accounts[2], {from: accounts[2]});
     }).then(function() {
       return multiAsset.setSwitch(sha3(SYMBOL, Features.ICAP), true);
     }).then(function() {
@@ -3561,7 +3573,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
-      return icap.registerInstitution("TST", "XREG", accounts[2]);
+      return icap.registerInstitution("XREG", accounts[2]);
+    }).then(function() {
+      return icap.registerInstitutionAsset("TST", "XREG", accounts[2], {from: accounts[2]});
     }).then(function() {
       return multiAsset.setSwitch(sha3(SYMBOL, Features.TransferWithReference), true);
     }).then(function() {
@@ -3771,7 +3785,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
-      return icap.registerInstitution("TST", "XREG", accounts[2]);
+      return icap.registerInstitution("XREG", accounts[2]);
+    }).then(function() {
+      return icap.registerInstitutionAsset("TST", "XREG", accounts[2], {from: accounts[2]});
     }).then(function() {
       watcher = eventsHistory.TransferToICAP();
       eventsHelper.setupEvents(eventsHistory);
@@ -3803,7 +3819,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
-      return icap.registerInstitution("TST", "XREG", accounts[2]);
+      return icap.registerInstitution("XREG", accounts[2]);
+    }).then(function() {
+      return icap.registerInstitutionAsset("TST", "XREG", accounts[2], {from: accounts[2]});
     }).then(function() {
       watcher = eventsHistory.TransferToICAP();
       eventsHelper.setupEvents(eventsHistory);
@@ -3835,7 +3853,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
-      return icap.registerInstitution("TST", "XREG", accounts[2]);
+      return icap.registerInstitution("XREG", accounts[2]);
+    }).then(function() {
+      return icap.registerInstitutionAsset("TST", "XREG", accounts[2], {from: accounts[2]});
     }).then(function() {
       return multiAsset.approve(accounts[1], 200, SYMBOL);
     }).then(function() {
@@ -3872,7 +3892,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
-      return icap.registerInstitution("TST", "XREG", accounts[2]);
+      return icap.registerInstitution("XREG", accounts[2]);
+    }).then(function() {
+      return icap.registerInstitutionAsset("TST", "XREG", accounts[2], {from: accounts[2]});
     }).then(function() {
       return multiAsset.approve(accounts[1], 200, SYMBOL);
     }).then(function() {
@@ -3913,7 +3935,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
-      return icap.registerInstitution("TST", "XREG", recursiveAttackAsset.address);
+      return icap.registerInstitution("XREG", accounts[2]);
+    }).then(function() {
+      return icap.registerInstitutionAsset("TST", "XREG", recursiveAttackAsset.address, {from: accounts[2]});
     }).then(function() {
       return multiAsset.setProxy(recursiveAttackAsset.address, true, SYMBOL);
     }).then(function() {
@@ -3954,7 +3978,9 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerAsset("TST", SYMBOL);
     }).then(function() {
-      return icap.registerInstitution("TST", "XREG", recursiveAttackAsset.address);
+      return icap.registerInstitution("XREG", accounts[2]);
+    }).then(function() {
+      return icap.registerInstitutionAsset("TST", "XREG", recursiveAttackAsset.address, {from: accounts[2]});
     }).then(function() {
       return multiAsset.setProxy(recursiveAttackAsset.address, true, SYMBOL);
     }).then(function() {

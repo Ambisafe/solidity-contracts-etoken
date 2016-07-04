@@ -26,7 +26,9 @@ contract('AssetWithFee', {reset_state: true}, function(accounts) {
     }).then(function() {
       return that.icap.registerAsset("TST", SYMBOL);
     }).then(function() {
-      return that.icap.registerInstitution("TST", "XREG", accounts[2]);
+      return that.icap.registerInstitution("XREG", accounts[2]);
+    }).then(function() {
+      return that.icap.registerInstitutionAsset("TST", "XREG", accounts[2], {from: accounts[2]});
     }).then(function() {
       return that.asset.init(that.multiAsset.address, SYMBOL);
     }).then(function() {

@@ -103,7 +103,7 @@ contract MultiAsset is Switchable {
         }
     }
 
-    function _isSignedOwner(bytes32 _symbol) internal noValue() checkSigned(_symbol, getHolderId(msg.sender)) returns(bool) {
+    function _isSignedOwner(bytes32 _symbol) internal checkSigned(_symbol, getHolderId(msg.sender)) returns(bool) {
         return isOwner(msg.sender, _symbol);
     }
 
@@ -177,17 +177,17 @@ contract MultiAsset is Switchable {
         return true;
     }
 
-    function _proxyCheck(bytes32 _symbol) internal constant returns(bool) {
+    function _proxyCheckFails(bytes32 _symbol) internal constant returns(bool) {
         return proxies[_symbol].onlyProxy && !proxies[_symbol].isProxy[msg.sender];
     }
 
-    function _transferDirect(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol, string _reference) internal {
+    function _transferDirect(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol) internal {
         assets[_symbol].wallets[_posFrom].balance -= _value;
         assets[_symbol].wallets[_posTo].balance += _value;
     }
 
-    function _transfer(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol, string _reference, uint _posSender) internal noValue() checkSigned(_symbol, _posSender) returns(bool) {
-        if (_proxyCheck(_symbol)) {
+    function _transfer(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol, string _reference, uint _posSender) internal checkSigned(_symbol, _posSender) returns(bool) {
+        if (_proxyCheckFails(_symbol)) {
             return false;
         }
         if (_posFrom == _posTo) {
@@ -202,7 +202,7 @@ contract MultiAsset is Switchable {
         if (_posFrom != _posSender && _allowance(_posFrom, _posSender, _symbol) < _value) {
             return false;
         }
-        _transferDirect(_posFrom, _posTo, _value, _symbol, _reference);
+        _transferDirect(_posFrom, _posTo, _value, _symbol);
         if (_posFrom != _posSender) {
             assets[_symbol].wallets[_posFrom].allowance[_posSender] -= _value;
         }
@@ -268,7 +268,7 @@ contract MultiAsset is Switchable {
             _setupNoCallback();
             // Internal Out Of Gas/Throw: revert this transaction too if configured, or ignore;
             // Call Stack Depth Limit reached: revert this transaction too;
-            // Recursive Call: safe, all changes already made, tx.origin cannot be exploited due to noCallback() modifier on every proxy funtion.
+            // Recursive Call: safe, all changes already made, tx.origin cannot be exploited due to noCallback() modifier on every proxy function.
             if (!conf.proxy.call(bytes4(sha3("emitTransfer(address,address,uint256)")), _address(_posFrom), _address(_posTo), _value)) {
                 if (conf.throwOnFailedEmit) {
                     throw;
@@ -293,7 +293,7 @@ contract MultiAsset is Switchable {
         return posHolder;
     }
 
-    function issueAsset(bytes32 _symbol, uint _value, string _name, string _description, uint8 _baseUnit, bool _isReissuable) noValue() checkEnabledSwitch(sha3(_symbol, _isReissuable, Features.Issue)) returns(bool) {
+    function issueAsset(bytes32 _symbol, uint _value, string _name, string _description, uint8 _baseUnit, bool _isReissuable) checkEnabledSwitch(sha3(_symbol, _isReissuable, Features.Issue)) returns(bool) {
         if (_value == 0 && !_isReissuable) {
             return false;
         }
@@ -371,7 +371,7 @@ contract MultiAsset is Switchable {
         return holders[getHolderId(_from)].trustIndex[_to] != 0;
     }
 
-    function trust(address _to) noValue() returns(bool) {
+    function trust(address _to) returns(bool) {
         uint posFrom = _createPosHolder(msg.sender);
         if (posFrom == getHolderId(_to)) {
             return false;
@@ -385,7 +385,7 @@ contract MultiAsset is Switchable {
         return true;
     }
 
-    function distrust(address _to) noValue() checkTrust(msg.sender, _to) returns(bool) {
+    function distrust(address _to) checkTrust(msg.sender, _to) returns(bool) {
         uint posFrom = getHolderId(msg.sender);
         uint trustPos = holders[posFrom].trustIndex[_to];
         if (trustPos < holders[posFrom].trustsCount-1) {
@@ -398,7 +398,7 @@ contract MultiAsset is Switchable {
         return true;
     }
 
-    function distrustAll() noValue() returns(bool) {
+    function distrustAll() returns(bool) {
         uint posFrom = getHolderId(msg.sender);
         if (posFrom == 0) {
             return false;
@@ -415,7 +415,7 @@ contract MultiAsset is Switchable {
         return true;
     }
     
-    function recover(address _from, address _to) noValue() checkTrust(_from, msg.sender) checkSignedHolder(getHolderId(_from)) returns(bool) {
+    function recover(address _from, address _to) checkTrust(_from, msg.sender) checkSignedHolder(getHolderId(_from)) returns(bool) {
         if (getHolderId(_to) != 0) {
             return false;
         }
@@ -429,8 +429,8 @@ contract MultiAsset is Switchable {
         return true;
     }
 
-    function _approve(uint _posSpender, uint _value, bytes32 _symbol, uint _posSender) internal noValue() requireStackDepth(1) checkEnabledSwitch(sha3(_symbol, Features.Allowances)) checkSigned(_symbol, _posSender) returns(bool) {
-        if (_proxyCheck(_symbol)) {
+    function _approve(uint _posSpender, uint _value, bytes32 _symbol, uint _posSender) internal requireStackDepth(1) checkEnabledSwitch(sha3(_symbol, Features.Allowances)) checkSigned(_symbol, _posSender) returns(bool) {
+        if (_proxyCheckFails(_symbol)) {
             return false;
         }
         if (!isCreated(_symbol)) {
@@ -556,7 +556,7 @@ contract MultiAsset is Switchable {
         return _setCosignerAddress(_address, sha3(_createPosHolder(tx.origin), _symbol));
     }
 
-    function _setCosignerAddress(address _address, bytes32 _identity) internal noValue() returns(bool) {
+    function _setCosignerAddress(address _address, bytes32 _identity) internal returns(bool) {
         cosigners[_identity] = Cosigner(_address);
         return true;
     }
