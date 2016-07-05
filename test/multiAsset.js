@@ -2149,27 +2149,20 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       assert.equal(result.valueOf(), VALUE);
     }).then(done).catch(done);
   });
-  // Why not allow this?
-  it.skip('should not be possible to do allowance transfer from oneself', function(done) {
+  it('should be possible to do allowance transfer from oneself', function(done) {
     var holder = accounts[0];
     var receiver = accounts[1];
+    var amount = 50;
     var watcher;
     multiAsset.issueAsset(SYMBOL, VALUE, NAME, DESCRIPTION, BASE_UNIT, IS_REISSUABLE).then(function() {
-      return multiAsset.approve(holder, 50, SYMBOL);
+      return multiAsset.transferFrom(holder, receiver, amount, SYMBOL);
     }).then(function() {
-      eventsHelper.setupEvents(eventsHistory);
-      watcher = eventsHistory.Transfer();
-      return multiAsset.transferFrom(holder, receiver, 50, SYMBOL);
-    }).then(function(txHash) {
-      return eventsHelper.getEvents(txHash, watcher);
-    }).then(function(events) {
-      assert.equal(events.length, 0);
       return multiAsset.balanceOf.call(holder, SYMBOL);
     }).then(function(result) {
-      assert.equal(result.valueOf(), VALUE);
+      assert.equal(result.valueOf(), VALUE - amount);
       return multiAsset.balanceOf.call(receiver, SYMBOL);
     }).then(function(result) {
-      assert.equal(result.valueOf(), 0);
+      assert.equal(result.valueOf(), amount);
     }).then(done).catch(done);
   });
   it('should not be possible to do allowance transfer with 0 value', function(done) {
@@ -4108,7 +4101,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return userContract.setEventsProxy(dummyAsset.address, SYMBOL);
     }).then(function() {
       // Might be unstable due to: https://github.com/ethereumjs/testrpc/issues/115
-      return userContractPure.callStackDepthAttack(1, multiAssetAbi.approve.getData(holder2, amount, SYMBOL));
+      return userContractPure.callStackDepthAttack(0, multiAssetAbi.approve.getData(holder2, amount, SYMBOL));
     }).then(function() {
       return multiAsset.allowance.call(holder, holder2, SYMBOL);
     }).then(function(result) {
@@ -4126,7 +4119,7 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
       return userContract.setEventsProxy(dummyAsset.address, SYMBOL);
     }).then(function() {
       // Might be unstable due to: https://github.com/ethereumjs/testrpc/issues/115
-      return userContractPure.callStackDepthAttack(2, multiAssetAbi.approve.getData(holder2, amount, SYMBOL));
+      return userContractPure.callStackDepthAttack(1, multiAssetAbi.approve.getData(holder2, amount, SYMBOL));
     }).then(function() {
       return multiAsset.allowance.call(holder, holder2, SYMBOL);
     }).then(function(result) {

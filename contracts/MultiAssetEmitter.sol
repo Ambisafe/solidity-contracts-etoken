@@ -8,7 +8,7 @@ library MultiAssetEmitter {
     event Approve(address indexed from, address indexed spender, bytes32 indexed symbol, uint value, uint version);
     event Recovery(address indexed from, address indexed to, address by, uint version);
     event TransferToICAP(address indexed from, address indexed to, bytes32 indexed icap, uint value, string reference, uint version);
-    event Error(uint8 indexed code, bytes32 message, uint version);
+    event Error(bytes32 message, uint version);
     
     function emitTransfer(address _from, address _to, bytes32 _symbol, uint _value, string _reference) {
         Transfer(_from, _to, _symbol, _value, _reference, _getVersion());
@@ -38,8 +38,8 @@ library MultiAssetEmitter {
         TransferToICAP(_from, _to, _icap, _value, _reference, _getVersion());
     }
 
-    function emitError(uint8 _code, bytes32 _message) {
-        Error(_code, _message, _getVersion());
+    function emitError(bytes32 _message) {
+        Error(_message, _getVersion());
     }
 
     function _getVersion() constant internal returns(uint) {

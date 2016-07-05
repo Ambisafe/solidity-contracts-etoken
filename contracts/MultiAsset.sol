@@ -13,7 +13,7 @@ contract Emitter {
     function emitApprove(address _from, address _spender, bytes32 _symbol, uint _value);
     function emitRecovery(address _from, address _to, address _by);
     function emitTransferToICAP(address _from, address _to, bytes32 _icap, uint _value, string _reference);
-    function emitError(uint8 _code, bytes32 _message);
+    function emitError(bytes32 _message);
 }
 
 contract MultiAsset is Owned {
@@ -33,7 +33,7 @@ contract MultiAsset is Owned {
         if (isEnabled(_switch)) {
             _
         }
-        _error(1, "Feature is disabled");
+        _error("Feature is disabled");
     }
 
     enum Features { Issue, TransferWithReference, Revoke, ChangeOwnership, Allowances, ICAP }
@@ -61,14 +61,19 @@ contract MultiAsset is Owned {
     }
 
     struct Holder {
+        // Iterable mapping pattern is used for trusts.
         uint trustsCount;
+        // Current (last recovered to) address of the holder.
+        // All the events for this holder will have this address, regardless of access address.
         address addr;
         mapping(uint => address) trusts;
         mapping(address => uint) trustIndex;
     }
 
-    uint public holdersCount = 1;
+    // Iterable mapping pattern is used for holders.
+    uint public holdersCount;
     mapping(uint => Holder) holders;
+    // This is access address mapping. Many addresses may have access to a single holder.
     mapping(address => uint) holderIndex;
     mapping(bytes32 => Asset) public assets;
     mapping(bytes32 => ProxyConf) public proxies;
@@ -77,8 +82,8 @@ contract MultiAsset is Owned {
     // Should use interface of the emitter, but address of events history.
     Emitter public eventsHistory;
 
-    function _error(uint8 _code, bytes32 _message) internal {
-        eventsHistory.emitError(_code, _message);
+    function _error(bytes32 _message) internal {
+        eventsHistory.emitError(_message);
     }
 
     function () {
@@ -99,14 +104,14 @@ contract MultiAsset is Owned {
         if (_isSignedOwner(_symbol)) {
             _
         }
-        _error(2, "Only owner: access denied");
+        _error("Only owner: access denied");
     }
 
     modifier onlyProxy(bytes32 _symbol) {
         if (proxies[_symbol].isProxy[msg.sender]) {
             _
         }
-        _error(3, "Only proxy: access denied");
+        _error("Only proxy: access denied");
     }
 
     function _isSignedOwner(bytes32 _symbol) internal checkSigned(_symbol, getHolderId(msg.sender)) returns(bool) {
@@ -117,7 +122,7 @@ contract MultiAsset is Owned {
         if (isTrusted(_from, _to)) {
             _
         }
-        _error(4, "Only trusted: access denied");
+        _error("Only trusted: access denied");
     }
 
     function isCreated(bytes32 _symbol) constant returns(bool) {
@@ -156,12 +161,12 @@ contract MultiAsset is Owned {
         return _balanceOf(getHolderId(_holder), _symbol);
     }
 
-    function _balanceOf(uint _posHolder, bytes32 _symbol) constant internal returns(uint) {
-        return assets[_symbol].wallets[_posHolder].balance;
+    function _balanceOf(uint _holderId, bytes32 _symbol) constant internal returns(uint) {
+        return assets[_symbol].wallets[_holderId].balance;
     }
 
-    function _address(uint pos) constant internal returns(address) {
-        return holders[pos].addr;
+    function _address(uint _holderId) constant internal returns(address) {
+        return holders[_holderId].addr;
     }
 
     function setProxy(address _address, bool enabled, bytes32 _symbol) onlyOwner(_symbol) returns(bool) {
@@ -177,7 +182,7 @@ contract MultiAsset is Owned {
     function setProxyConf(bool _onlyThroughProxy, bool _throwOnFailedEmit, bytes32 _symbol) onlyOwner(_symbol) returns(bool) {
         // Allow turning on special proxy conf for assets without holders only.
         if ((_onlyThroughProxy || _throwOnFailedEmit) && balanceOf(msg.sender, _symbol) != totalSupply(_symbol)) {
-            _error(5, "Cannot set with holders");
+            _error("Cannot set with holders");
             return false;
         }
         proxies[_symbol].onlyProxy = _onlyThroughProxy;
@@ -189,45 +194,45 @@ contract MultiAsset is Owned {
         return proxies[_symbol].onlyProxy && !proxies[_symbol].isProxy[msg.sender];
     }
 
-    function _transferDirect(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol) internal {
-        assets[_symbol].wallets[_posFrom].balance -= _value;
-        assets[_symbol].wallets[_posTo].balance += _value;
+    function _transferDirect(uint _fromId, uint _toId, uint _value, bytes32 _symbol) internal {
+        assets[_symbol].wallets[_fromId].balance -= _value;
+        assets[_symbol].wallets[_toId].balance += _value;
     }
 
-    function _transfer(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol, string _reference, uint _posSender) internal checkSigned(_symbol, _posSender) returns(bool) {
+    function _transfer(uint _fromId, uint _toId, uint _value, bytes32 _symbol, string _reference, uint _senderId) internal checkSigned(_symbol, _senderId) returns(bool) {
         if (_proxyCheckFails(_symbol)) {
-            _error(6, "Access only through proxy");
+            _error("Access only through proxy");
             return false;
         }
-        if (_posFrom == _posTo) {
-            _error(11, "Cannot send to oneself");
+        if (_fromId == _toId) {
+            _error("Cannot send to oneself");
             return false;
         }
         if (_value == 0) {
-            _error(12, "Cannot send 0 value");
+            _error("Cannot send 0 value");
             return false;
         }
-        if (_balanceOf(_posFrom, _symbol) < _value) {
-            _error(13, "Insufficient balance");
+        if (_balanceOf(_fromId, _symbol) < _value) {
+            _error("Insufficient balance");
             return false;
         }
         if (bytes(_reference).length > 0 && !isEnabled(sha3(_symbol, Features.TransferWithReference))) {
-            _error(7, "References feature is disabled");
+            _error("References feature is disabled");
             return false;
         }
-        if (_posFrom != _posSender && _allowance(_posFrom, _posSender, _symbol) < _value) {
-            _error(14, "Not enough allowance");
+        if (_fromId != _senderId && _allowance(_fromId, _senderId, _symbol) < _value) {
+            _error("Not enough allowance");
             return false;
         }
-        _transferDirect(_posFrom, _posTo, _value, _symbol);
-        if (_posFrom != _posSender) {
-            assets[_symbol].wallets[_posFrom].allowance[_posSender] -= _value;
+        _transferDirect(_fromId, _toId, _value, _symbol);
+        if (_fromId != _senderId) {
+            assets[_symbol].wallets[_fromId].allowance[_senderId] -= _value;
         }
         // Internal Out Of Gas/Throw: revert this transaction too;
         // Call Stack Depth Limit reached: revert this transaction too;
         // Recursive Call: safe, all changes already made.
-        eventsHistory.emitTransfer(_address(_posFrom), _address(_posTo), _symbol, _value, _reference);
-        _proxyTransferEvent(_posFrom, _posTo, _value, _symbol);
+        eventsHistory.emitTransfer(_address(_fromId), _address(_toId), _symbol, _value, _reference);
+        _proxyTransferEvent(_fromId, _toId, _value, _symbol);
         return true;
     }
 
@@ -247,49 +252,49 @@ contract MultiAsset is Owned {
     function _transferToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference, address _sender) internal returns(bool) {
         var (to, symbol, success) = registryICAP.parse(_icap);
         if (!success) {
-            _error(15, "ICAP is not registered");
+            _error("ICAP is not registered");
             return false;
         }
         if (!isEnabled(sha3(symbol, Features.ICAP))) {
-            _error(8, "ICAP feature is disabled");
+            _error("ICAP feature is disabled");
             return false;
         }
         if (msg.sender != _sender && !proxies[symbol].isProxy[msg.sender]) {
-            _error(3, "Only proxy: access denied");
+            _error("Only proxy: access denied");
             return false;
         }
-        uint posFrom = getHolderId(_from);
-        uint posTo = _createPosHolder(to);
-        if (!_transfer(posFrom, posTo, _value, symbol, _reference, getHolderId(_sender))) {
+        uint fromId = getHolderId(_from);
+        uint toId = _createHolderId(to);
+        if (!_transfer(fromId, toId, _value, symbol, _reference, getHolderId(_sender))) {
             return false;
         }
         // Internal Out Of Gas/Throw: revert this transaction too;
         // Call Stack Depth Limit reached: revert this transaction too;
         // Recursive Call: safe, all changes already made.
-        eventsHistory.emitTransferToICAP(_address(posFrom), _address(posTo), _icap, _value, _reference);
+        eventsHistory.emitTransferToICAP(_address(fromId), _address(toId), _icap, _value, _reference);
         return true;
     }
 
     function transferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) returns(bool) {
-        return _transfer(getHolderId(msg.sender), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(msg.sender));
+        return _transfer(getHolderId(msg.sender), _createHolderId(_to), _value, _symbol, _reference, getHolderId(msg.sender));
     }
 
     function proxyTransferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) onlyProxy(_symbol) noCallback() returns(bool) {
-        return _transfer(getHolderId(tx.origin), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(tx.origin));
+        return _transfer(getHolderId(tx.origin), _createHolderId(_to), _value, _symbol, _reference, getHolderId(tx.origin));
     }
 
     function proxyTransferToICAPWithReference(bytes32 _icap, uint _value, string _reference) noCallback() returns(bool) {
         return _transferToICAPWithReference(tx.origin, _icap, _value, _reference, tx.origin);
     }
 
-    function _proxyTransferEvent(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol) internal requireStackDepth(1) {
+    function _proxyTransferEvent(uint _fromId, uint _toId, uint _value, bytes32 _symbol) internal requireStackDepth(1) {
         ProxyConf conf = proxies[_symbol];
         if (conf.proxy != 0x0) {
             _setupNoCallback();
             // Internal Out Of Gas/Throw: revert this transaction too if configured, or ignore;
             // Call Stack Depth Limit reached: revert this transaction too;
             // Recursive Call: safe, all changes already made, tx.origin cannot be exploited due to noCallback() modifier on every proxy function.
-            if (!conf.proxy.call(bytes4(sha3("emitTransfer(address,address,uint256)")), _address(_posFrom), _address(_posTo), _value)) {
+            if (!conf.proxy.call(bytes4(sha3("emitTransfer(address,address,uint256)")), _address(_fromId), _address(_toId), _value)) {
                 if (conf.throwOnFailedEmit) {
                     throw;
                 }
@@ -302,96 +307,95 @@ contract MultiAsset is Owned {
         return holderIndex[_holder];
     }
 
-    function _createPosHolder(address _holder) internal returns(uint) {
-        uint posHolder = holderIndex[_holder];
-        if (posHolder == 0) {
-            posHolder = holdersCount++;
-            holders[posHolder].addr = _holder;
-            holders[posHolder].trustsCount = 1;
-            holderIndex[_holder] = posHolder;
+    function _createHolderId(address _holder) internal returns(uint) {
+        uint holderId = holderIndex[_holder];
+        if (holderId == 0) {
+            holderId = ++holdersCount;
+            holders[holderId].addr = _holder;
+            holderIndex[_holder] = holderId;
         }
-        return posHolder;
+        return holderId;
     }
 
     function issueAsset(bytes32 _symbol, uint _value, string _name, string _description, uint8 _baseUnit, bool _isReissuable) checkEnabledSwitch(sha3(_symbol, _isReissuable, Features.Issue)) returns(bool) {
         if (_value == 0 && !_isReissuable) {
-            _error(16, "Cannot issue 0 value fixed asset");
+            _error("Cannot issue 0 value fixed asset");
             return false;
         }
         if (isCreated(_symbol)) {
-            _error(17, "Asset already issued");
+            _error("Asset already issued");
             return false;
         }
-        uint posHolder = _createPosHolder(msg.sender);
+        uint holderId = _createHolderId(msg.sender);
 
-        assets[_symbol] = Asset(posHolder, _value, _name, _description, _isReissuable, _baseUnit);
-        assets[_symbol].wallets[posHolder].balance = _value;
+        assets[_symbol] = Asset(holderId, _value, _name, _description, _isReissuable, _baseUnit);
+        assets[_symbol].wallets[holderId].balance = _value;
         // Internal Out Of Gas/Throw: revert this transaction too;
         // Call Stack Depth Limit reached: revert this transaction too;
         // Recursive Call: safe, all changes already made.
-        eventsHistory.emitIssue(_symbol, _value, _address(posHolder));
+        eventsHistory.emitIssue(_symbol, _value, _address(holderId));
         return true;
     }
     
     function reissueAsset(bytes32 _symbol, uint _value) onlyOwner(_symbol) returns(bool) {
         if (_value == 0) {
-            _error(17, "Cannot reissue 0 value");
+            _error("Cannot reissue 0 value");
             return false;
         }
         Asset asset = assets[_symbol];
         if (!asset.isReissuable) {
-            _error(18, "Cannot reissue fixed asset");
+            _error("Cannot reissue fixed asset");
             return false;
         }
         if (asset.totalSupply + _value < asset.totalSupply) {
-            _error(19, "Total supply overflow");
+            _error("Total supply overflow");
             return false;
         }
-        uint pos = getHolderId(msg.sender);
-        asset.wallets[pos].balance += _value;
+        uint holderId = getHolderId(msg.sender);
+        asset.wallets[holderId].balance += _value;
         asset.totalSupply += _value;
         // Internal Out Of Gas/Throw: revert this transaction too;
         // Call Stack Depth Limit reached: revert this transaction too;
         // Recursive Call: safe, all changes already made.
-        eventsHistory.emitIssue(_symbol, _value, _address(pos));
-        _proxyTransferEvent(0, pos, _value, _symbol);
+        eventsHistory.emitIssue(_symbol, _value, _address(holderId));
+        _proxyTransferEvent(0, holderId, _value, _symbol);
         return true;
     }
     
     function revokeAsset(bytes32 _symbol, uint _value) onlyOwner(_symbol) checkEnabledSwitch(sha3(_symbol, Features.Revoke)) returns(bool) {
         if (_value == 0) {
-            _error(20, "Cannot revoke 0 value");
+            _error("Cannot revoke 0 value");
             return false;
         }
         Asset asset = assets[_symbol];
-        uint pos = getHolderId(msg.sender);
-        if (asset.wallets[pos].balance < _value) {
-            _error(21, "Not enough tokens to revoke");
+        uint holderId = getHolderId(msg.sender);
+        if (asset.wallets[holderId].balance < _value) {
+            _error("Not enough tokens to revoke");
             return false;
         }
-        asset.wallets[pos].balance -= _value;
+        asset.wallets[holderId].balance -= _value;
         asset.totalSupply -= _value;
         // Internal Out Of Gas/Throw: revert this transaction too;
         // Call Stack Depth Limit reached: revert this transaction too;
         // Recursive Call: safe, all changes already made.
-        eventsHistory.emitRevoke(_symbol, _value, _address(pos));
-        _proxyTransferEvent(pos, 0, _value, _symbol);
+        eventsHistory.emitRevoke(_symbol, _value, _address(holderId));
+        _proxyTransferEvent(holderId, 0, _value, _symbol);
         return true;
     }
 
     function changeOwnership(bytes32 _symbol, address _newOwner) onlyOwner(_symbol) checkEnabledSwitch(sha3(_symbol, Features.ChangeOwnership)) returns(bool) {
         Asset asset = assets[_symbol];
-        uint posNewOwner = _createPosHolder(_newOwner);
-        if (asset.owner == posNewOwner) {
-            _error(22, "Cannot pass ownership to oneself");
+        uint newOwnerId = _createHolderId(_newOwner);
+        if (asset.owner == newOwnerId) {
+            _error("Cannot pass ownership to oneself");
             return false;
         }
         address oldOwner = _address(asset.owner);
-        asset.owner = posNewOwner;
+        asset.owner = newOwnerId;
         // Internal Out Of Gas/Throw: revert this transaction too;
         // Call Stack Depth Limit reached: revert this transaction too;
         // Recursive Call: safe, all changes already made.
-        eventsHistory.emitOwnershipChange(oldOwner, _address(posNewOwner), _symbol);
+        eventsHistory.emitOwnershipChange(oldOwner, _address(newOwnerId), _symbol);
         return true;
     }
 
@@ -400,58 +404,62 @@ contract MultiAsset is Owned {
     }
 
     function trust(address _to) returns(bool) {
-        uint posFrom = _createPosHolder(msg.sender);
-        if (posFrom == getHolderId(_to)) {
-            _error(23, "Cannot trust to oneself");
+        uint fromId = _createHolderId(msg.sender);
+        if (fromId == getHolderId(_to)) {
+            _error("Cannot trust to oneself");
             return false;
         }
         if (isTrusted(msg.sender, _to)) {
-            _error(24, "Already trusted");
+            _error("Already trusted");
             return false;
         }
-        uint trustPos = holders[posFrom].trustsCount++;
-        holders[posFrom].trustIndex[_to] = trustPos;
-        holders[posFrom].trusts[trustPos] = _to;
+        uint trustId = ++holders[fromId].trustsCount;
+        holders[fromId].trustIndex[_to] = trustId;
+        holders[fromId].trusts[trustId] = _to;
         return true;
     }
 
     function distrust(address _to) checkTrust(msg.sender, _to) returns(bool) {
-        uint posFrom = getHolderId(msg.sender);
-        uint trustPos = holders[posFrom].trustIndex[_to];
-        if (trustPos < holders[posFrom].trustsCount-1) {
-            address last = holders[posFrom].trusts[holders[posFrom].trustsCount-1];
-            holders[posFrom].trusts[trustPos] = last;
-            holders[posFrom].trustIndex[last] = trustPos; 
+        uint fromId = getHolderId(msg.sender);
+        uint trustId = holders[fromId].trustIndex[_to];
+        if (trustId < holders[fromId].trustsCount) {
+            address last = holders[fromId].trusts[holders[fromId].trustsCount];
+            holders[fromId].trusts[trustId] = last;
+            holders[fromId].trustIndex[last] = trustId;
         }
-        delete holders[posFrom].trusts[--holders[posFrom].trustsCount];
-        delete holders[posFrom].trustIndex[_to];
+        delete holders[fromId].trusts[--holders[fromId].trustsCount];
+        delete holders[fromId].trustIndex[_to];
         return true;
     }
 
     function distrustAll() returns(bool) {
-        uint posFrom = getHolderId(msg.sender);
-        if (posFrom == 0) {
-            _error(25, "Didn't trust yet");
+        uint fromId = getHolderId(msg.sender);
+        if (fromId == 0) {
+            _error("Didn't trust yet");
             return false;
         }
-        if (holders[posFrom].trustsCount == 1) {
-            _error(25, "Didn't trust yet");
+        if (holders[fromId].trustsCount == 0) {
+            _error("Didn't trust yet");
             return false;
         }
-        for (uint i = 1; i < holders[posFrom].trustsCount; i++) {
-            address j = holders[posFrom].trusts[i];
-            delete holders[posFrom].trustIndex[j];
-            delete holders[posFrom].trusts[i];
+        for (uint i = 1; i <= holders[fromId].trustsCount; i++) {
+            address j = holders[fromId].trusts[i];
+            delete holders[fromId].trustIndex[j];
+            delete holders[fromId].trusts[i];
         }
-        holders[posFrom].trustsCount = 1;
+        holders[fromId].trustsCount = 0;
         return true;
     }
     
+    // This function logic is actually more of a addAccess(uint _holderId, address _to).
+    // It just grants another address access to this holder.
     function recover(address _from, address _to) checkTrust(_from, msg.sender) checkSignedHolder(getHolderId(_from)) returns(bool) {
         if (getHolderId(_to) != 0) {
-            _error(26, "Should recover to new address");
+            _error("Should recover to new address");
             return false;
         }
+        // We take current holder address because it might not equal _from.
+        // It is possible to recover from any old holder address, but event should have the current one.
         address from = holders[getHolderId(_from)].addr;
         holders[getHolderId(_from)].addr = _to;
         holderIndex[_to] = getHolderId(_from);
@@ -462,31 +470,31 @@ contract MultiAsset is Owned {
         return true;
     }
 
-    function _approve(uint _posSpender, uint _value, bytes32 _symbol, uint _posSender) internal requireStackDepth(1) checkEnabledSwitch(sha3(_symbol, Features.Allowances)) checkSigned(_symbol, _posSender) returns(bool) {
+    function _approve(uint _spenderId, uint _value, bytes32 _symbol, uint _senderId) internal requireStackDepth(1) checkEnabledSwitch(sha3(_symbol, Features.Allowances)) checkSigned(_symbol, _senderId) returns(bool) {
         if (_proxyCheckFails(_symbol)) {
-            _error(6, "Access only through proxy");
+            _error("Access only through proxy");
             return false;
         }
         if (!isCreated(_symbol)) {
-            _error(27, "Asset is not issued");
+            _error("Asset is not issued");
             return false;
         }
-        if (_posSender == _posSpender) {
-            _error(28, "Cannot approve to oneself");
+        if (_senderId == _spenderId) {
+            _error("Cannot approve to oneself");
             return false;
         }
-        assets[_symbol].wallets[_posSender].allowance[_posSpender] = _value;
+        assets[_symbol].wallets[_senderId].allowance[_spenderId] = _value;
         // Internal Out Of Gas/Throw: revert this transaction too;
         // Call Stack Depth Limit reached: revert this transaction too;
         // Recursive Call: safe, all changes already made.
-        eventsHistory.emitApprove(_address(_posSender), _address(_posSpender), _symbol, _value);
+        eventsHistory.emitApprove(_address(_senderId), _address(_spenderId), _symbol, _value);
         ProxyConf conf = proxies[_symbol];
         if (conf.proxy != 0x0) {
             _setupNoCallback();
             // Internal Out Of Gas/Throw: revert this transaction too;
             // Call Stack Depth Limit reached: revert this transaction too;
             // Recursive Call: safe, all changes already made, tx.origin cannot be exploited due to noCallback() modifier on every proxy funtion.
-            if (!conf.proxy.call(bytes4(sha3("emitApprove(address,address,uint256)")), _address(_posSender), _address(_posSpender), _value)) {
+            if (!conf.proxy.call(bytes4(sha3("emitApprove(address,address,uint256)")), _address(_senderId), _address(_spenderId), _value)) {
                 if (conf.throwOnFailedEmit) {
                     throw;
                 }
@@ -497,19 +505,19 @@ contract MultiAsset is Owned {
     }
 
     function approve(address _spender, uint _value, bytes32 _symbol) returns(bool) {
-        return _approve(_createPosHolder(_spender), _value, _symbol, _createPosHolder(msg.sender));
+        return _approve(_createHolderId(_spender), _value, _symbol, _createHolderId(msg.sender));
     }
 
     function proxyApprove(address _spender, uint _value, bytes32 _symbol) onlyProxy(_symbol) noCallback() returns(bool) {
-        return _approve(_createPosHolder(_spender), _value, _symbol, _createPosHolder(tx.origin));
+        return _approve(_createHolderId(_spender), _value, _symbol, _createHolderId(tx.origin));
     }
 
     function allowance(address _from, address _spender, bytes32 _symbol) constant returns(uint) {
         return _allowance(getHolderId(_from), getHolderId(_spender), _symbol);
     }
 
-    function _allowance(uint _posFrom, uint _posTo, bytes32 _symbol) constant internal returns(uint) {
-        return assets[_symbol].wallets[_posFrom].allowance[_posTo];
+    function _allowance(uint _fromId, uint _toId, bytes32 _symbol) constant internal returns(uint) {
+        return assets[_symbol].wallets[_fromId].allowance[_toId];
     }
 
     function transferFrom(address _from, address _to, uint _value, bytes32 _symbol) returns(bool) {
@@ -517,7 +525,7 @@ contract MultiAsset is Owned {
     }
 
     function transferFromWithReference(address _from, address _to, uint _value, bytes32 _symbol, string _reference) returns(bool) {
-        return _transfer(getHolderId(_from), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(msg.sender));
+        return _transfer(getHolderId(_from), _createHolderId(_to), _value, _symbol, _reference, getHolderId(msg.sender));
     }
 
     function transferFromToICAP(address _from, bytes32 _icap, uint _value) returns(bool) {
@@ -529,7 +537,7 @@ contract MultiAsset is Owned {
     }
 
     function proxyTransferFromWithReference(address _from, address _to, uint _value, bytes32 _symbol, string _reference) onlyProxy(_symbol) noCallback() returns(bool) {
-        return _transfer(getHolderId(_from), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(tx.origin));
+        return _transfer(getHolderId(_from), _createHolderId(_to), _value, _symbol, _reference, getHolderId(tx.origin));
     }
 
     function proxyTransferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) noCallback() returns(bool) {
@@ -540,46 +548,46 @@ contract MultiAsset is Owned {
     uint public signChecks; // DEPLOY REMOVE
     bytes32 public lastOperation; // DEPLOY REMOVE
 
-    modifier checkSigned(bytes32 _symbol, uint _posSender) {
+    modifier checkSigned(bytes32 _symbol, uint _senderId) {
         signChecks++; // DEPLOY REMOVE
-        lastOperation = sha3(msg.data, _posSender); // DEPLOY REMOVE
-        bytes32 perUserPerAsset = sha3(_posSender, _symbol);
-        bytes32 perUser = sha3(_posSender);
+        lastOperation = sha3(msg.data, _senderId); // DEPLOY REMOVE
+        bytes32 perUserPerAsset = sha3(_senderId, _symbol);
+        bytes32 perUser = sha3(_senderId);
         if (address(cosigners[perUserPerAsset]) != 0x0) {
             // Internal Out Of Gas/Throw: revert this transaction too;
             // Call Stack Depth Limit reached: revert this transaction too;
             // Recursive Call: safe, no any changes applied yet, we are inside of modifier.
-            if (cosigners[perUserPerAsset].isSigned(sha3(msg.data, _posSender))) {
+            if (cosigners[perUserPerAsset].isSigned(sha3(msg.data, _senderId))) {
                 _
             } else {
-                _error(29, "Operation is not cosigned");
+                _error("Operation is not cosigned");
             }
         } else if (address(cosigners[perUser]) != 0x0) {
             // Internal Out Of Gas/Throw: revert this transaction too;
             // Call Stack Depth Limit reached: revert this transaction too;
             // Recursive Call: safe, no any changes applied yet, we are inside of modifier.
-            if (cosigners[perUser].isSigned(sha3(msg.data, _posSender))) {
+            if (cosigners[perUser].isSigned(sha3(msg.data, _senderId))) {
                 _
             } else {
-                _error(29, "Operation is not cosigned");
+                _error("Operation is not cosigned");
             }
         } else {
             _
         }
     }
 
-    modifier checkSignedHolder(uint _posSender) {
+    modifier checkSignedHolder(uint _senderId) {
         signChecks++; // DEPLOY REMOVE
-        lastOperation = sha3(msg.data, _posSender); // DEPLOY REMOVE
-        bytes32 perUser = sha3(_posSender);
+        lastOperation = sha3(msg.data, _senderId); // DEPLOY REMOVE
+        bytes32 perUser = sha3(_senderId);
         if (address(cosigners[perUser]) != 0x0) {
             // Internal Out Of Gas/Throw: revert this transaction too;
             // Call Stack Depth Limit reached: revert this transaction too;
             // Recursive Call: safe, no any changes applied yet, we are inside of modifier.
-            if (cosigners[perUser].isSigned(sha3(msg.data, _posSender))) {
+            if (cosigners[perUser].isSigned(sha3(msg.data, _senderId))) {
                 _
             } else {
-                _error(29, "Operation is not cosigned");
+                _error("Operation is not cosigned");
             }
         } else {
             _
@@ -587,15 +595,15 @@ contract MultiAsset is Owned {
     }
 
     function setCosignerAddress(address _address, bytes32 _symbol) checkSigned(_symbol, getHolderId(msg.sender)) returns(bool) {
-        return _setCosignerAddress(_address, sha3(_createPosHolder(msg.sender), _symbol));
+        return _setCosignerAddress(_address, sha3(_createHolderId(msg.sender), _symbol));
     }
 
     function setCosignerAddressForUser(address _address) checkSignedHolder(getHolderId(msg.sender)) returns(bool) {
-        return _setCosignerAddress(_address, sha3(_createPosHolder(msg.sender)));
+        return _setCosignerAddress(_address, sha3(_createHolderId(msg.sender)));
     }
 
     function proxySetCosignerAddress(address _address, bytes32 _symbol) onlyProxy(_symbol) noCallback() checkSigned(_symbol, getHolderId(tx.origin)) returns(bool) {
-        return _setCosignerAddress(_address, sha3(_createPosHolder(tx.origin), _symbol));
+        return _setCosignerAddress(_address, sha3(_createHolderId(tx.origin), _symbol));
     }
 
     function _setCosignerAddress(address _address, bytes32 _identity) internal returns(bool) {
