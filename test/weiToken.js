@@ -50,9 +50,9 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     }).then(function() {
       return icap.registerInstitutionAsset(SYMBOL, 'ACC3', accounts[3], {from: accounts[3]});
     }).then(function() {
-      return router.setAddress('icap', icap.address);
+      return router.setupRegistryICAP(icap.address);
     }).then(function() {
-      return asset.setAddress('router', router.address);
+      return asset.setupRouterICAP(router.address);
     }).then(function() {
       return asset.init(multiAsset.address, SYMBOL);
     }).then(function() {

@@ -13,9 +13,10 @@ contract Emitter {
     function emitApprove(address _from, address _spender, bytes32 _symbol, uint _value);
     function emitRecovery(address _from, address _to, address _by);
     function emitTransferToICAP(address _from, address _to, bytes32 _icap, uint _value, string _reference);
+    function emitError(uint8 _code, bytes32 _message);
 }
 
-contract Switchable is Owned {
+contract MultiAsset is Owned {
     mapping(bytes32 => bool) public switches;
 
     function isEnabled(bytes32 _switch) constant returns(bool) {
@@ -32,10 +33,9 @@ contract Switchable is Owned {
         if (isEnabled(_switch)) {
             _
         }
+        _error(1, "Feature is disabled");
     }
-}
 
-contract MultiAsset is Switchable {
     enum Features { Issue, TransferWithReference, Revoke, ChangeOwnership, Allowances, ICAP }
 
     struct Asset {
@@ -77,6 +77,10 @@ contract MultiAsset is Switchable {
     // Should use interface of the emitter, but address of events history.
     Emitter public eventsHistory;
 
+    function _error(uint8 _code, bytes32 _message) internal {
+        eventsHistory.emitError(_code, _message);
+    }
+
     function () {
         // donations
     }
@@ -95,12 +99,14 @@ contract MultiAsset is Switchable {
         if (_isSignedOwner(_symbol)) {
             _
         }
+        _error(2, "Only owner: access denied");
     }
 
     modifier onlyProxy(bytes32 _symbol) {
         if (proxies[_symbol].isProxy[msg.sender]) {
             _
         }
+        _error(3, "Only proxy: access denied");
     }
 
     function _isSignedOwner(bytes32 _symbol) internal checkSigned(_symbol, getHolderId(msg.sender)) returns(bool) {
@@ -111,6 +117,7 @@ contract MultiAsset is Switchable {
         if (isTrusted(_from, _to)) {
             _
         }
+        _error(4, "Only trusted: access denied");
     }
 
     function isCreated(bytes32 _symbol) constant returns(bool) {
@@ -170,6 +177,7 @@ contract MultiAsset is Switchable {
     function setProxyConf(bool _onlyThroughProxy, bool _throwOnFailedEmit, bytes32 _symbol) onlyOwner(_symbol) returns(bool) {
         // Allow turning on special proxy conf for assets without holders only.
         if ((_onlyThroughProxy || _throwOnFailedEmit) && balanceOf(msg.sender, _symbol) != totalSupply(_symbol)) {
+            _error(5, "Cannot set with holders");
             return false;
         }
         proxies[_symbol].onlyProxy = _onlyThroughProxy;
@@ -188,18 +196,27 @@ contract MultiAsset is Switchable {
 
     function _transfer(uint _posFrom, uint _posTo, uint _value, bytes32 _symbol, string _reference, uint _posSender) internal checkSigned(_symbol, _posSender) returns(bool) {
         if (_proxyCheckFails(_symbol)) {
+            _error(6, "Access only through proxy");
             return false;
         }
         if (_posFrom == _posTo) {
+            _error(11, "Cannot send to oneself");
             return false;
         }
-        if (_value == 0 || _balanceOf(_posFrom, _symbol) < _value) {
+        if (_value == 0) {
+            _error(12, "Cannot send 0 value");
+            return false;
+        }
+        if (_balanceOf(_posFrom, _symbol) < _value) {
+            _error(13, "Insufficient balance");
             return false;
         }
         if (bytes(_reference).length > 0 && !isEnabled(sha3(_symbol, Features.TransferWithReference))) {
+            _error(7, "References feature is disabled");
             return false;
         }
         if (_posFrom != _posSender && _allowance(_posFrom, _posSender, _symbol) < _value) {
+            _error(14, "Not enough allowance");
             return false;
         }
         _transferDirect(_posFrom, _posTo, _value, _symbol);
@@ -230,12 +247,15 @@ contract MultiAsset is Switchable {
     function _transferToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference, address _sender) internal returns(bool) {
         var (to, symbol, success) = registryICAP.parse(_icap);
         if (!success) {
+            _error(15, "ICAP is not registered");
             return false;
         }
         if (!isEnabled(sha3(symbol, Features.ICAP))) {
+            _error(8, "ICAP feature is disabled");
             return false;
         }
         if (msg.sender != _sender && !proxies[symbol].isProxy[msg.sender]) {
+            _error(3, "Only proxy: access denied");
             return false;
         }
         uint posFrom = getHolderId(_from);
@@ -295,9 +315,11 @@ contract MultiAsset is Switchable {
 
     function issueAsset(bytes32 _symbol, uint _value, string _name, string _description, uint8 _baseUnit, bool _isReissuable) checkEnabledSwitch(sha3(_symbol, _isReissuable, Features.Issue)) returns(bool) {
         if (_value == 0 && !_isReissuable) {
+            _error(16, "Cannot issue 0 value fixed asset");
             return false;
         }
         if (isCreated(_symbol)) {
+            _error(17, "Asset already issued");
             return false;
         }
         uint posHolder = _createPosHolder(msg.sender);
@@ -313,13 +335,16 @@ contract MultiAsset is Switchable {
     
     function reissueAsset(bytes32 _symbol, uint _value) onlyOwner(_symbol) returns(bool) {
         if (_value == 0) {
+            _error(17, "Cannot reissue 0 value");
             return false;
         }
         Asset asset = assets[_symbol];
         if (!asset.isReissuable) {
+            _error(18, "Cannot reissue fixed asset");
             return false;
         }
         if (asset.totalSupply + _value < asset.totalSupply) {
+            _error(19, "Total supply overflow");
             return false;
         }
         uint pos = getHolderId(msg.sender);
@@ -335,11 +360,13 @@ contract MultiAsset is Switchable {
     
     function revokeAsset(bytes32 _symbol, uint _value) onlyOwner(_symbol) checkEnabledSwitch(sha3(_symbol, Features.Revoke)) returns(bool) {
         if (_value == 0) {
+            _error(20, "Cannot revoke 0 value");
             return false;
         }
         Asset asset = assets[_symbol];
         uint pos = getHolderId(msg.sender);
         if (asset.wallets[pos].balance < _value) {
+            _error(21, "Not enough tokens to revoke");
             return false;
         }
         asset.wallets[pos].balance -= _value;
@@ -356,6 +383,7 @@ contract MultiAsset is Switchable {
         Asset asset = assets[_symbol];
         uint posNewOwner = _createPosHolder(_newOwner);
         if (asset.owner == posNewOwner) {
+            _error(22, "Cannot pass ownership to oneself");
             return false;
         }
         address oldOwner = _address(asset.owner);
@@ -374,9 +402,11 @@ contract MultiAsset is Switchable {
     function trust(address _to) returns(bool) {
         uint posFrom = _createPosHolder(msg.sender);
         if (posFrom == getHolderId(_to)) {
+            _error(23, "Cannot trust to oneself");
             return false;
         }
         if (isTrusted(msg.sender, _to)) {
+            _error(24, "Already trusted");
             return false;
         }
         uint trustPos = holders[posFrom].trustsCount++;
@@ -401,9 +431,11 @@ contract MultiAsset is Switchable {
     function distrustAll() returns(bool) {
         uint posFrom = getHolderId(msg.sender);
         if (posFrom == 0) {
+            _error(25, "Didn't trust yet");
             return false;
         }
         if (holders[posFrom].trustsCount == 1) {
+            _error(25, "Didn't trust yet");
             return false;
         }
         for (uint i = 1; i < holders[posFrom].trustsCount; i++) {
@@ -417,6 +449,7 @@ contract MultiAsset is Switchable {
     
     function recover(address _from, address _to) checkTrust(_from, msg.sender) checkSignedHolder(getHolderId(_from)) returns(bool) {
         if (getHolderId(_to) != 0) {
+            _error(26, "Should recover to new address");
             return false;
         }
         address from = holders[getHolderId(_from)].addr;
@@ -431,12 +464,15 @@ contract MultiAsset is Switchable {
 
     function _approve(uint _posSpender, uint _value, bytes32 _symbol, uint _posSender) internal requireStackDepth(1) checkEnabledSwitch(sha3(_symbol, Features.Allowances)) checkSigned(_symbol, _posSender) returns(bool) {
         if (_proxyCheckFails(_symbol)) {
+            _error(6, "Access only through proxy");
             return false;
         }
         if (!isCreated(_symbol)) {
+            _error(27, "Asset is not issued");
             return false;
         }
         if (_posSender == _posSpender) {
+            _error(28, "Cannot approve to oneself");
             return false;
         }
         assets[_symbol].wallets[_posSender].allowance[_posSpender] = _value;
@@ -515,6 +551,8 @@ contract MultiAsset is Switchable {
             // Recursive Call: safe, no any changes applied yet, we are inside of modifier.
             if (cosigners[perUserPerAsset].isSigned(sha3(msg.data, _posSender))) {
                 _
+            } else {
+                _error(29, "Operation is not cosigned");
             }
         } else if (address(cosigners[perUser]) != 0x0) {
             // Internal Out Of Gas/Throw: revert this transaction too;
@@ -522,6 +560,8 @@ contract MultiAsset is Switchable {
             // Recursive Call: safe, no any changes applied yet, we are inside of modifier.
             if (cosigners[perUser].isSigned(sha3(msg.data, _posSender))) {
                 _
+            } else {
+                _error(29, "Operation is not cosigned");
             }
         } else {
             _
@@ -538,6 +578,8 @@ contract MultiAsset is Switchable {
             // Recursive Call: safe, no any changes applied yet, we are inside of modifier.
             if (cosigners[perUser].isSigned(sha3(msg.data, _posSender))) {
                 _
+            } else {
+                _error(29, "Operation is not cosigned");
             }
         } else {
             _

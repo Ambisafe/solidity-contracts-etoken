@@ -9,6 +9,13 @@ contract WeiToken is Asset, EtherTreasuryInterface {
     bool private isWithdrawOrReissue = false;
     mapping(address => bool) public autoDeposit;
 
+    RouterICAPInterface public routerICAP;
+
+    function setupRouterICAP(address _routerICAP) noValue() immutable(address(routerICAP)) returns(bool) {
+        routerICAP = RouterICAPInterface(_routerICAP);
+        return true;
+    }
+
     function() {
         deposit(msg.sender);
     }
@@ -62,7 +69,7 @@ contract WeiToken is Asset, EtherTreasuryInterface {
     }
 
     function _sendEtherToICAPWithReference(bytes32 _icap, uint _value, string _reference) internal {
-        if (!RouterICAPInterface(getAddress("router")).transferToICAPWithReference.value(_value)(_icap, _reference)) {
+        if (!routerICAP.transferToICAPWithReference.value(_value)(_icap, _reference)) {
             throw;
         }
     }

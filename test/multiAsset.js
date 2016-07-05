@@ -64,6 +64,8 @@ contract('MultiAsset', {reset_state: true}, function(accounts) {
     }).then(function() {
       return eventsHistory.addEmitter(multiAssetEmitterAbi.emitTransferToICAP.getData.apply(this, fakeArgs).slice(0, 10), multiAssetEmitter.address);
     }).then(function() {
+      return eventsHistory.addEmitter(multiAssetEmitterAbi.emitError.getData.apply(this, fakeArgs).slice(0, 10), multiAssetEmitter.address);
+    }).then(function() {
       eventsHistory = MultiAssetEmitter.at(eventsHistory.address);
       done();
     }).catch(done);
