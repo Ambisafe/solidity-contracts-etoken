@@ -274,10 +274,12 @@ contract MultiAsset is Owned {
         return _transfer(getHolderId(msg.sender), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(msg.sender));
     }
 
+    // this function will fail unless isProxy[msg.sender] == true
     function proxyTransferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) onlyProxy(_symbol) noCallback() returns(bool) {
         return _transfer(getHolderId(tx.origin), _createPosHolder(_to), _value, _symbol, _reference, getHolderId(tx.origin));
     }
 
+    // this function will fail unless isProxy[msg.sender] == true
     function proxyTransferToICAPWithReference(bytes32 _icap, uint _value, string _reference) noCallback() returns(bool) {
         return _transferToICAPWithReference(tx.origin, _icap, _value, _reference, tx.origin);
     }
@@ -313,6 +315,8 @@ contract MultiAsset is Owned {
         return posHolder;
     }
 
+    // _isReissuable is included in checkEnabledSwitch because it should be
+    // explicitly allowed before issuing new asset
     function issueAsset(bytes32 _symbol, uint _value, string _name, string _description, uint8 _baseUnit, bool _isReissuable) checkEnabledSwitch(sha3(_symbol, _isReissuable, Features.Issue)) returns(bool) {
         if (_value == 0 && !_isReissuable) {
             _error(16, "Cannot issue 0 value fixed asset");
@@ -332,7 +336,7 @@ contract MultiAsset is Owned {
         eventsHistory.emitIssue(_symbol, _value, _address(posHolder));
         return true;
     }
-    
+
     function reissueAsset(bytes32 _symbol, uint _value) onlyOwner(_symbol) returns(bool) {
         if (_value == 0) {
             _error(17, "Cannot reissue 0 value");
@@ -357,7 +361,7 @@ contract MultiAsset is Owned {
         _proxyTransferEvent(0, pos, _value, _symbol);
         return true;
     }
-    
+
     function revokeAsset(bytes32 _symbol, uint _value) onlyOwner(_symbol) checkEnabledSwitch(sha3(_symbol, Features.Revoke)) returns(bool) {
         if (_value == 0) {
             _error(20, "Cannot revoke 0 value");
@@ -421,7 +425,7 @@ contract MultiAsset is Owned {
         if (trustPos < holders[posFrom].trustsCount-1) {
             address last = holders[posFrom].trusts[holders[posFrom].trustsCount-1];
             holders[posFrom].trusts[trustPos] = last;
-            holders[posFrom].trustIndex[last] = trustPos; 
+            holders[posFrom].trustIndex[last] = trustPos;
         }
         delete holders[posFrom].trusts[--holders[posFrom].trustsCount];
         delete holders[posFrom].trustIndex[_to];
@@ -446,7 +450,7 @@ contract MultiAsset is Owned {
         holders[posFrom].trustsCount = 1;
         return true;
     }
-    
+
     function recover(address _from, address _to) checkTrust(_from, msg.sender) checkSignedHolder(getHolderId(_from)) returns(bool) {
         if (getHolderId(_to) != 0) {
             _error(26, "Should recover to new address");
