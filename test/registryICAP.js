@@ -56,6 +56,15 @@ contract('RegistryICAP', {reset_state: true}, function(accounts) {
       assert.isFalse(result[2]);
     }).then(done).catch(done);
   });
+  it('should not parse ICAP longer than 20 chars', function(done) {
+    var _icap = "XE21EXPXREGQQQQQQQQQ0";
+    icap.parse(_icap).then(function(result) {
+      assert.equal(result.length, 3);
+      assert.equal(web3.toDecimal(result[0]), 0);
+      assert.equal(web3.toDecimal(result[1]), 0);
+      assert.isFalse(result[2]);
+    }).then(done).catch(done);
+  });
   it('should not parse valid ICAP of unknown institution', function(done) {
     var _icap = "XE85EXPXREH123456789";
     icap.parse(_icap).then(function(result) {

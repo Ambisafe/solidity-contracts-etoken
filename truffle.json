@@ -35,7 +35,8 @@
     "EventsHistory",
     "MultiAssetEmitter",
     "StackDepthLib",
-    "DummyAsset"
+    "DummyAsset",
+    "RouterICAPEmitter"
   ],
   "rpc": {
     // Default RPC configuration.

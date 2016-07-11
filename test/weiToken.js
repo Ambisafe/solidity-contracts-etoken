@@ -26,9 +26,13 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     icap = RegistryICAP.deployed();
     router = RouterICAP.deployed();
     userContract = UserContract.deployed();
+    eventsHistory = EventsHistory.deployed();
     getBalance = web3.eth.getBalance;
     getTokenBalance = asset.balanceOf;
     var stackDepthLib = StackDepthLib.deployed();
+    var routerEmitter = RouterICAPEmitter.deployed();
+    var routerEmitterAbi = web3.eth.contract(routerEmitter.abi).at(0x0);
+    var fakeArgs = [0,0,0,0,0,0,0,0,0,0,0];
     send = function(to, value, from) {
       return web3.eth.sendTransaction({to: to, value: value, from: from || accounts[0]});
     }
@@ -51,6 +55,14 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
       return icap.registerInstitutionAsset(SYMBOL, 'ACC3', accounts[3], {from: accounts[3]});
     }).then(function() {
       return router.setupRegistryICAP(icap.address);
+    }).then(function() {
+      return router.setupEventsHistory(eventsHistory.address);
+    }).then(function() {
+      return eventsHistory.addVersion(router.address, "Origin", "Initial version.");
+    }).then(function() {
+      return eventsHistory.addEmitter(routerEmitterAbi.emitTransferToICAP.getData.apply(this, fakeArgs).slice(0, 10), routerEmitter.address);
+    }).then(function() {
+      return eventsHistory.addEmitter(routerEmitterAbi.emitError.getData.apply(this, fakeArgs).slice(0, 10), routerEmitter.address);
     }).then(function() {
       return asset.setupRouterICAP(router.address);
     }).then(function() {

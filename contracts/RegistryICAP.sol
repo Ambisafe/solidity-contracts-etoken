@@ -1,14 +1,15 @@
 import "AmbiEnabled.sol";
+import "Safe.sol";
 
-contract RegistryICAP is AmbiEnabled {
+contract RegistryICAP is AmbiEnabled, Safe {
     function decodeIndirect(bytes _bban) constant returns(string, string, string) {
         bytes memory asset = new bytes(3);
         bytes memory institution = new bytes(4);
         bytes memory client = new bytes(9);
 
-        uint k = 0;
+        uint8 k = 0;
 
-        for (uint i = 0; i < asset.length; i++) {
+        for (uint8 i = 0; i < asset.length; i++) {
             asset[i] = _bban[k++];
         }
         for (i = 0; i < institution.length; i++) {
@@ -24,6 +25,12 @@ contract RegistryICAP is AmbiEnabled {
         // Should start with XE.
         if (_icap[0] != 88 || _icap[1] != 69) {
             return (0, 0, false);
+        }
+        // Should have 12 zero bytes at the end.
+        for (uint8 j = 20; j < 32; j++) {
+            if (_icap[j] != 0) {
+                return (0, 0, false);
+            }
         }
         bytes memory bban = new bytes(18);
         for (uint8 i = 0; i < 16; i++) {
@@ -41,7 +48,7 @@ contract RegistryICAP is AmbiEnabled {
         return (institutions[assetInstitutionHash], assets[sha3(asset)], registered[assetInstitutionHash]);
     }
 
-    function prepare(bytes memory _bban) constant returns(bytes) {
+    function prepare(bytes _bban) constant returns(bytes) {
         for (uint8 i = 0; i < 16; i++) {
             uint8 charCode = uint8(_bban[i]);
             if (charCode >= 65 && charCode <= 90) {
@@ -92,20 +99,17 @@ contract RegistryICAP is AmbiEnabled {
         }
     }
 
-    function changeInstitutionOwner(string _institution, address _address) onlyInstitutionOwner(_institution) returns(bool) {
+    function changeInstitutionOwner(string _institution, address _address) noValue() onlyInstitutionOwner(_institution) returns(bool) {
         institutionOwners[sha3(_institution)] = _address;
         return true;
     }
 
+    // web3js sendIBANTransaction interface
     function addr(bytes32 _institution) constant returns(address) {
-        bytes memory institution = new bytes(4);
-        for (var i = 0; i < 4; i++) {
-            institution[i] = _institution[i];
-        }
-        return institutions[sha3("ETH", institution)];
+        return institutions[sha3("ETH", _institution[0], _institution[1], _institution[2], _institution[3])];
     }
 
-    function registerInstitution(string _institution, address _address) checkAccess("admin") returns(bool) {
+    function registerInstitution(string _institution, address _address) noValue() checkAccess("admin") returns(bool) {
         if (bytes(_institution).length != 4) {
             return false;
         }
@@ -116,7 +120,7 @@ contract RegistryICAP is AmbiEnabled {
         return true;
     }
 
-    function registerInstitutionAsset(string _asset, string _institution, address _address) onlyInstitutionOwner(_institution) returns(bool) {
+    function registerInstitutionAsset(string _asset, string _institution, address _address) noValue() onlyInstitutionOwner(_institution) returns(bool) {
         if (!registered[sha3(_asset)]) {
             return false;
         }
@@ -129,7 +133,7 @@ contract RegistryICAP is AmbiEnabled {
         return true;
     }
 
-    function updateInstitutionAsset(string _asset, string _institution, address _address) onlyInstitutionOwner(_institution) returns(bool) {
+    function updateInstitutionAsset(string _asset, string _institution, address _address) noValue() onlyInstitutionOwner(_institution) returns(bool) {
         bytes32 assetInstitutionHash = sha3(_asset, _institution);
         if (!registered[assetInstitutionHash]) {
             return false;
@@ -138,7 +142,7 @@ contract RegistryICAP is AmbiEnabled {
         return true;
     }
 
-    function removeInstitutionAsset(string _asset, string _institution) onlyInstitutionOwner(_institution) returns(bool) {
+    function removeInstitutionAsset(string _asset, string _institution) noValue() onlyInstitutionOwner(_institution) returns(bool) {
         bytes32 assetInstitutionHash = sha3(_asset, _institution);
         if (!registered[assetInstitutionHash]) {
             return false;
@@ -148,7 +152,7 @@ contract RegistryICAP is AmbiEnabled {
         return true;
     }
 
-    function registerAsset(string _asset, bytes32 _symbol) checkAccess("admin") returns(bool) {
+    function registerAsset(string _asset, bytes32 _symbol) noValue() checkAccess("admin") returns(bool) {
         if (bytes(_asset).length != 3) {
             return false;
         }
