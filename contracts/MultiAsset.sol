@@ -72,7 +72,7 @@ contract MultiAsset is Owned {
 
     // Iterable mapping pattern is used for holders.
     uint public holdersCount;
-    mapping(uint => Holder) holders;
+    mapping(uint => Holder) public holders;
     // This is access address mapping. Many addresses may have access to a single holder.
     mapping(address => uint) holderIndex;
     mapping(bytes32 => Asset) public assets;
@@ -616,4 +616,4 @@ contract MultiAsset is Owned {
     }
 }
 
-// RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(proxy[^"]+|issueAsset|reissueAsset|revokeAsset|changeOwnership|setSwitch|[^"]+Proxy|isEnabled|setup|changeContractOwnership)"[^\]]+[^}]+},\s+
+// RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(proxy[^"]+|claimContractOwnership|issueAsset|reissueAsset|revokeAsset|changeOwnership|setSwitch|[^"]+Proxy|isEnabled|setup|changeContractOwnership)"[^\]]+[^}]+},\s+
