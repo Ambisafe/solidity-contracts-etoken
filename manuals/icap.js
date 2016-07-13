@@ -1,6 +1,11 @@
 // REMOVE OLD 'icap' NODE FROM THE AMBI.
 // Deploy RegistryICAP from commonAmbi
 // 1737526 RegistryICAP.sol
+// deployRegistryICAP
+({
+  env: 'test',
+  myNodeName: 'commonAmbi'
+});
 var deployRegistryICAP = function(args) {
   if (args.env) { var env = args.env; } else throw "env not specified";
   if (args.myNodeName) { var myNodeName = args.myNodeName; } else if (env === 'prod') throw "myNodeName not specified";
@@ -21,7 +26,7 @@ var deployRegistryICAP = function(args) {
         log(
           'RegistryICAP has been successfully deployed at ' + icap.address + 
           '. Add it here if neccessary: https://ambisafe.atlassian.net/wiki/display/ETOKEN ' +
-          ' compiler: 48238c9, commit: <add here>.',
+          ' compiler: 48238c9, commit: ebb42f6.',
           $logs
         );
       }));
@@ -53,7 +58,7 @@ var deployRouterICAP = function(args) {
             'RouterICAP has been successfully deployed at ' + eToken.address + 
             '. With EventsHistory at ' + history.address + 
             '. Add it here if neccessary: https://ambisafe.atlassian.net/wiki/display/ETOKEN ' +
-            ' compiler: 48238c9, commit: <add here>.',
+            ' compiler: 48238c9, commit: ebb42f6.',
             $logs
           );
         })
