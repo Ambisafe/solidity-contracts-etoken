@@ -38,38 +38,54 @@ contract Asset is Safe, AmbiEnabled {
     }
 
     function transfer(address _to, uint _value) returns(bool) {
-        return transferWithReference(_to, _value, "");
+        return __transferWithReference(_to, _value, "");
     }
 
-    function transferWithReference(address _to, uint _value, string _reference) noValue() returns(bool) {
+    function transferWithReference(address _to, uint _value, string _reference) returns(bool) {
+        return __transferWithReference(_to, _value, _reference);
+    }
+
+    function __transferWithReference(address _to, uint _value, string _reference) private noValue() returns(bool) {
         return _isHuman() ?
             multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference) :
             multiAsset.transferFromWithReference(msg.sender, _to, _value, symbol, _reference);
     }
 
     function transferToICAP(bytes32 _icap, uint _value) returns(bool) {
-        return transferToICAPWithReference(_icap, _value, "");
+        return __transferToICAPWithReference(_icap, _value, "");
     }
 
-    function transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) noValue() returns(bool) {
+    function transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) returns(bool) {
+        return __transferToICAPWithReference(_icap, _value, _reference);
+    }
+
+    function __transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) private noValue() returns(bool) {
         return _isHuman() ?
             multiAsset.proxyTransferToICAPWithReference(_icap, _value, _reference) :
             multiAsset.transferFromToICAPWithReference(msg.sender, _icap, _value, _reference);
     }
     
     function transferFrom(address _from, address _to, uint _value) returns(bool) {
-        return transferFromWithReference(_from, _to, _value, "");
+        return __transferFromWithReference(_from, _to, _value, "");
     }
 
-    function transferFromWithReference(address _from, address _to, uint _value, string _reference) noValue() onlyHuman() returns(bool) {
+    function transferFromWithReference(address _from, address _to, uint _value, string _reference) returns(bool) {
+        return __transferFromWithReference(_from, _to, _value, _reference);
+    }
+
+    function __transferFromWithReference(address _from, address _to, uint _value, string _reference) private noValue() onlyHuman() returns(bool) {
         return multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference);
     }
 
     function transferFromToICAP(address _from, bytes32 _icap, uint _value) returns(bool) {
-        return transferFromToICAPWithReference(_from, _icap, _value, "");
+        return __transferFromToICAPWithReference(_from, _icap, _value, "");
     }
 
-    function transferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) noValue() onlyHuman() returns(bool) {
+    function transferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) returns(bool) {
+        return __transferFromToICAPWithReference(_from, _icap, _value, _reference);
+    }
+
+    function __transferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) private noValue() onlyHuman() returns(bool) {
         return multiAsset.proxyTransferFromToICAPWithReference(_from, _icap, _value, _reference);
     }
 

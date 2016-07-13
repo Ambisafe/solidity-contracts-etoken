@@ -36,7 +36,8 @@
     "MultiAssetEmitter",
     "StackDepthLib",
     "DummyAsset",
-    "RouterICAPEmitter"
+    "RouterICAPEmitter",
+    "Fake"
   ],
   "rpc": {
     // Default RPC configuration.

@@ -37,4 +37,38 @@ contract('AssetWithRefund', {reset_state: true}, function(accounts) {
   });
 
   assetBase(accounts);
+
+  it('should call refunder on transfer', function(done) {
+    var that = this;
+    var holder = accounts[0];
+    var holder2 = accounts[1];
+    var amount = 1;
+    var fake = Fake.deployed();
+    that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
+      return that.asset.setupTreasury(fake.address, web3.toWei(21, 'gwei'));
+    }).then(function() {
+      return that.asset.transfer(holder2, amount);
+    }).then(function() {
+      return fake.calls.call();
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 1);
+    }).then(done).catch(done);
+  });
+
+  it('should call refunder on transfer with reference', function(done) {
+    var that = this;
+    var holder = accounts[0];
+    var holder2 = accounts[1];
+    var amount = 1;
+    var fake = Fake.deployed();
+    that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
+      return that.asset.setupTreasury(fake.address, web3.toWei(21, 'gwei'));
+    }).then(function() {
+      return that.asset.transferWithReference(holder2, amount, 'test');
+    }).then(function() {
+      return fake.calls.call();
+    }).then(function(result) {
+      assert.equal(result.valueOf(), 1);
+    }).then(done).catch(done);
+  });
 });

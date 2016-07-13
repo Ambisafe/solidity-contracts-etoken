@@ -132,10 +132,7 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         return multiAsset.revokeAsset(symbol, balanceOf(address(this)));
     }
 
-    function init(address _multiAsset, bytes32 _symbol) noValue() returns(bool) {
-        if (address(multiAsset) != 0x0) {
-            return false;
-        }
+    function init(address _multiAsset, bytes32 _symbol) noValue() immutable(address(multiAsset)) returns(bool) {
         var mAsset = MultiAsset(_multiAsset);
         if (!mAsset.issueAsset(_symbol, 0, "WeiToken", "1-to-1 with wei.", 0, true)) {
             // DEPLOY REMOVE START
@@ -155,12 +152,20 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         throw;
     }
 
+    function transfer(address _to, uint _value) returns(bool) {
+        return transferWithReference(_to, _value, "");
+    }
+
     function transferWithReference(address _to, uint _value, string _reference) returns(bool) {
         deposit(msg.sender);
         // DEPLOY REMOVE START
         if (msg.sender == _to && this.balance < _value) return false;
         // DEPLOY REMOVE END
         return _withdrawWithReference(_to, _value, _reference);
+    }
+
+    function transferFrom(address _from, address _to, uint _value) returns(bool) {
+        return transferFromWithReference(_from, _to, _value, "");
     }
 
     function transferFromWithReference(address _from, address _to, uint _value, string _reference) noValue() onlyHuman() returns(bool) {
@@ -174,9 +179,17 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         return success;
     }
 
+    function transferToICAP(bytes32 _icap, uint _value) returns(bool) {
+        return transferToICAPWithReference(_icap, _value, "");
+    }
+
     function transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) returns(bool) {
         deposit(msg.sender);
         return _withdrawToICAPWithReference(_icap, _value, _reference);
+    }
+
+    function transferFromToICAP(address _from, bytes32 _icap, uint _value) returns(bool) {
+        return transferFromToICAPWithReference(_from, _icap, _value, "");
     }
 
     function transferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) noValue() onlyHuman() returns(bool) {
