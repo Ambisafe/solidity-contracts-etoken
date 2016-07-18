@@ -7,6 +7,7 @@ contract RouterICAPInterface {
 
 contract WeiToken is Asset, EtherTreasuryInterface {
     bool private __isWithdrawOrReissue = false;
+    bool private __isDeposit = false;
     mapping(address => bool) public autoDeposit;
 
     RouterICAPInterface public routerICAP;
@@ -32,15 +33,18 @@ contract WeiToken is Asset, EtherTreasuryInterface {
             return _safeFalse();
         }
         __isWithdrawOrReissue = true;
-        if (balanceOf(address(this)) >= msg.value || multiAsset.reissueAsset(symbol, msg.value)) {
-            __isWithdrawOrReissue = false;
-            if (multiAsset.transferWithReference(_to, msg.value, symbol, _reference)) {
+        bool reissue = balanceOf(address(this)) >= msg.value || multiAsset.reissueAsset(symbol, msg.value);
+        __isWithdrawOrReissue = false;
+        if (reissue) {
+            __isDeposit = true;
+            bool transfer = multiAsset.transferWithReference(_to, msg.value, symbol, _reference);
+            __isDeposit = false;
+            if (transfer) {
                 return true;
             } else {
                 return revokeAll();
             }
         } else {
-            __isWithdrawOrReissue = false;
             return _safeFalse();
         }
     }
@@ -210,7 +214,9 @@ contract WeiToken is Asset, EtherTreasuryInterface {
                 throw;
             }
         } else if (!isAutoDeposit(_to)) {
-            throw;
+            if (!__isDeposit) {
+                throw;
+            }
         }
     }
 

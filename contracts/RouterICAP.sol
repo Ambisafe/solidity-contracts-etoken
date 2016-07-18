@@ -30,6 +30,10 @@ contract RouterICAP is Safe {
             _error("Invalid ICAP");
             return _safeFalse();
         }
+        if (to == msg.sender) {
+            _error("Cannot send to oneself");
+            return _safeFalse();
+        }
         if (!_unsafeSend(to, msg.value)) {
             _error("Exception on receiver contract");
             return _safeFalse();

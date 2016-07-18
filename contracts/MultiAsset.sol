@@ -1,5 +1,15 @@
 import "Owned.sol";
-import "RegistryICAP.sol";
+
+contract RegistryICAPInterface {
+    function decodeIndirect(bytes _bban) constant returns(string, string, string);
+    function parse(bytes32 _icap) constant returns(address, bytes32, bool);
+    function prepare(bytes _bban) constant returns(bytes);
+    function mod9710(bytes _prepared) constant returns(uint8);
+    mapping(bytes32 => bool) public registered;
+    mapping(bytes32 => address) public institutions;
+    mapping(bytes32 => address) public institutionOwners;
+    mapping(bytes32 => bytes32) public assets;
+}
 
 contract Cosigner {
     function isSigned(bytes32) returns(bool);
@@ -78,7 +88,7 @@ contract MultiAsset is Owned {
     mapping(bytes32 => Asset) public assets;
     mapping(bytes32 => ProxyConf) public proxies;
 
-    RegistryICAP public registryICAP;
+    RegistryICAPInterface public registryICAP;
     // Should use interface of the emitter, but address of events history.
     Emitter public eventsHistory;
 
@@ -91,7 +101,7 @@ contract MultiAsset is Owned {
     }
 
     function setupRegistryICAP(address _registryICAP) onlyContractOwner() immutable(address(registryICAP)) returns(bool) {
-        registryICAP = RegistryICAP(_registryICAP);
+        registryICAP = RegistryICAPInterface(_registryICAP);
         return true;
     }
 

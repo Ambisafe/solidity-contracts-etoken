@@ -1,17 +1,15 @@
 import "MultiAsset.sol";
-import "AmbiEnabled.sol";
-import "Safe.sol";
 
-contract Asset is Safe, AmbiEnabled {
+contract Asset is Safe {
     event Transfer(address indexed from, address indexed to, uint value);
     event Approve(address indexed from, address indexed spender, uint value);
 
     MultiAsset public multiAsset;
     bytes32 public symbol;
 
-    function init(address _multiAsset, bytes32 _symbol) noValue() returns(bool) {
+    function init(address _multiAsset, bytes32 _symbol) noValue() immutable(address(multiAsset)) returns(bool) {
         MultiAsset ma = MultiAsset(_multiAsset);
-        if (address(multiAsset) != 0x0 || !ma.isCreated(_symbol)) {
+        if (!ma.isCreated(_symbol)) {
             return false;
         }
         multiAsset = ma;
