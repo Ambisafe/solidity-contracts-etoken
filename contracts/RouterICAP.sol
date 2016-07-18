@@ -27,6 +27,7 @@ contract RouterICAP is Safe {
     function transfer(bytes32 _icap, string _reference) returns(bool) {
         var (to, _symbol, success) = registryICAP.parse(_icap);
         if (!success) {
+            _error("Invalid ICAP");
             return _safeFalse();
         }
         if (!_unsafeSend(to, msg.value)) {
@@ -56,4 +57,6 @@ contract RouterICAP is Safe {
         }
         return transferToICAPWithReference(_icap, _reference);
     }
+
+    function () noValue() {}
 }

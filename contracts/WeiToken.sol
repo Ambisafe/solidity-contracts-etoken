@@ -6,7 +6,7 @@ contract RouterICAPInterface {
 }
 
 contract WeiToken is Asset, EtherTreasuryInterface {
-    bool private isWithdrawOrReissue = false;
+    bool private __isWithdrawOrReissue = false;
     mapping(address => bool) public autoDeposit;
 
     RouterICAPInterface public routerICAP;
@@ -16,7 +16,7 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         return true;
     }
 
-    function() {
+    function () {
         deposit(msg.sender);
     }
     
@@ -31,16 +31,16 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         if (_to == address(this)) {
             return _safeFalse();
         }
-        isWithdrawOrReissue = true;
+        __isWithdrawOrReissue = true;
         if (balanceOf(address(this)) >= msg.value || multiAsset.reissueAsset(symbol, msg.value)) {
-            isWithdrawOrReissue = false;
+            __isWithdrawOrReissue = false;
             if (multiAsset.transferWithReference(_to, msg.value, symbol, _reference)) {
                 return true;
             } else {
                 return revokeAll();
             }
         } else {
-            isWithdrawOrReissue = false;
+            __isWithdrawOrReissue = false;
             return _safeFalse();
         }
     }
@@ -113,18 +113,18 @@ contract WeiToken is Asset, EtherTreasuryInterface {
     }
 
     function _prepareWithdraw(uint _value, string _reference) internal returns(bool) {
-        isWithdrawOrReissue = true;
+        __isWithdrawOrReissue = true;
         bool success = _isHuman() ?
             multiAsset.proxyTransferWithReference(address(this), _value, symbol, _reference) :
             multiAsset.transferFromWithReference(msg.sender, address(this), _value, symbol, _reference);
-        isWithdrawOrReissue = false;
+        __isWithdrawOrReissue = false;
         return success;
     }
 
     function _prepareWithdrawFrom(address _from, uint _value, string _reference) internal returns(bool) {
-        isWithdrawOrReissue = true;
+        __isWithdrawOrReissue = true;
         bool success = multiAsset.proxyTransferFromWithReference(_from, address(this), _value, symbol, _reference);
-        isWithdrawOrReissue = false;
+        __isWithdrawOrReissue = false;
         return success;
     }
 
@@ -172,11 +172,11 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         if (isAutoDeposit(_to)) {
             return multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference);
         }
-        bool success = _prepareWithdrawFrom(_from, _value, _reference);
-        if (success) {
-            _sendEther(_to, _value);
+        if (!_prepareWithdrawFrom(_from, _value, _reference)) {
+            return false;
         }
-        return success;
+        _sendEther(_to, _value);
+        return true;
     }
 
     function transferToICAP(bytes32 _icap, uint _value) returns(bool) {
@@ -196,17 +196,17 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         if (isAutoDepositICAP(_icap)) {
             return multiAsset.proxyTransferFromToICAPWithReference(_from, _icap, _value, _reference);
         }
-        bool success = _prepareWithdrawFrom(_from, _value, _reference);
-        if (success) {
-            _sendEtherToICAPWithReference(_icap, _value, _reference);
+        if (!_prepareWithdrawFrom(_from, _value, _reference)) {
+            return false;
         }
-        return success;
+        _sendEtherToICAPWithReference(_icap, _value, _reference);
+        return true;
     }
 
     function emitTransfer(address _from, address _to, uint _value) {
         super.emitTransfer(_from, _to, _value);
         if (_to == address(this)) {
-            if (!isWithdrawOrReissue) {
+            if (!__isWithdrawOrReissue) {
                 throw;
             }
         } else if (!isAutoDeposit(_to)) {

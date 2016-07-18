@@ -33,20 +33,22 @@ contract AssetWithRefund is Asset {
         return refundGas;
     }
 
-    function setOperationsCallGas
-        (
-            uint _transfer,
-            uint _transferFrom,
-            uint _transferToICAP,
-            uint _transferFromToICAP,
-            uint _transferWithReference,
-            uint _transferFromWithReference,
-            uint _transferToICAPWithReference,
-            uint _transferFromToICAPWithReference,
-            uint _approve,
-            uint _forward,
-            uint _setCosigner
-        ) noValue() checkAccess("setup") returns(bool)
+    function setOperationsCallGas(
+        uint _transfer,
+        uint _transferFrom,
+        uint _transferToICAP,
+        uint _transferFromToICAP,
+        uint _transferWithReference,
+        uint _transferFromWithReference,
+        uint _transferToICAPWithReference,
+        uint _transferFromToICAPWithReference,
+        uint _approve,
+        uint _forward,
+        uint _setCosigner
+    )
+        noValue()
+        checkAccess("setup")
+        returns(bool)
     {
         transferCallGas = _transfer;
         transferFromCallGas = _transferFrom;
