@@ -20,6 +20,9 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
   var icap2;
   var icap3;
 
+  var _true = false;
+  var _false = true;
+
   before('setup', function(done) {
     multiAsset = MultiAsset.deployed();
     asset = WeiToken.deployed();
@@ -126,7 +129,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
   it('should auto convert to ether', function(done) {
     var value = 132000000;
     var receiver = accounts[1];
-    asset.setAutoDeposit(true, {from: receiver}).then(function() {
+    asset.setAutoDeposit(_false, {from: receiver}).then(function() {
       return asset.deposit(accounts[0], {value: value});
     }).then(function() {
       return getBalance(receiver);
@@ -171,7 +174,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
   it('should auto deposit and auto convert to ether on transfer', function(done) {
     var value = 132000000;
     var receiver = accounts[1];
-    asset.setAutoDeposit(true, {from: receiver}).then(function() {
+    asset.setAutoDeposit(_false, {from: receiver}).then(function() {
       return getBalance(receiver);
     }).then(function(balance) {
       startingBalance1 = balance;
@@ -196,7 +199,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     var value = 132000000;
     var receiver = accounts[1];
     var spender = accounts[2];
-    asset.setAutoDeposit(true, {from: receiver}).then(function() {
+    asset.setAutoDeposit(_false, {from: receiver}).then(function() {
       return asset.deposit(accounts[0], {value: value});
     }).then(function() {
       return getBalance(receiver);
@@ -224,7 +227,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
   it('should auto convert to ether on transfer to ICAP', function(done) {
     var value = 132000000;
     var receiver = accounts[2];
-    asset.setAutoDeposit(true, {from: receiver}).then(function() {
+    asset.setAutoDeposit(_false, {from: receiver}).then(function() {
       return asset.deposit(accounts[0], {value: value});
     }).then(function() {
       return getBalance(receiver);
@@ -269,7 +272,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
   it('should auto deposit and auto convert to ether on transfer to ICAP', function(done) {
     var value = 132000000;
     var receiver = accounts[2];
-    asset.setAutoDeposit(true, {from: receiver}).then(function() {
+    asset.setAutoDeposit(_false, {from: receiver}).then(function() {
       return getBalance(receiver);
     }).then(function(balance) {
       startingBalance1 = balance;
@@ -294,7 +297,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     var value = 132000000;
     var receiver = accounts[2];
     var spender = accounts[3];
-    asset.setAutoDeposit(true, {from: receiver}).then(function() {
+    asset.setAutoDeposit(_false, {from: receiver}).then(function() {
       return asset.deposit(accounts[0], {value: value});
     }).then(function() {
       return getBalance(receiver);
@@ -324,7 +327,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     var returnValue = 1000000;
     var receiver = accounts[1];
     var spender = accounts[2];
-    asset.setAutoDeposit(true, {from: receiver}).then(function() {
+    asset.setAutoDeposit(_false, {from: receiver}).then(function() {
       return asset.deposit(accounts[0], {value: value});
     }).then(function() {
       return getBalance(receiver);
@@ -360,7 +363,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     var returnValue = 1000000;
     var receiver = accounts[2];
     var spender = accounts[3];
-    asset.setAutoDeposit(true, {from: receiver}).then(function() {
+    asset.setAutoDeposit(_false, {from: receiver}).then(function() {
       return asset.deposit(accounts[0], {value: value});
     }).then(function() {
       return getBalance(receiver);
@@ -400,7 +403,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     var returnValue = 1000000;
     var receiver = accounts[1];
     var spender = userContract.address;
-    asset.setAutoDeposit(true, {from: receiver}).then(function() {
+    asset.setAutoDeposit(_false, {from: receiver}).then(function() {
       return asset.deposit(accounts[0], {value: value});
     }).then(function() {
       return getBalance(receiver);
@@ -448,7 +451,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     var value = 132000000;
     var receiver = accounts[1];
     var sender = userContract.address;
-    asset.setAutoDeposit(true, {from: receiver}).then(function() {
+    asset.setAutoDeposit(_false, {from: receiver}).then(function() {
       return userContract.deposit(sender, {value: value});
     }).then(function() {
       return getBalance(receiver);
@@ -495,7 +498,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     var value = 132000000;
     var receiver = accounts[1];
     var sender = userContract.address;
-    asset.setAutoDeposit(true, {from: receiver}).then(function() {
+    asset.setAutoDeposit(_false, {from: receiver}).then(function() {
       return getBalance(receiver);
     }).then(function(balance) {
       startingBalance1 = balance;
@@ -520,7 +523,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     var value = 132000000;
     var receiver = accounts[2];
     var sender = userContract.address;
-    asset.setAutoDeposit(true, {from: receiver}).then(function() {
+    asset.setAutoDeposit(_false, {from: receiver}).then(function() {
       return userContract.deposit(sender, {value: value});
     }).then(function() {
       return getBalance(receiver);
@@ -567,7 +570,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     var value = 132000000;
     var receiver = accounts[2];
     var sender = userContract.address;
-    asset.setAutoDeposit(true, {from: receiver}).then(function() {
+    asset.setAutoDeposit(_false, {from: receiver}).then(function() {
       return getBalance(receiver);
     }).then(function(balance) {
       startingBalance1 = balance;
