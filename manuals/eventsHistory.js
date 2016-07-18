@@ -35,7 +35,7 @@ var deployEventsHistory = function(args) {
 // If needed, deploy MultiAssetEmitter:
 // setupETokenEvents
 ({
-  eventsHistory: '0x705716323028f5d060b7935dd2c5480952920cae'
+  eventsHistory: '0x60bf91ac87fee5a78c28f7b67701fbcfa79c18ec'
 });
 var setupETokenEvents = function(args) {
   if (args.eventsHistory) { var eventsHistory = args.eventsHistory; } else throw "eventsHistory address not specified";
