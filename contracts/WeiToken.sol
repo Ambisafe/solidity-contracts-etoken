@@ -8,6 +8,7 @@ contract RouterICAPInterface {
 contract WeiToken is Asset, EtherTreasuryInterface {
     bool private __isWithdrawOrReissue = false;
     bool private __isDeposit = false;
+    bool private __isRevoke = false;
     mapping(address => bool) public autoDeposit;
 
     RouterICAPInterface public routerICAP;
@@ -99,10 +100,6 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         return success;
     }
 
-    function withdrawToICAPWithReference(bytes32 _icap, uint _value, string _reference) noValue() returns(bool) {
-        return _withdrawToICAPWithReference(_icap, _value, _reference);
-    }
-
     function _withdrawToICAPWithReference(bytes32 _icap, uint _value, string _reference) internal returns(bool) {
         if (isAutoDepositICAP(_icap)) {
             return _isHuman() ?
@@ -133,7 +130,10 @@ contract WeiToken is Asset, EtherTreasuryInterface {
     }
 
     function revokeAll() noValue() returns(bool) {
-        return multiAsset.revokeAsset(symbol, balanceOf(address(this)));
+        __isRevoke = true;
+        bool success = multiAsset.revokeAsset(symbol, balanceOf(address(this)));
+        __isRevoke = false;
+        return success;
     }
 
     function init(address _multiAsset, bytes32 _symbol) noValue() immutable(address(multiAsset)) returns(bool) {
@@ -144,6 +144,7 @@ contract WeiToken is Asset, EtherTreasuryInterface {
                 multiAsset = mAsset;
                 symbol = _symbol;
                 autoDeposit[address(this)] = true;
+                autoDeposit[0x0] = true;
             }
             // DEPLOY REMOVE END
             return false;
@@ -214,7 +215,7 @@ contract WeiToken is Asset, EtherTreasuryInterface {
                 throw;
             }
         } else if (!isAutoDeposit(_to)) {
-            if (!__isDeposit) {
+            if (!__isDeposit && !__isRevoke) {
                 throw;
             }
         }
