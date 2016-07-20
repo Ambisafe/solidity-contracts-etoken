@@ -68,7 +68,7 @@ module.exports = function(accounts) {
       return that.multiAsset.setEventsProxy(that.asset.address, SYMBOL2);
     }).then(function() {
       eventsHelper.setupEvents(that.asset);
-      return that.asset.emitTransfer(owner, nonOwner, 100, {from: nonOwner});
+      return that.asset.emitTransfer(owner, nonOwner, 100);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
     }).then(function(events) {
@@ -84,7 +84,7 @@ module.exports = function(accounts) {
       return that.multiAsset.setEventsProxy(that.asset.address, SYMBOL2);
     }).then(function() {
       eventsHelper.setupEvents(that.asset);
-      return that.asset.approve(owner, nonOwner, 100, {from: nonOwner});
+      return that.asset.emitApprove(owner, nonOwner, 100);
     }).then(function(txHash) {
       return eventsHelper.getEvents(txHash, watcher);
     }).then(function(events) {

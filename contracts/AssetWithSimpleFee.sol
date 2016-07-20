@@ -2,9 +2,9 @@ import "EtherTreasuryInterface.sol";
 import "AmbiEnabled.sol";
 import "Asset.sol";
 
-contract AssetWithFee is Asset, AmbiEnabled {
+contract AssetWithSimpleFee is Asset, AmbiEnabled {
+    uint public txGasPriceLimit = 21000000000;
     uint public refundGas = 40000;
-    uint public feeGas = 40000;
     uint public transferCallGas = 21000;
     uint public transferWithReferenceCallGas = 21000;
     uint public transferFromCallGas = 21000;
@@ -16,61 +16,38 @@ contract AssetWithFee is Asset, AmbiEnabled {
     uint public approveCallGas = 21000;
     uint public forwardCallGas = 21000;
     uint public setCosignerCallGas = 21000;
-    uint public tokenPriceInWeiSell = 1;
-    uint public tokenPriceInWeiBuy = 2;
-    uint public buyLimitMin = 0;
-    uint public buyLimitMax = 0;
-    uint public sellLimitMin = 0;
-    uint public sellLimitMax = 0;
-    address public exchangeAddress;
+    uint public absMinFee;
+    uint public feePercent; // set up in 1/100 of percent, 10 is 0.1%
+    uint public absMaxFee;
     EtherTreasuryInterface public treasury;
     address public feeAddress;
+    bool private __isAllowed;
     mapping(bytes32 => address) public allowedForwards;
+
+    function setFeeStructure(uint _absMinFee, uint _feePercent, uint _absMaxFee) noValue() checkAccess("cron") returns (bool) {
+        if(_feePercent > 10000 || _absMaxFee < _absMinFee) {
+            return false;
+        }
+        absMinFee = _absMinFee;
+        feePercent = _feePercent;
+        absMaxFee = _absMaxFee;
+        return true;
+    }
 
     function setupFee(address _feeAddress) noValue() checkAccess("admin") returns(bool) {
         feeAddress = _feeAddress;
         return true;
     }
 
-    function setupExchange(address _exchangeAddress, uint _buyLimitMin, uint _buyLimitMax, uint _sellLimitMin, uint _sellLimitMax) noValue() checkAccess("admin") returns(bool) {
-        if (_buyLimitMin > _buyLimitMax || _sellLimitMin > _sellLimitMax) {
-            return false;
-        }
-        exchangeAddress = _exchangeAddress;
-        buyLimitMin = _buyLimitMin;
-        buyLimitMax = _buyLimitMax;
-        sellLimitMin = _sellLimitMin;
-        sellLimitMax = _sellLimitMax;
-        return true;
-    }
-
-    function setTokenPrice(uint _tokenPriceInWeiSell, uint _tokenPriceInWeiBuy) noValue() checkAccess("cron") returns(bool) {
-        if (_tokenPriceInWeiSell == 0 || _tokenPriceInWeiBuy == 0 || _tokenPriceInWeiSell > _tokenPriceInWeiBuy) {
-            return false;
-        }
-        tokenPriceInWeiSell = _tokenPriceInWeiSell;
-        tokenPriceInWeiBuy = _tokenPriceInWeiBuy;
-        return true;
-    }
-
-    function setWholeTokenPrice(uint _wholeTokenPriceInWeiSell, uint _wholeTokenPriceInWeiBuy) noValue() returns(bool) {
-        uint wholeToken = (10 ** multiAsset.baseUnit(symbol));
-        return setTokenPrice(_wholeTokenPriceInWeiSell / wholeToken, _wholeTokenPriceInWeiBuy / wholeToken);
-    }
-
-    function updateFeeGas() noValue() checkAccess("setup") returns(uint) {
-        uint startGas = msg.gas;
-        if (!_transferFee(msg.sender, 1, "Update fee conf")) {
-            return 0;
-        }
-        feeGas = startGas - msg.gas;
-        return feeGas;
-    }
-
     function updateRefundGas() noValue() checkAccess("setup") returns(uint) {
         uint startGas = msg.gas;
-        uint refund = (startGas - msg.gas + refundGas) * tx.gasprice; // just to simulate calculations, dunno if optimizer will remove this.
-        if (!_refund(1)) {
+        // just to simulate calculations
+        uint refund = (startGas - msg.gas + refundGas) * tx.gasprice;
+        if (tx.gasprice > txGasPriceLimit) {
+            return 0;
+        }
+        // end
+        if (!_refund(5000000000000000)) {
             return 0;
         }
         refundGas = startGas - msg.gas;
@@ -108,8 +85,12 @@ contract AssetWithFee is Asset, AmbiEnabled {
         return true;
     }
 
-    function setupTreasury(address _treasury) checkAccess("admin") returns(bool) {
+    function setupTreasury(address _treasury, uint _txGasPriceLimit) checkAccess("admin") returns(bool) {
+        if (_txGasPriceLimit == 0) {
+            return _safeFalse();
+        }
         treasury = EtherTreasuryInterface(_treasury);
+        txGasPriceLimit = _txGasPriceLimit;
         if (msg.value > 0) {
             _safeSend(_treasury, msg.value);
         }
@@ -132,17 +113,56 @@ contract AssetWithFee is Asset, AmbiEnabled {
         return multiAsset.transferFromWithReference(_feeFrom, feeAddress, _value, symbol, _reference);
     }
 
-    function _applyFeeAndRefund(address _feeFrom, uint _startGas, string _reference) internal returns(bool) {
-        uint fee = ((_startGas - msg.gas + refundGas + feeGas) * tx.gasprice / tokenPriceInWeiSell) + 1; // Round up.
-        if (!_transferFee(_feeFrom, fee, _reference)) {
-            return false;
+    function _returnFee(address _to, uint _value) internal returns(bool, bool) {
+        if (feeAddress == 0x0 || feeAddress == _to) {
+            return (false, true);
         }
+        if (!multiAsset.transferFromWithReference(feeAddress, _to, _value, symbol, "Fee return")) {
+            throw;
+        }
+        return (false, true);
+    }
+
+    function _applyRefund(uint _startGas) internal returns(bool) {
         uint refund = (_startGas - msg.gas + refundGas) * tx.gasprice;
         return _refund(refund);
     }
 
     function _refund(uint _value) internal returns(bool) {
+        if (tx.gasprice > txGasPriceLimit) {
+            return false;
+        }
         return treasury.withdraw(tx.origin, _value);
+    }
+
+    function _allow() internal {
+        __isAllowed = true;
+    }
+
+    function _disallow() internal {
+        __isAllowed = false;
+    }
+
+    function calculateFee(uint _value) constant returns(uint) {
+        uint fee = (_value * feePercent) / 10000;
+        if (fee < absMinFee) {
+            return absMinFee;
+        }
+        if (fee > absMaxFee) {
+            return absMaxFee;
+        }
+        return fee;
+    }
+
+    function calculateFeeDynamic(uint _value, uint _additionalGas) constant returns(uint) {
+        uint fee = calculateFee(_value);
+        if (_additionalGas <= 7500) {
+            return fee;
+        }
+        // Assuming that absMinFee covers at least 100000 gas refund, let's add another absMinFee
+        // for every other 100000 additional gas.
+        uint additionalFee = ((_additionalGas / 100000) + 1) * absMinFee;
+        return fee + additionalFee;
     }
 
     function takeFee(address _feeFrom, uint _value, string _reference) noValue() checkAccess("fee") returns(bool) {
@@ -151,82 +171,159 @@ contract AssetWithFee is Asset, AmbiEnabled {
 
     function _transfer(address _to, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferCallGas;
-        if (!super.transfer(_to, _value)) {
+        uint fee = calculateFee(_value);
+        if (!_transferFee(msg.sender, fee, "Transfer fee")) {
             return (false, false);
         }
-        return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
+        _allow();
+        bool success = super.transfer(_to, _value);
+        _disallow();
+        if (!success) {
+            return _returnFee(msg.sender, fee);
+        }
+        return (true, _applyRefund(startGas));
     }
 
     function _transferFrom(address _from, address _to, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromCallGas;
-        if (!super.transferFrom(_from, _to, _value)) {
+        _allow();
+        uint fee = calculateFee(_value);
+        if (!_transferFee(_from, fee, "Transfer fee")) {
             return (false, false);
         }
-        return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
+        _allow();
+        bool success = super.transferFrom(_from, _to, _value);
+        _disallow();
+        if (!success) {
+            return _returnFee(_from, fee);
+        }
+        return (true, _applyRefund(startGas));
     }
 
     function _transferToICAP(bytes32 _icap, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferToICAPCallGas;
-        if (!super.transferToICAP(_icap, _value)) {
+        uint fee = calculateFee(_value);
+        if (!_transferFee(msg.sender, fee, "Transfer fee")) {
             return (false, false);
         }
-        return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
+        _allow();
+        bool success = super.transferToICAP(_icap, _value);
+        _disallow();
+        if (!success) {
+            return _returnFee(msg.sender, fee);
+        }
+        return (true, _applyRefund(startGas));
     }
 
     function _transferFromToICAP(address _from, bytes32 _icap, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromToICAPCallGas;
-        if (!super.transferFromToICAP(_from, _icap, _value)) {
+        uint fee = calculateFee(_value);
+        if (!_transferFee(_from, fee, "Transfer fee")) {
             return (false, false);
         }
-        return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
+        _allow();
+        bool success = super.transferFromToICAP(_from, _icap, _value);
+        _disallow();
+        if (!success) {
+            return _returnFee(_from, fee);
+        }
+        return (true, _applyRefund(startGas));
     }
 
     function _transferWithReference(address _to, uint _value, string _reference) internal returns(bool, bool) {
-        uint startGas = msg.gas + transferWithReferenceCallGas + _stringGas(_reference);
-        if (!super.transferWithReference(_to, _value, _reference)) {
+        uint startGas = msg.gas + transferWithReferenceCallGas;
+        uint additionalGas = _stringGas(_reference);
+        uint fee = calculateFeeDynamic(_value, additionalGas);
+        if (!_transferFee(msg.sender, fee, "Transfer fee")) {
             return (false, false);
         }
-        return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
+        _allow();
+        bool success = super.transferWithReference(_to, _value, _reference);
+        _disallow();
+        if (!success) {
+            return _returnFee(msg.sender, fee);
+        }
+        return (true, _applyRefund(startGas + additionalGas));
     }
 
     function _transferFromWithReference(address _from, address _to, uint _value, string _reference) internal returns(bool, bool) {
-        uint startGas = msg.gas + transferFromWithReferenceCallGas + _stringGas(_reference);
-        if (!super.transferFromWithReference(_from, _to, _value, _reference)) {
+        uint startGas = msg.gas + transferFromWithReferenceCallGas;
+        uint additionalGas = _stringGas(_reference);
+        uint fee = calculateFeeDynamic(_value, additionalGas);
+        if (!_transferFee(_from, fee, "Transfer fee")) {
             return (false, false);
         }
-        return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
+        _allow();
+        bool success = super.transferFromWithReference(_from, _to, _value, _reference);
+        _disallow();
+        if (!success) {
+            return _returnFee(_from, fee);
+        }
+        return (true, _applyRefund(startGas + additionalGas));
     }
 
     function _transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) internal returns(bool, bool) {
-        uint startGas = msg.gas + transferToICAPWithReferenceCallGas + _stringGas(_reference);
-        if (!super.transferToICAPWithReference(_icap, _value, _reference)) {
+        uint startGas = msg.gas + transferToICAPWithReferenceCallGas;
+        uint additionalGas = _stringGas(_reference);
+        uint fee = calculateFeeDynamic(_value, additionalGas);
+        if (!_transferFee(msg.sender, fee, "Transfer fee")) {
             return (false, false);
         }
-        return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
+        _allow();
+        bool success = super.transferToICAPWithReference(_icap, _value, _reference);
+        _disallow();
+        if (!success) {
+            return _returnFee(msg.sender, fee);
+        }
+        return (true, _applyRefund(startGas + additionalGas));
     }
 
     function _transferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) internal returns(bool, bool) {
-        uint startGas = msg.gas + transferFromToICAPWithReferenceCallGas + _stringGas(_reference);
-        if (!super.transferFromToICAPWithReference(_from, _icap, _value, _reference)) {
+        uint startGas = msg.gas + transferFromToICAPWithReferenceCallGas;
+        uint additionalGas = _stringGas(_reference);
+        uint fee = calculateFeeDynamic(_value, additionalGas);
+        if (!_transferFee(_from, fee, "Transfer fee")) {
             return (false, false);
         }
-        return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
+        _allow();
+        bool success = super.transferFromToICAPWithReference(_from, _icap, _value, _reference);
+        _disallow();
+        if (!success) {
+            return _returnFee(_from, fee);
+        }
+        return (true, _applyRefund(startGas + additionalGas));
     }
 
     function _approve(address _spender, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + approveCallGas;
-        if (!super.approve(_spender, _value)) {
+        // Don't take fee when enabling fee taking.
+        // Don't refund either.
+        if (_spender == address(this)) {
+            return (super.approve(_spender, _value), false);
+        }
+        uint fee = calculateFee(0);
+        if (!_transferFee(msg.sender, fee, "Approve fee")) {
             return (false, false);
         }
-        return (true, _applyFeeAndRefund(msg.sender, startGas, "Approve fee"));
+        _allow();
+        bool success = super.approve(_spender, _value);
+        _disallow();
+        if (!success) {
+            return _returnFee(msg.sender, fee);
+        }
+        return (true, _applyRefund(startGas));
     }
 
     function _setCosignerAddress(address _cosigner) internal returns(bool, bool) {
         uint startGas = msg.gas + setCosignerCallGas;
-        if (!super.setCosignerAddress(_cosigner)) {
+        uint fee = calculateFee(0);
+        if (!_transferFee(msg.sender, fee, "Cosigner fee")) {
             return (false, false);
         }
-        return (true, _applyFeeAndRefund(msg.sender, startGas, "Cosigner fee"));
+        if (!super.setCosignerAddress(_cosigner)) {
+            return _returnFee(msg.sender, fee);
+        }
+        return (true, _applyRefund(startGas));
     }
 
     function transfer(address _to, uint _value) returns(bool) {
@@ -334,14 +431,20 @@ contract AssetWithFee is Asset, AmbiEnabled {
     }
 
     function _forward(address _to, bytes _data) internal returns(bool, bool) {
-        uint startGas = msg.gas + forwardCallGas + (_data.length * 50); // 50 gas per byte;
+        uint startGas = msg.gas + forwardCallGas;
+        uint additionalGas = (_data.length * 50);  // 50 gas per byte;
         if (_to == 0x0) {
             return (false, _safeFalse());
         }
+        uint fee = calculateFeeDynamic(0, additionalGas);
+        if (!_transferFee(msg.sender, fee, "Forward fee")) {
+            return (false, false);
+        }
         if (!_to.call.value(msg.value)(_data)) {
+            _returnFee(msg.sender, fee);
             return (false, _safeFalse());
         }
-        return (true, _applyFeeAndRefund(msg.sender, startGas, "Forward fee"));
+        return (true, _applyRefund(startGas + additionalGas));
     }
 
     function () returns(bool) {
@@ -350,32 +453,27 @@ contract AssetWithFee is Asset, AmbiEnabled {
         return success;
     }
 
-    function sell(address _to, uint _value) noValue() returns(bool) {
-        if (exchangeAddress == 0x0 || _value < sellLimitMin || _value > sellLimitMax) {
-            return false;
+    function emitTransfer(address _from, address _to, uint _value) onlyMultiAsset() {
+        Transfer(_from, _to, _value);
+        if (__isAllowed) {
+            return;
         }
-        if (!multiAsset.transferFromWithReference(msg.sender, exchangeAddress, _value, symbol, "Sell")) {
-            return false;
+        if (feeAddress == 0x0 || _to == feeAddress || _from == feeAddress) {
+            return;
         }
-        uint result = _value * tokenPriceInWeiSell;
-        if (!treasury.withdrawWithReference(_to, result, "Sell")) {
-            throw;
-        }
-        return true;
+        throw;
     }
 
-    function buy(address _to) returns(bool) {
-        uint value = msg.value / tokenPriceInWeiBuy;
-        if (exchangeAddress == 0x0 || value < buyLimitMin || value > buyLimitMax) {
-            return false;
+    function emitApprove(address _from, address _spender, uint _value) onlyMultiAsset() {
+        Approve(_from, _spender, _value);
+        if (__isAllowed) {
+            return;
         }
-        if (!multiAsset.transferFromWithReference(exchangeAddress, _to, value, symbol, "Buy")) {
-            return false;
+        if (feeAddress == 0x0 || _spender == address(this)) {
+            return;
         }
-        _safeSend(exchangeAddress, msg.value);
-        return true;
+        throw;
     }
 }
 
 // RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(transferFromToICAPCallGas|transferFromToICAPWithReferenceCallGas|transferToICAPCallGas|transferToICAPWithReferenceCallGas|refundGas|feeGas|transferCallGas|transferWithReferenceCallGas|transferFromCallGas|transferFromWithReferenceCallGas|approveCallGas|forwardCallGas|setupFee|setupExchange|setTokenPrice|setWholeTokenPrice|updateFeeGas|updateRefundGas|setOperationsCallGas|setupTreasury|treasury|setForward|takeFee|init|emitTransfer|emitApprove|ambiC|name|getAddress|setAmbiAddress|remove)"[^\]]+[^}]+},\s+
-// RegEx to remove all admin and exchange functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(transferFromToICAPCallGas|transferFromToICAPWithReferenceCallGas|transferToICAPCallGas|transferToICAPWithReferenceCallGas|tokenPriceInWeiBuy|buyLimitMin|buyLimitMax|sellLimitMin|sellLimitMax|exchangeAddress|buy|sell|refundGas|feeGas|transferCallGas|transferWithReferenceCallGas|transferFromCallGas|transferFromWithReferenceCallGas|approveCallGas|forwardCallGas|setupFee|setupExchange|setTokenPrice|setWholeTokenPrice|updateFeeGas|updateRefundGas|setOperationsCallGas|setupTreasury|treasury|setForward|takeFee|init|emitTransfer|emitApprove|ambiC|name|getAddress|setAmbiAddress|remove)"[^\]]+[^}]+},\s+

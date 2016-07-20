@@ -67,7 +67,7 @@ contract AssetWithRefund is Asset, AmbiEnabled {
 
     function setupTreasury(address _treasury, uint _txGasPriceLimit) checkAccess("admin") returns(bool) {
         if (_txGasPriceLimit == 0) {
-            return false;
+            return _safeFalse();
         }
         treasury = EtherTreasuryInterface(_treasury);
         txGasPriceLimit = _txGasPriceLimit;
@@ -279,12 +279,7 @@ contract AssetWithRefund is Asset, AmbiEnabled {
     }
 
     function checkForward(bytes _data) constant returns(bool, bool) {
-        bytes memory sig = new bytes(4);
-        sig[0] = _data[0];
-        sig[1] = _data[1];
-        sig[2] = _data[2];
-        sig[3] = _data[3];
-        return _forward(allowedForwards[sha3(sig)], _data);
+        return _forward(allowedForwards[sha3(_data[0], _data[1], _data[2], _data[3])], _data);
     }
 
     function _forward(address _to, bytes _data) internal returns(bool, bool) {

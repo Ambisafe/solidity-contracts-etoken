@@ -208,8 +208,7 @@ contract WeiToken is Asset, EtherTreasuryInterface {
         return true;
     }
 
-    function emitTransfer(address _from, address _to, uint _value) {
-        super.emitTransfer(_from, _to, _value);
+    function emitTransfer(address _from, address _to, uint _value) onlyMultiAsset() {
         if (_to == address(this)) {
             if (!__isWithdrawOrReissue) {
                 throw;
@@ -219,6 +218,7 @@ contract WeiToken is Asset, EtherTreasuryInterface {
                 throw;
             }
         }
+        Transfer(_from, _to, _value);
     }
 
     function sendToOwner() noValue() returns(bool) {

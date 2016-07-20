@@ -37,7 +37,8 @@
     "StackDepthLib",
     "DummyAsset",
     "RouterICAPEmitter",
-    "Fake"
+    "Fake",
+    "AssetWithSimpleFee"
   ],
   "rpc": {
     // Default RPC configuration.
