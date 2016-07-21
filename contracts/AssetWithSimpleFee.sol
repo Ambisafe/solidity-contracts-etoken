@@ -107,14 +107,14 @@ contract AssetWithSimpleFee is Asset, AmbiEnabled {
     }
 
     function _transferFee(address _feeFrom, uint _value, string _reference) internal returns(bool) {
-        if (feeAddress == 0x0 || feeAddress == _feeFrom) {
+        if (feeAddress == 0x0 || feeAddress == _feeFrom || _value == 0) {
             return true;
         }
         return multiAsset.transferFromWithReference(_feeFrom, feeAddress, _value, symbol, _reference);
     }
 
     function _returnFee(address _to, uint _value) internal returns(bool, bool) {
-        if (feeAddress == 0x0 || feeAddress == _to) {
+        if (feeAddress == 0x0 || feeAddress == _to || _value == 0) {
             return (false, true);
         }
         if (!multiAsset.transferFromWithReference(feeAddress, _to, _value, symbol, "Fee return")) {
