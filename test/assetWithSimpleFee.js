@@ -47,6 +47,8 @@ contract('AssetWithSimpleFee', {reset_state: true}, function(accounts) {
     var amount = 1;
     var fake = Fake.deployed();
     that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
+      return that.multiAsset.setEventsProxy(that.asset.address, SYMBOL);
+    }).then(function() {
       return that.asset.setupTreasury(fake.address, web3.toWei(21, 'gwei'));
     }).then(function() {
       return that.asset.transfer(holder2, amount);
@@ -64,6 +66,8 @@ contract('AssetWithSimpleFee', {reset_state: true}, function(accounts) {
     var amount = 1;
     var fake = Fake.deployed();
     that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
+      return that.multiAsset.setEventsProxy(that.asset.address, SYMBOL);
+    }).then(function() {
       return that.asset.setupTreasury(fake.address, web3.toWei(21, 'gwei'));
     }).then(function() {
       return that.asset.transferWithReference(holder2, amount, 'test');
@@ -83,8 +87,9 @@ contract('AssetWithSimpleFee', {reset_state: true}, function(accounts) {
     var feeMin = 3;
     var feePercent = 10 * 100;
     var feeMax = 6;
-    var fake = Fake.deployed();
     that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
+      return that.multiAsset.setEventsProxy(that.asset.address, SYMBOL);
+    }).then(function() {
       return that.asset.approve(that.asset.address, 1000);
     }).then(function() {
       return that.asset.setupFee(feeAddress);
@@ -114,8 +119,9 @@ contract('AssetWithSimpleFee', {reset_state: true}, function(accounts) {
     var feeMin = 3;
     var feePercent = 10 * 100;
     var feeMax = 6;
-    var fake = Fake.deployed();
     that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
+      return that.multiAsset.setEventsProxy(that.asset.address, SYMBOL);
+    }).then(function() {
       return that.asset.approve(that.asset.address, 1000);
     }).then(function() {
       return that.asset.setupFee(feeAddress);
@@ -145,8 +151,9 @@ contract('AssetWithSimpleFee', {reset_state: true}, function(accounts) {
     var feeMin = 3;
     var feePercent = 10 * 100;
     var feeMax = 6;
-    var fake = Fake.deployed();
     that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
+      return that.multiAsset.setEventsProxy(that.asset.address, SYMBOL);
+    }).then(function() {
       return that.asset.approve(that.asset.address, 1000);
     }).then(function() {
       return that.asset.setupFee(feeAddress);
@@ -176,8 +183,9 @@ contract('AssetWithSimpleFee', {reset_state: true}, function(accounts) {
     var feeMin = 3;
     var feePercent = 10 * 100;
     var feeMax = 6;
-    var fake = Fake.deployed();
     that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
+      return that.multiAsset.setEventsProxy(that.asset.address, SYMBOL);
+    }).then(function() {
       return that.asset.approve(that.asset.address, 1000);
     }).then(function() {
       return that.asset.approve(that.asset.address, 1000, {from: feeAddress});
@@ -209,8 +217,9 @@ contract('AssetWithSimpleFee', {reset_state: true}, function(accounts) {
     var feeMin = 3;
     var feePercent = 10 * 100;
     var feeMax = 6;
-    var fake = Fake.deployed();
     that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
+      return that.multiAsset.setEventsProxy(that.asset.address, SYMBOL);
+    }).then(function() {
       return that.asset.approve(that.asset.address, 1000);
     }).then(function() {
       return that.asset.setupFee(feeAddress);
@@ -240,8 +249,9 @@ contract('AssetWithSimpleFee', {reset_state: true}, function(accounts) {
     var feeMin = 3;
     var feePercent = 10 * 100;
     var feeMax = 6;
-    var fake = Fake.deployed();
     that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
+      return that.multiAsset.setEventsProxy(that.asset.address, SYMBOL);
+    }).then(function() {
       return that.asset.approve(that.asset.address, 1000);
     }).then(function() {
       return that.asset.setupFee(feeAddress);
@@ -271,8 +281,9 @@ contract('AssetWithSimpleFee', {reset_state: true}, function(accounts) {
     var feeMin = 3;
     var feePercent = 10 * 100;
     var feeMax = 6;
-    var fake = Fake.deployed();
     that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
+      return that.multiAsset.setEventsProxy(that.asset.address, SYMBOL);
+    }).then(function() {
       return that.asset.approve(that.asset.address, 1000);
     }).then(function() {
       return that.asset.setupFee(feeAddress);
@@ -290,6 +301,70 @@ contract('AssetWithSimpleFee', {reset_state: true}, function(accounts) {
       return that.asset.balanceOf(feeAddress);
     }).then(function(balance) {
       assert.equal(balance.valueOf(), feeMin*3);
+    }).then(done).catch(done);
+  });
+
+  it('should take fee on transfer through EToken', function(done) {
+    var that = this;
+    var holder = accounts[0];
+    var holder2 = accounts[1];
+    var feeAddress = accounts[2];
+    var amount = 1;
+    var feeMin = 3;
+    var feePercent = 10 * 100;
+    var feeMax = 6;
+    that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
+      return that.multiAsset.setEventsProxy(that.asset.address, SYMBOL);
+    }).then(function() {
+      return that.asset.approve(that.asset.address, 1000);
+    }).then(function() {
+      return that.asset.setupFee(feeAddress);
+    }).then(function() {
+      return that.asset.setFeeStructure(feeMin, feePercent, feeMax);
+    }).then(function() {
+      return that.multiAsset.transfer(holder2, amount, SYMBOL);
+    }).then(function() {
+      return that.asset.balanceOf(holder);
+    }).then(function(balance) {
+      assert.equal(balance.valueOf(), VALUE - amount - feeMin);
+      return that.asset.balanceOf(holder2);
+    }).then(function(balance) {
+      assert.equal(balance.valueOf(), amount);
+      return that.asset.balanceOf(feeAddress);
+    }).then(function(balance) {
+      assert.equal(balance.valueOf(), feeMin);
+    }).then(done).catch(done);
+  });
+
+  it('should take fee on approve through EToken', function(done) {
+    var that = this;
+    var holder = accounts[0];
+    var holder2 = accounts[1];
+    var feeAddress = accounts[2];
+    var amount = 1;
+    var feeMin = 3;
+    var feePercent = 10 * 100;
+    var feeMax = 6;
+    that.multiAsset.setProxy(that.asset.address, true, SYMBOL).then(function() {
+      return that.multiAsset.setEventsProxy(that.asset.address, SYMBOL);
+    }).then(function() {
+      return that.asset.approve(that.asset.address, 1000);
+    }).then(function() {
+      return that.asset.setupFee(feeAddress);
+    }).then(function() {
+      return that.asset.setFeeStructure(feeMin, feePercent, feeMax);
+    }).then(function() {
+      return that.multiAsset.approve(holder2, amount, SYMBOL);
+    }).then(function() {
+      return that.asset.balanceOf(holder);
+    }).then(function(balance) {
+      assert.equal(balance.valueOf(), VALUE - feeMin);
+      return that.asset.balanceOf(holder2);
+    }).then(function(balance) {
+      assert.equal(balance.valueOf(), 0);
+      return that.asset.balanceOf(feeAddress);
+    }).then(function(balance) {
+      assert.equal(balance.valueOf(), feeMin);
     }).then(done).catch(done);
   });
 });

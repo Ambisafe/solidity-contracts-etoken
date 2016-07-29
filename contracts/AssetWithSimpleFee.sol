@@ -461,6 +461,9 @@ contract AssetWithSimpleFee is Asset, AmbiEnabled {
         if (feeAddress == 0x0 || _to == feeAddress || _from == feeAddress) {
             return;
         }
+        if (_transferFee(_from, calculateFee(_value), "Transfer fee")) {
+            return;
+        }
         throw;
     }
 
@@ -470,6 +473,9 @@ contract AssetWithSimpleFee is Asset, AmbiEnabled {
             return;
         }
         if (feeAddress == 0x0 || _spender == address(this)) {
+            return;
+        }
+        if (_transferFee(_from, calculateFee(0), "Approve fee")) {
             return;
         }
         throw;
