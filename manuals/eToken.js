@@ -771,38 +771,38 @@ var setupAssetWithSimpleFee = function(args) {
                 return;
               }
               log('Ether balance - PASSED.', $logs);
-              if (refunderAddress) {
-                ambi.isRelation(treasuryNodeName, 'admin', myNodeName, function(err, result) {
+              if (refunderSaas) {
+                ambi.hasRelation(refunderSaasNodeName, 'admin', refunderSaasAdminAddress, function(err, result) {
                   if (err) {
                     logError(err, $logs);
                     return;
                   }
                   if (!result) {
-                    logError(myNodeName + ' doesn\'nt have an admin role on refunder at address: ' + refunderAddress + '. Please do safeTransaction(ambi.setRelation, ["' + treasuryNodeName + '", "admin", "' + myNodeName + '"], address);');
+                    logError(refunderSaasAdminAddress + ' doesn\'nt have an admin role on refunder with name: ' + refunderSaasNodeName + '. Please do safeTransaction(ambi.setRelation, ["' + refunderSaasNodeName + '", "admin", "commonAmbi"], address);');
                     logError('Permission denied.', $logs);
                     return;
                   }
-                  log('Refunder admin role - PASSED.', $logs);
-                  if (refunderSaas) {
-                    ambi.hasRelation(refunderSaasNodeName, 'admin', refunderSaasAdminAddress, function(err, result) {
-                      if (err) {
-                        logError(err, $logs);
-                        return;
-                      }
-                      if (!result) {
-                        logError(refunderSaasAdminAddress + ' doesn\'nt have an admin role on refunder with name: ' + refunderSaasNodeName + '. Please do safeTransaction(ambi.setRelation, ["' + refunderSaasNodeName + '", "admin", "commonAmbi"], address);');
-                        logError('Permission denied.', $logs);
-                        return;
-                      }
-                      log('SaaS refunder admin role - PASSED.', $logs);
-                      action();
-                    });
-                  } else {
-                    action();
-                  }
+                  log('SaaS refunder admin role - PASSED.', $logs);
+                  action();
                 });
               } else {
-                action();
+                if (refunderAddress) {
+                  ambi.isRelation(treasuryNodeName, 'admin', myNodeName, function(err, result) {
+                    if (err) {
+                      logError(err, $logs);
+                      return;
+                    }
+                    if (!result) {
+                      logError(myNodeName + ' doesn\'nt have an admin role on refunder at address: ' + refunderAddress + '. Please do safeTransaction(ambi.setRelation, ["' + treasuryNodeName + '", "admin", "' + myNodeName + '"], address);');
+                      logError('Permission denied.', $logs);
+                      return;
+                    }
+                    log('Refunder admin role - PASSED.', $logs);
+                    action();
+                  });
+                } else {
+                  action();
+                }
               }
             });
           });
