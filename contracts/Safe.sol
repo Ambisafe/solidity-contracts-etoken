@@ -1,5 +1,3 @@
-import "StackDepthLib.sol";
-
 contract Safe {
     // Should always be placed as first modifier!
     modifier noValue {
