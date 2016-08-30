@@ -458,7 +458,7 @@ var setupAssetWithRefund = function(args) {
                   asyncFunction(function(saasResolve, saasReject, __testRun) {
                     safeTransactions([
                       safeTransactionFunction(saasRefunder.unFreeze, [refunderSaasSubscription], address),
-                      safeTransactionFunction(saasRefunder.subscribe, [nanoApprovable.address, refunderSaasSubscription], address),
+                      safeTransactionFunction(saasRefunder.subscribe, [nanoApprovable.address, refunderSaasSubscription], address, {waitReceipt: true}),
                       syncFunction(function() {
                         log('SaaS refunder subscription ' + refunderSaasSubscription + ' activated, approvableProxy with address ' + nanoApprovable.address + ' subscribed.', $logs);
                         saasResolve();
@@ -933,7 +933,7 @@ var setupAssetWithSimpleFee = function(args) {
                   asyncFunction(function(saasResolve, saasReject, __testRun) {
                     safeTransactions([
                       safeTransactionFunction(saasRefunder.unFreeze, [refunderSaasSubscription], address),
-                      safeTransactionFunction(saasRefunder.subscribe, [proxyWithSimpleFee.address, refunderSaasSubscription], address),
+                      safeTransactionFunction(saasRefunder.subscribe, [proxyWithSimpleFee.address, refunderSaasSubscription], address, {waitReceipt: true}),
                       syncFunction(function() {
                         log('SaaS refunder subscription ' + refunderSaasSubscription + ' activated, proxy with address ' + proxyWithSimpleFee.address + ' subscribed.', $logs);
                         saasResolve();
