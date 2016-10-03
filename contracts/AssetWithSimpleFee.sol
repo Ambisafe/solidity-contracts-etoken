@@ -186,7 +186,6 @@ contract AssetWithSimpleFee is Asset, AmbiEnabled {
 
     function _transferFrom(address _from, address _to, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferFromCallGas;
-        _allow();
         uint fee = calculateFee(_value);
         if (!_transferFee(_from, fee, "Transfer fee")) {
             return (false, false);
