@@ -6,6 +6,7 @@ contract Asset is Safe {
 
     MultiAsset public multiAsset;
     bytes32 public symbol;
+    string public name;
 
     function init(address _multiAsset, bytes32 _symbol) noValue() immutable(address(multiAsset)) returns(bool) {
         MultiAsset ma = MultiAsset(_multiAsset);
@@ -14,6 +15,14 @@ contract Asset is Safe {
         }
         multiAsset = ma;
         symbol = _symbol;
+        return true;
+    }
+
+    function setName(string _name) noValue() returns(bool) {
+        if (bytes(name).length != 0) {
+            return false;
+        }
+        name = _name;
         return true;
     }
 
@@ -111,6 +120,10 @@ contract Asset is Safe {
             success = _unsafeSend(owner, balance);
         }
         return multiAsset.transfer(owner, balanceOf(owner), symbol) && success;
+    }
+
+    function decimals() constant returns(uint8) {
+        return multiAsset.baseUnit(symbol);
     }
 }
 
