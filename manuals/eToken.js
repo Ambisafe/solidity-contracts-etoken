@@ -1202,7 +1202,7 @@ var deployETokenETH = function(args) {
             'etokenETH has been successfully deployed at ' + etokenETH.address + 
             '. With RouterICAP at ' + routerICAP + 
             '. Add it here if neccessary: https://ambisafe.atlassian.net/wiki/display/ETOKEN ' +
-            ' compiler: 0.4.4, commit: <current>.',
+            ' compiler: 0.4.4, commit: 9867041.',
             $logs
           );
         })
