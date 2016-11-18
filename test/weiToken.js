@@ -327,7 +327,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
 
-  it('should return value on transfer from', function(done) {
+  it.skip('should return value on transfer from', function(done) {
     var value = 132000000;
     var returnValue = 1000000;
     var receiver = accounts[1];
@@ -361,7 +361,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
 
-  it('should return value on transfer from to ICAP', function(done) {
+  it.skip('should return value on transfer from to ICAP', function(done) {
     var value = 132000000;
     var returnValue = 1000000;
     var receiver = accounts[2];
@@ -395,7 +395,7 @@ contract('WeiToken', {reset_state: true}, function(accounts) {
     }).then(done).catch(done);
   });
 
-  it('should be possible to revoke excess tokens', function(done) {
+  it.skip('should be possible to revoke excess tokens', function(done) {
     var value = 132000000;
     var amount = 100000000;
     var receiver = accounts[1];
