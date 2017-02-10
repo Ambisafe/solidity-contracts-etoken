@@ -7,9 +7,6 @@ contract RegistryICAP {
 }
 
 contract MultiAsset {
-    function registryICAP() constant returns(RegistryICAP);
-    function setupRegistryICAP(address _registryICAP) returns(bool);
-    function setupEventsHistory(address _eventsHistory) returns(bool);
     function isCreated(bytes32 _symbol) constant returns(bool);
     function baseUnit(bytes32 _symbol) constant returns(uint8);
     function name(bytes32 _symbol) constant returns(string);
@@ -19,25 +16,12 @@ contract MultiAsset {
     function isOwner(address _owner, bytes32 _symbol) constant returns(bool);
     function totalSupply(bytes32 _symbol) constant returns(uint);
     function balanceOf(address _holder, bytes32 _symbol) constant returns(uint);
-    function setProxy(address _address, bool enabled, bytes32 _symbol) returns(bool);
-    function setEventsProxy(address _address, bytes32 _symbol) returns(bool);
-    function setProxyConf(bool _onlyThroughProxy, bool _throwOnFailedEmit, bytes32 _symbol) returns(bool);
     function transfer(address _to, uint _value, bytes32 _symbol) returns(bool);
     function transferToICAP(bytes32 _icap, uint _value) returns(bool);
     function transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) returns(bool);
     function transferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) returns(bool);
     function proxyTransferWithReference(address _to, uint _value, bytes32 _symbol, string _reference) returns(bool);
     function proxyTransferToICAPWithReference(bytes32 _icap, uint _value, string _reference) returns(bool);
-    function getHolderId(address _holder) constant returns(uint);
-    function issueAsset(bytes32 _symbol, uint _value, string _name, string _description, uint8 _baseUnit, bool _isReissuable) returns(bool);
-    function reissueAsset(bytes32 _symbol, uint _value) returns(bool);
-    function revokeAsset(bytes32 _symbol, uint _value) returns(bool);
-    function changeOwnership(bytes32 _symbol, address _newOwner) returns(bool);
-    function isTrusted(address _from, address _to) constant returns(bool);
-    function trust(address _to) returns(bool);
-    function distrust(address _to) returns(bool);
-    function distrustAll() returns(bool);
-    function recover(address _from, address _to) returns(bool);
     function approve(address _spender, uint _value, bytes32 _symbol) returns(bool);
     function proxyApprove(address _spender, uint _value, bytes32 _symbol) returns(bool);
     function allowance(address _from, address _spender, bytes32 _symbol) constant returns(uint);
@@ -124,14 +108,6 @@ contract AssetMin is SafeMin {
             multiAsset.transferFromToICAPWithReference(msg.sender, _icap, _value, _reference);
     }
     
-    function __transferFromWithReference(address _from, address _to, uint _value, string _reference) private onlyHuman() returns(bool) {
-        return multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference);
-    }
-
-    function __transferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) private onlyHuman() returns(bool) {
-        return multiAsset.proxyTransferFromToICAPWithReference(_from, _icap, _value, _reference);
-    }
-
     function approve(address _spender, uint _value) onlyHuman() returns(bool) {
         return multiAsset.proxyApprove(_spender, _value, symbol);
     }

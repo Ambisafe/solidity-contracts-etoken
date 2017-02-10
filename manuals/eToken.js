@@ -210,9 +210,9 @@ deployContract(
 // register ICAP
 // setupIcap
 ({
-  symbol: 'OD',
-  icapName: 'ODL',
-  icapInstName: 'BTCZ',
+  symbol: 'CC',
+  icapName: 'BCC',
+  icapInstName: 'SPAC',
   icapInstAddress: '0xbDf30fedeb099BCa4aAa30Be7108EebBa954f84C',
   icapInstOwnerPK: undefined,
   env: 'prod' // For prod use commonAmbi private key from 1password
@@ -261,7 +261,7 @@ var setupIcap = function(args) {
         if (!regResult) {
           log('Institution already registered.', $logs);
         } else {
-          transactions.push(safeTransactionFunction(icap.registerInstitution, [icapInstName, icapInstOwnerAddress], address, {gas: 100000}));
+          transactions.push(safeTransactionFunction(icap.registerInstitution, [icapInstName, icapInstOwnerAddress], address, {gas: 100000, waitReceipt: true}));
         }
         if (icapInstOwnerPK) {
           transactions.push(syncFunction(function() {
@@ -273,6 +273,56 @@ var setupIcap = function(args) {
       transactions.push(syncFunction(function() {
         log('Example ICAP: ' + web3.eth.iban.fromBban(icapName + icapInstName + '000000000').toString() + ' registered on address: ' + icapInstAddress + '.', $logs);
         log('Now setup Proxy contract.', $logs);
+      }));
+      safeTransactions(transactions);
+    });
+  });
+};
+
+// register ICAP admin
+// setupIcapAdmin
+({
+  symbol: 'CC',
+  icapName: 'BCC',
+  icapInstName: 'SPAC',
+  icapInstAdminAddress: '0xbDf30fedeb099BCa4aAa30Be7108EebBa954f84C',
+  env: 'prod' // For prod use commonAmbi private key from 1password
+});
+var setupIcapAdmin = function(args) {
+  if (args.symbol) { var symbol = args.symbol; } else throw "symbol not specified";
+  if (args.icapName) { var icapName = args.icapName; } else throw "icapName not specified";
+  if (args.icapInstName) { var icapInstName = args.icapInstName; } else throw "icapInstName not specified";
+  if (args.icapInstAdminAddress) { var icapInstAdminAddress = args.icapInstAdminAddress.toLowerCase(); } else throw "icapInstAddress not specified";
+  if (args.env) { var env = args.env; } else throw "env not specified";
+  var icap = web3.eth.contract([{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":false,"inputs":[{"name":"_stackDepthLib","type":"address"}],"name":"setupStackDepthLib","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"_name","type":"bytes32"}],"name":"getAddress","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[{"name":"_institution","type":"bytes32"}],"name":"addr","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[{"name":"_icap","type":"bytes32"}],"name":"parse","outputs":[{"name":"","type":"address"},{"name":"","type":"bytes32"},{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"registered","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_institution","type":"string"},{"name":"_address","type":"address"}],"name":"changeInstitutionOwner","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_asset","type":"string"},{"name":"_institution","type":"string"},{"name":"_address","type":"address"}],"name":"updateInstitutionAsset","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_ambi","type":"address"},{"name":"_name","type":"bytes32"}],"name":"setAmbiAddress","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_asset","type":"string"},{"name":"_symbol","type":"bytes32"}],"name":"registerAsset","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"_asset","type":"string"},{"name":"_institution","type":"string"},{"name":"_address","type":"address"}],"name":"registerInstitutionAsset","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"institutions","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"assets","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":false,"inputs":[],"name":"remove","outputs":[],"type":"function"},{"constant":false,"inputs":[{"name":"_institution","type":"string"},{"name":"_address","type":"address"}],"name":"registerInstitution","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"bytes32"}],"name":"institutionOwners","outputs":[{"name":"","type":"address"}],"type":"function"},{"constant":false,"inputs":[{"name":"_asset","type":"string"},{"name":"_institution","type":"string"}],"name":"removeInstitutionAsset","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"_bban","type":"bytes"}],"name":"prepare","outputs":[{"name":"","type":"bytes"}],"type":"function"},{"constant":true,"inputs":[{"name":"_prepared","type":"bytes"}],"name":"mod9710","outputs":[{"name":"","type":"uint8"}],"type":"function"},{"constant":true,"inputs":[{"name":"_bban","type":"bytes"}],"name":"decodeIndirect","outputs":[{"name":"","type":"string"},{"name":"","type":"string"},{"name":"","type":"string"}],"type":"function"}])
+  .at(env === 'prod' ? '0x96a51938cfb22565e0d40694fe103675c63ae218' : '0x98a715181466035e10ea4b7da5635a356b1d1c4d');
+  var transactions = [];
+  if (icapName.length !== 3) {
+    logError('ICAP names should always be 3 chars long, and match this regex: [A-Z0-9]{3}', $logs);
+    return;
+  }
+  icap.parse(web3.eth.iban.fromBban(icapName + icapInstName + '012345678').toString(), 'pending', function(err, parseResult) {
+    if (err) {
+      logError(err, $logs);
+      return;
+    }
+    icap.registerInstitution.call(icapInstName, icapInstAdminAddress, {from: address}, 'pending', function(regErr, regResult) {
+      if (regErr) {
+        logError(regErr, $logs);
+        return;
+      }
+      if (web3.toAscii(parseResult[1]).slice(0, symbol.length) == symbol) {
+        log('Asset already registered.', $logs);
+      } else {
+        transactions.push(safeTransactionFunction(icap.registerAsset, [icapName, symbol], address));
+      }
+      if (!regResult) {
+        log('Institution already registered.', $logs);
+      } else {
+        transactions.push(safeTransactionFunction(icap.registerInstitution, [icapInstName, icapInstAdminAddress], address, {gas: 100000, waitReceipt: true}));
+      }
+      transactions.push(syncFunction(function() {
+        log('Institution ' + icapInstName + ' registered with admin address: ' + icapInstAdminAddress + '.', $logs);
       }));
       safeTransactions(transactions);
     });
