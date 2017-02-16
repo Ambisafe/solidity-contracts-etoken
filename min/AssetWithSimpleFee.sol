@@ -5,19 +5,19 @@ import "Ambi2EnabledFull.sol";
 import "Asset.sol";
 
 contract AssetWithSimpleFee is Asset, Ambi2EnabledFull {
-    uint public txGasPriceLimit = 21000000000;
-    uint public refundGas = 40000;
-    uint public transferCallGas = 21000;
-    uint public transferWithReferenceCallGas = 21000;
-    uint public transferFromCallGas = 21000;
-    uint public transferFromWithReferenceCallGas = 21000;
-    uint public transferToICAPCallGas = 21000;
-    uint public transferToICAPWithReferenceCallGas = 21000;
-    uint public transferFromToICAPCallGas = 21000;
-    uint public transferFromToICAPWithReferenceCallGas = 21000;
-    uint public approveCallGas = 21000;
-    uint public forwardCallGas = 21000;
-    uint public setCosignerCallGas = 21000;
+    uint public txGasPriceLimit;
+    uint public refundGas;
+    uint public transferCallGas;
+    uint public transferWithReferenceCallGas;
+    uint public transferFromCallGas;
+    uint public transferFromWithReferenceCallGas;
+    uint public transferToICAPCallGas;
+    uint public transferToICAPWithReferenceCallGas;
+    uint public transferFromToICAPCallGas;
+    uint public transferFromToICAPWithReferenceCallGas;
+    uint public approveCallGas;
+    uint public forwardCallGas;
+    uint public setCosignerCallGas;
     uint public absMinFee;
     uint public feePercent; // set up in 1/100 of percent, 10 is 0.1%
     uint public absMaxFee;
@@ -177,7 +177,7 @@ contract AssetWithSimpleFee is Asset, Ambi2EnabledFull {
             return (false, false);
         }
         _allow();
-        bool success = super.transferWithReference(_to, _value, "");
+        bool success = super.transfer(_to, _value);
         _disallow();
         if (!success) {
             return _returnFee(msg.sender, fee);
@@ -192,7 +192,7 @@ contract AssetWithSimpleFee is Asset, Ambi2EnabledFull {
             return (false, false);
         }
         _allow();
-        bool success = super.transferFromWithReference(_from, _to, _value, "");
+        bool success = super.transferFrom(_from, _to, _value);
         _disallow();
         if (!success) {
             return _returnFee(_from, fee);
@@ -207,7 +207,7 @@ contract AssetWithSimpleFee is Asset, Ambi2EnabledFull {
             return (false, false);
         }
         _allow();
-        bool success = super.transferToICAPWithReference(_icap, _value, "");
+        bool success = super.transferToICAP(_icap, _value);
         _disallow();
         if (!success) {
             return _returnFee(msg.sender, fee);
@@ -222,7 +222,7 @@ contract AssetWithSimpleFee is Asset, Ambi2EnabledFull {
             return (false, false);
         }
         _allow();
-        bool success = super.transferFromToICAPWithReference(_from, _icap, _value, "");
+        bool success = super.transferFromToICAP(_from, _icap, _value);
         _disallow();
         if (!success) {
             return _returnFee(_from, fee);
@@ -386,55 +386,11 @@ contract AssetWithSimpleFee is Asset, Ambi2EnabledFull {
         return success;
     }
 
-    function checkTransfer(address _to, uint _value) constant returns(bool, bool) {
-        return _transfer(_to, _value);
-    }
-
-    function checkTransferFrom(address _from, address _to, uint _value) constant returns(bool, bool) {
-        return _transferFrom(_from, _to, _value);
-    }
-
-    function checkTransferToICAP(bytes32 _icap, uint _value) constant returns(bool, bool) {
-        return _transferToICAP(_icap, _value);
-    }
-
-    function checkTransferFromToICAP(address _from, bytes32 _icap, uint _value) constant returns(bool, bool) {
-        return _transferFromToICAP(_from, _icap, _value);
-    }
-
-    function checkTransferWithReference(address _to, uint _value, string _reference) constant returns(bool, bool) {
-        return _transferWithReference(_to, _value, _reference);
-    }
-
-    function checkTransferFromWithReference(address _from, address _to, uint _value, string _reference) constant returns(bool, bool) {
-        return _transferFromWithReference(_from, _to, _value, _reference);
-    }
-
-    function checkTransferToICAPWithReference(bytes32 _icap, uint _value, string _reference) constant returns(bool, bool) {
-        return _transferToICAPWithReference(_icap, _value, _reference);
-    }
-
-    function checkTransferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) constant returns(bool, bool) {
-        return _transferFromToICAPWithReference(_from, _icap, _value, _reference);
-    }
-
-    function checkApprove(address _spender, uint _value) constant returns(bool, bool) {
-        return _approve(_spender, _value);
-    }
-
-    function checkSetCosignerAddress(address _cosigner) constant returns(bool, bool) {
-        return _setCosignerAddress(_cosigner);
-    }
-
-    function checkForward(bytes _data) constant returns(bool, bool) {
-        return _forward(allowedForwards[sha3(_data[0], _data[1], _data[2], _data[3])], _data);
-    }
-
     function _forward(address _to, bytes _data) internal returns(bool, bool) {
         uint startGas = msg.gas + forwardCallGas;
         uint additionalGas = (_data.length * 50);  // 50 gas per byte;
         if (_to == 0x0) {
-            return (false, _safeFalse());
+            return (false, false);
         }
         uint fee = calculateFeeDynamic(0, additionalGas);
         if (!_transferFee(msg.sender, fee, "Forward fee")) {
@@ -442,7 +398,7 @@ contract AssetWithSimpleFee is Asset, Ambi2EnabledFull {
         }
         if (!_to.call.value(msg.value)(_data)) {
             _returnFee(msg.sender, fee);
-            return (false, _safeFalse());
+            return (false, false);
         }
         return (true, _applyRefund(startGas + additionalGas));
     }
@@ -450,6 +406,7 @@ contract AssetWithSimpleFee is Asset, Ambi2EnabledFull {
     function () payable {
         bool success;
         (success,) = _forward(allowedForwards[sha3(msg.sig)], msg.data);
+        success = success || _safeFalse();
         assembly {
             mstore(0, success)
             return(0, 32)

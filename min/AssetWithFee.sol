@@ -1,12 +1,12 @@
-pragma solidity ^0.4.9;
+pragma solidity 0.4.9;
 
 import "EtherTreasuryInterface.sol";
 import "Ambi2EnabledFull.sol";
 import "Asset.sol";
 
-contract AssetWithRefund is Asset, Ambi2EnabledFull {
-    uint public txGasPriceLimit;
+contract AssetWithFee is Asset, Ambi2EnabledFull {
     uint public refundGas;
+    uint public feeGas;
     uint public transferCallGas;
     uint public transferWithReferenceCallGas;
     uint public transferFromCallGas;
@@ -18,18 +18,61 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
     uint public approveCallGas;
     uint public forwardCallGas;
     uint public setCosignerCallGas;
+    uint public tokenPriceInWeiSell = 1;
+    uint public tokenPriceInWeiBuy = 2;
+    uint public buyLimitMin = 0;
+    uint public buyLimitMax = 0;
+    uint public sellLimitMin = 0;
+    uint public sellLimitMax = 0;
+    address public exchangeAddress;
     EtherTreasuryInterface public treasury;
+    address public feeAddress;
     mapping(bytes32 => address) public allowedForwards;
+
+    function setupFee(address _feeAddress) onlyRole("admin") returns(bool) {
+        feeAddress = _feeAddress;
+        return true;
+    }
+
+    function setupExchange(address _exchangeAddress, uint _buyLimitMin, uint _buyLimitMax, uint _sellLimitMin, uint _sellLimitMax) onlyRole("admin") returns(bool) {
+        if (_buyLimitMin > _buyLimitMax || _sellLimitMin > _sellLimitMax) {
+            return false;
+        }
+        exchangeAddress = _exchangeAddress;
+        buyLimitMin = _buyLimitMin;
+        buyLimitMax = _buyLimitMax;
+        sellLimitMin = _sellLimitMin;
+        sellLimitMax = _sellLimitMax;
+        return true;
+    }
+
+    function setTokenPrice(uint _tokenPriceInWeiSell, uint _tokenPriceInWeiBuy) onlyRole("cron") returns(bool) {
+        if (_tokenPriceInWeiSell == 0 || _tokenPriceInWeiBuy == 0 || _tokenPriceInWeiSell > _tokenPriceInWeiBuy) {
+            return false;
+        }
+        tokenPriceInWeiSell = _tokenPriceInWeiSell;
+        tokenPriceInWeiBuy = _tokenPriceInWeiBuy;
+        return true;
+    }
+
+    function setWholeTokenPrice(uint _wholeTokenPriceInWeiSell, uint _wholeTokenPriceInWeiBuy) returns(bool) {
+        uint wholeToken = (10 ** decimals());
+        return setTokenPrice(_wholeTokenPriceInWeiSell / wholeToken, _wholeTokenPriceInWeiBuy / wholeToken);
+    }
+
+    function updateFeeGas() onlyRole("setup") returns(uint) {
+        uint startGas = msg.gas;
+        if (!_transferFee(msg.sender, 1, "Update fee conf")) {
+            return 0;
+        }
+        feeGas = startGas - msg.gas;
+        return feeGas;
+    }
 
     function updateRefundGas() onlyRole("setup") returns(uint) {
         uint startGas = msg.gas;
-        // just to simulate calculations, dunno if optimizer will remove this.
-        uint refund = (startGas - msg.gas + refundGas) * tx.gasprice;
-        if (tx.gasprice > txGasPriceLimit) {
-            return 0;
-        }
-        // end.
-        if (!_refund(5000000000000000)) {
+        uint refund = (startGas - msg.gas + refundGas) * tx.gasprice; // just to simulate calculations, dunno if optimizer will remove this.
+        if (!_refund(1)) {
             return 0;
         }
         refundGas = startGas - msg.gas;
@@ -66,12 +109,8 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
         return true;
     }
 
-    function setupTreasury(address _treasury, uint _txGasPriceLimit) payable onlyRole("admin") returns(bool) {
-        if (_txGasPriceLimit == 0) {
-            return _safeFalse();
-        }
+    function setupTreasury(address _treasury) payable onlyRole("admin") returns(bool) {
         treasury = EtherTreasuryInterface(_treasury);
-        txGasPriceLimit = _txGasPriceLimit;
         if (msg.value > 0) {
             _safeSend(_treasury, msg.value);
         }
@@ -87,8 +126,16 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
         return bytes(_string).length * 75; // ~75 gas per byte, empirical shown 68-72.
     }
 
-    function _applyRefund(uint _startGas) internal returns(bool) {
-        if (tx.gasprice > txGasPriceLimit) {
+    function _transferFee(address _feeFrom, uint _value, string _reference) internal returns(bool) {
+        if (feeAddress == 0x0 || feeAddress == _feeFrom) {
+            return true;
+        }
+        return multiAsset.transferFromWithReference(_feeFrom, feeAddress, _value, symbol, _reference);
+    }
+
+    function _applyFeeAndRefund(address _feeFrom, uint _startGas, string _reference) internal returns(bool) {
+        uint fee = ((_startGas - msg.gas + refundGas + feeGas) * tx.gasprice / tokenPriceInWeiSell) + 1; // Good enough round up.
+        if (!_transferFee(_feeFrom, fee, _reference)) {
             return false;
         }
         uint refund = (_startGas - msg.gas + refundGas) * tx.gasprice;
@@ -99,12 +146,16 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
         return treasury.withdraw(tx.origin, _value);
     }
 
+    function takeFee(address _feeFrom, uint _value, string _reference) onlyRole("fee") returns(bool) {
+        return _transferFee(_feeFrom, _value, _reference);
+    }
+
     function _transfer(address _to, uint _value) internal returns(bool, bool) {
         uint startGas = msg.gas + transferCallGas;
         if (!super.transfer(_to, _value)) {
             return (false, false);
         }
-        return (true, _applyRefund(startGas));
+        return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
     }
 
     function _transferFrom(address _from, address _to, uint _value) internal returns(bool, bool) {
@@ -112,7 +163,7 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
         if (!super.transferFrom(_from, _to, _value)) {
             return (false, false);
         }
-        return (true, _applyRefund(startGas));
+        return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
     }
 
     function _transferToICAP(bytes32 _icap, uint _value) internal returns(bool, bool) {
@@ -120,7 +171,7 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
         if (!super.transferToICAP(_icap, _value)) {
             return (false, false);
         }
-        return (true, _applyRefund(startGas));
+        return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
     }
 
     function _transferFromToICAP(address _from, bytes32 _icap, uint _value) internal returns(bool, bool) {
@@ -128,7 +179,7 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
         if (!super.transferFromToICAP(_from, _icap, _value)) {
             return (false, false);
         }
-        return (true, _applyRefund(startGas));
+        return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
     }
 
     function _transferWithReference(address _to, uint _value, string _reference) internal returns(bool, bool) {
@@ -136,7 +187,7 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
         if (!super.transferWithReference(_to, _value, _reference)) {
             return (false, false);
         }
-        return (true, _applyRefund(startGas));
+        return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
     }
 
     function _transferFromWithReference(address _from, address _to, uint _value, string _reference) internal returns(bool, bool) {
@@ -144,7 +195,7 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
         if (!super.transferFromWithReference(_from, _to, _value, _reference)) {
             return (false, false);
         }
-        return (true, _applyRefund(startGas));
+        return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
     }
 
     function _transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) internal returns(bool, bool) {
@@ -152,7 +203,7 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
         if (!super.transferToICAPWithReference(_icap, _value, _reference)) {
             return (false, false);
         }
-        return (true, _applyRefund(startGas));
+        return (true, _applyFeeAndRefund(msg.sender, startGas, "Transfer fee"));
     }
 
     function _transferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) internal returns(bool, bool) {
@@ -160,7 +211,7 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
         if (!super.transferFromToICAPWithReference(_from, _icap, _value, _reference)) {
             return (false, false);
         }
-        return (true, _applyRefund(startGas));
+        return (true, _applyFeeAndRefund(_from, startGas, "Transfer fee"));
     }
 
     function _approve(address _spender, uint _value) internal returns(bool, bool) {
@@ -168,7 +219,7 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
         if (!super.approve(_spender, _value)) {
             return (false, false);
         }
-        return (true, _applyRefund(startGas));
+        return (true, _applyFeeAndRefund(msg.sender, startGas, "Approve fee"));
     }
 
     function _setCosignerAddress(address _cosigner) internal returns(bool, bool) {
@@ -176,7 +227,7 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
         if (!super.setCosignerAddress(_cosigner)) {
             return (false, false);
         }
-        return (true, _applyRefund(startGas));
+        return (true, _applyFeeAndRefund(msg.sender, startGas, "Cosigner fee"));
     }
 
     function transfer(address _to, uint _value) returns(bool) {
@@ -247,7 +298,7 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
         if (!_to.call.value(msg.value)(_data)) {
             return (false, false);
         }
-        return (true, _applyRefund(startGas));
+        return (true, _applyFeeAndRefund(msg.sender, startGas, "Forward fee"));
     }
 
     function () payable {
@@ -258,5 +309,31 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
             mstore(0, success)
             return(0, 32)
         }
+    }
+
+    function sell(address _to, uint _value) returns(bool) {
+        if (exchangeAddress == 0x0 || _value < sellLimitMin || _value > sellLimitMax) {
+            return false;
+        }
+        if (!multiAsset.transferFromWithReference(msg.sender, exchangeAddress, _value, symbol, "Sell")) {
+            return false;
+        }
+        uint result = _value * tokenPriceInWeiSell;
+        if (!treasury.withdrawWithReference(_to, result, "Sell")) {
+            throw;
+        }
+        return true;
+    }
+
+    function buy(address _to) payable returns(bool) {
+        uint value = msg.value / tokenPriceInWeiBuy;
+        if (exchangeAddress == 0x0 || value < buyLimitMin || value > buyLimitMax) {
+            return _safeFalse();
+        }
+        if (!multiAsset.transferFromWithReference(exchangeAddress, _to, value, symbol, "Buy")) {
+            return _safeFalse();
+        }
+        _safeSend(exchangeAddress, msg.value);
+        return true;
     }
 }
