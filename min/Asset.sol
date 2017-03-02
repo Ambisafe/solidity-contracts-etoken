@@ -1,4 +1,4 @@
-pragma solidity ^0.4.4;
+pragma solidity ^0.4.9;
 
 import "SafeMin.sol";
 
@@ -36,7 +36,7 @@ contract MultiAsset {
     function proxySetCosignerAddress(address _address, bytes32 _symbol) returns(bool);
 }
 
-contract AssetMin is SafeMin {
+contract Asset is SafeMin {
     event Transfer(address indexed from, address indexed to, uint value);
     event Approve(address indexed from, address indexed spender, uint value);
 
@@ -44,12 +44,11 @@ contract AssetMin is SafeMin {
     bytes32 public symbol;
     string public name;
 
-    function init(address _multiAsset, bytes32 _symbol) immutable(address(multiAsset)) returns(bool) {
-        MultiAsset ma = MultiAsset(_multiAsset);
-        if (!ma.isCreated(_symbol)) {
+    function init(MultiAsset _multiAsset, bytes32 _symbol) immutable(address(multiAsset)) returns(bool) {
+        if (!_multiAsset.isCreated(_symbol)) {
             return false;
         }
-        multiAsset = ma;
+        multiAsset = _multiAsset;
         symbol = _symbol;
         return true;
     }
@@ -90,7 +89,7 @@ contract AssetMin is SafeMin {
 
     function __transferWithReference(address _to, uint _value, string _reference) private returns(bool) {
         return _isHuman() ?
-            multiAsset.proxyTransferWithReference(_to, _value, symbol, _reference) :
+            __transferFromWithReference(tx.origin, _to, _value, _reference) :
             multiAsset.transferFromWithReference(msg.sender, _to, _value, symbol, _reference);
     }
 
@@ -104,10 +103,34 @@ contract AssetMin is SafeMin {
 
     function __transferToICAPWithReference(bytes32 _icap, uint _value, string _reference) private returns(bool) {
         return _isHuman() ?
-            multiAsset.proxyTransferToICAPWithReference(_icap, _value, _reference) :
+            __transferFromToICAPWithReference(tx.origin, _icap, _value, _reference) :
             multiAsset.transferFromToICAPWithReference(msg.sender, _icap, _value, _reference);
     }
     
+    function transferFrom(address _from, address _to, uint _value) returns(bool) {
+        return __transferFromWithReference(_from, _to, _value, "");
+    }
+
+    function transferFromWithReference(address _from, address _to, uint _value, string _reference) returns(bool) {
+        return __transferFromWithReference(_from, _to, _value, _reference);
+    }
+
+    function __transferFromWithReference(address _from, address _to, uint _value, string _reference) private onlyHuman() returns(bool) {
+        return multiAsset.proxyTransferFromWithReference(_from, _to, _value, symbol, _reference);
+    }
+
+    function transferFromToICAP(address _from, bytes32 _icap, uint _value) returns(bool) {
+        return __transferFromToICAPWithReference(_from, _icap, _value, "");
+    }
+
+    function transferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) returns(bool) {
+        return __transferFromToICAPWithReference(_from, _icap, _value, _reference);
+    }
+
+    function __transferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference) private onlyHuman() returns(bool) {
+        return multiAsset.proxyTransferFromToICAPWithReference(_from, _icap, _value, _reference);
+    }
+
     function approve(address _spender, uint _value) onlyHuman() returns(bool) {
         return multiAsset.proxyApprove(_spender, _value, symbol);
     }
@@ -133,5 +156,3 @@ contract AssetMin is SafeMin {
         return multiAsset.baseUnit(symbol);
     }
 }
-
-// RegEx to remove all admin functions from ABI: (?s)\{\s+"constant"[^[]+\[[^\]]*\][^:]+:\s*"(init|emitTransfer|emitApprove|sendToOwner)"[^\]]+[^}]+},\s+

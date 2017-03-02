@@ -8,6 +8,8 @@ contract MultiAssetInterface {
 }
 
 contract MultiAssetOwner is OwnedProxy {
+    function MultiAssetOwner(address _multiAsset) OwnedProxy(_multiAsset) {}
+
     function _multiAsset() internal constant returns(MultiAssetInterface) {
         return MultiAssetInterface(ownedProxyTarget);
     }

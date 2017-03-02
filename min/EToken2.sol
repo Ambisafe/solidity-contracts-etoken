@@ -1,4 +1,4 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.9;
 
 import "Ambi2EnabledFull.sol";
 
@@ -17,6 +17,7 @@ contract Emitter {
     function emitOwnershipChange(address _from, address _to, bytes32 _symbol);
     function emitApprove(address _from, address _spender, bytes32 _symbol, uint _value);
     function emitRecovery(address _from, address _to, address _by);
+    function emitTransferToICAP(address _from, address _to, bytes32 _icap, uint _value, string _reference);
     function emitError(bytes32 _message);
 }
 
@@ -389,7 +390,6 @@ contract EToken2 is Ambi2EnabledFull {
             assets[_symbol].wallets[_fromId].allowance[_senderId] -= _value;
         }
         // Internal Out Of Gas/Throw: revert this transaction too;
-        // Call Stack Depth Limit reached: n/a after HF 4;
         // Recursive Call: safe, all changes already made.
         eventsHistory.emitTransfer(_address(_fromId), _address(_toId), _symbol, _value, _reference);
         _proxyTransferEvent(_fromId, _toId, _value, _symbol);
@@ -409,8 +409,42 @@ contract EToken2 is Ambi2EnabledFull {
      *
      * @return success.
      */
-    function proxyTransferWithReference(address _to, uint _value, bytes32 _symbol, string _reference, address _sender) onlyProxy(_symbol) returns(bool) {
-        return _transfer(getHolderId(_sender), _createHolderId(_to), _value, _symbol, _reference, getHolderId(_sender));
+    function proxyTransferWithReference(address _to, uint _value, bytes32 _symbol, string _reference, address _sender) returns(bool) {
+        return proxyTransferFromWithReference(_sender, _to, _value, _symbol, _reference, _sender);
+    }
+
+    // Feature and proxy checks done internally due to unknown symbol when the function is called.
+    function _transferToICAP(uint _fromId, bytes32 _icap, uint _value, string _reference, uint _senderId) internal returns(bool) {
+        var (to, symbol, success) = registryICAP.parse(_icap);
+        if (!success) {
+            _error("ICAP is not registered");
+            return false;
+        }
+        if (!isEnabled(sha3(symbol, Features.ICAP))) {
+            _error("ICAP feature is disabled");
+            return false;
+        }
+        if (proxies[symbol] != msg.sender) {
+            _error("Only proxy: access denied");
+            return false;
+        }
+        uint toId = _createHolderId(to);
+        if (!_transfer(_fromId, toId, _value, symbol, _reference, _senderId)) {
+            return false;
+        }
+        // Internal Out Of Gas/Throw: revert this transaction too;
+        // Call Stack Depth Limit reached: revert this transaction too;
+        // Recursive Call: safe, all changes already made.
+        eventsHistory.emitTransferToICAP(_address(_fromId), _address(toId), _icap, _value, _reference);
+        return true;
+    }
+
+    function proxyTransferToICAPWithReference(bytes32 _icap, uint _value, string _reference, address _sender) returns(bool) {
+        return proxyTransferFromToICAPWithReference(_sender, _icap, _value, _reference, _sender);
+    }
+
+    function proxyTransferFromToICAPWithReference(address _from, bytes32 _icap, uint _value, string _reference, address _sender) returns(bool) {
+        return _transferToICAP(getHolderId(_from), _icap, _value, _reference, getHolderId(_sender));
     }
 
     /**
@@ -424,7 +458,6 @@ contract EToken2 is Ambi2EnabledFull {
     function _proxyTransferEvent(uint _fromId, uint _toId, uint _value, bytes32 _symbol) internal {
         if (proxies[_symbol] != 0x0) {
             // Internal Out Of Gas/Throw: revert this transaction too;
-            // Call Stack Depth Limit reached: n/a after HF 4;
             // Recursive Call: safe, all changes already made.
             Proxy(proxies[_symbol]).emitTransfer(_address(_fromId), _address(_toId), _value);
         }
@@ -492,7 +525,6 @@ contract EToken2 is Ambi2EnabledFull {
         assets[_symbol] = Asset(holderId, _value, _name, _description, _isReissuable, _baseUnit);
         assets[_symbol].wallets[holderId].balance = _value;
         // Internal Out Of Gas/Throw: revert this transaction too;
-        // Call Stack Depth Limit reached: n/a after HF 4;
         // Recursive Call: safe, all changes already made.
         eventsHistory.emitIssue(_symbol, _value, _address(holderId));
         return true;
@@ -530,7 +562,6 @@ contract EToken2 is Ambi2EnabledFull {
         asset.wallets[holderId].balance += _value;
         asset.totalSupply += _value;
         // Internal Out Of Gas/Throw: revert this transaction too;
-        // Call Stack Depth Limit reached: n/a after HF 4;
         // Recursive Call: safe, all changes already made.
         eventsHistory.emitIssue(_symbol, _value, _address(holderId));
         _proxyTransferEvent(0, holderId, _value, _symbol);
@@ -561,7 +592,6 @@ contract EToken2 is Ambi2EnabledFull {
         asset.wallets[holderId].balance -= _value;
         asset.totalSupply -= _value;
         // Internal Out Of Gas/Throw: revert this transaction too;
-        // Call Stack Depth Limit reached: n/a after HF 4;
         // Recursive Call: safe, all changes already made.
         eventsHistory.emitRevoke(_symbol, _value, _address(holderId));
         _proxyTransferEvent(holderId, 0, _value, _symbol);
@@ -590,7 +620,6 @@ contract EToken2 is Ambi2EnabledFull {
         address oldOwner = _address(asset.owner);
         asset.owner = newOwnerId;
         // Internal Out Of Gas/Throw: revert this transaction too;
-        // Call Stack Depth Limit reached: n/a after HF 4;
         // Recursive Call: safe, all changes already made.
         eventsHistory.emitOwnershipChange(oldOwner, _address(newOwnerId), _symbol);
         return true;
@@ -619,6 +648,18 @@ contract EToken2 is Ambi2EnabledFull {
         } else {
             _error("Cosigner: access denied");
         }
+    }
+
+    /**
+     * Check if specified holder trusts an address with recovery procedure.
+     *
+     * @param _from truster.
+     * @param _to trustee.
+     *
+     * @return trust existance.
+     */
+    function isTrusted(address _from, address _to) constant returns(bool) {
+        return holders[getHolderId(_from)].trust[_to];
     }
 
     /**
@@ -707,7 +748,6 @@ contract EToken2 is Ambi2EnabledFull {
         holders[_fromId].addr = _to;
         holderIndex[_to] = _fromId;
         // Internal Out Of Gas/Throw: revert this transaction too;
-        // Call Stack Depth Limit reached: revert this transaction too;
         // Recursive Call: safe, all changes already made.
         eventsHistory.emitRecovery(from, _to, msg.sender);
         return true;
@@ -738,12 +778,10 @@ contract EToken2 is Ambi2EnabledFull {
         }
         assets[_symbol].wallets[_senderId].allowance[_spenderId] = _value;
         // Internal Out Of Gas/Throw: revert this transaction too;
-        // Call Stack Depth Limit reached: revert this transaction too;
         // Recursive Call: safe, all changes already made.
         eventsHistory.emitApprove(_address(_senderId), _address(_spenderId), _symbol, _value);
         if (proxies[_symbol] != 0x0) {
             // Internal Out Of Gas/Throw: revert this transaction too;
-            // Call Stack Depth Limit reached: n/a after HF 4;
             // Recursive Call: safe, all changes already made.
             Proxy(proxies[_symbol]).emitApprove(_address(_senderId), _address(_spenderId), _value);
         }

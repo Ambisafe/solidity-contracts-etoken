@@ -133,7 +133,7 @@ contract AssetWithSimpleFee is Asset, Ambi2EnabledFull {
         if (tx.gasprice > txGasPriceLimit) {
             return false;
         }
-        return treasury.withdraw(tx.origin, _value);
+        return address(treasury).call(bytes4(sha3('withdraw(address,uint256)')), tx.origin, _value);
     }
 
     function _allow() internal {

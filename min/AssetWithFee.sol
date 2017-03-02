@@ -143,7 +143,7 @@ contract AssetWithFee is Asset, Ambi2EnabledFull {
     }
 
     function _refund(uint _value) internal returns(bool) {
-        return treasury.withdraw(tx.origin, _value);
+        return address(treasury).call(bytes4(sha3('withdraw(address,uint256)')), tx.origin, _value);
     }
 
     function takeFee(address _feeFrom, uint _value, string _reference) onlyRole("fee") returns(bool) {

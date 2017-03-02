@@ -96,7 +96,7 @@ contract AssetWithRefund is Asset, Ambi2EnabledFull {
     }
 
     function _refund(uint _value) internal returns(bool) {
-        return treasury.withdraw(tx.origin, _value);
+        return address(treasury).call(bytes4(sha3('withdraw(address,uint256)')), tx.origin, _value);
     }
 
     function _transfer(address _to, uint _value) internal returns(bool, bool) {
