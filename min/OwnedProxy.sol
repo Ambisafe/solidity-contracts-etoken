@@ -26,9 +26,9 @@ contract OwnedProxy is Ambi2EnabledFull {
     function () onlyRole(PROXY_OWNER) {
         address addr = ownedProxyTarget;
         assembly {
-            let datastart := add(msize, 1)
+            let datastart := 0
             calldatacopy(datastart, 0, calldatasize)
-            pop(call(div(mul(gas, 63), 64), addr, 0, datastart, calldatasize, 0, 32))
+            pop(call(gas, addr, 0, datastart, calldatasize, 0, 32))
             return(0, 32)
         }
     }
